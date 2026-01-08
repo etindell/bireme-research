@@ -15,9 +15,27 @@ class CompanyForm(forms.ModelForm):
         kwargs.pop('organization', None)
         super().__init__(*args, **kwargs)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        alert_price = cleaned_data.get('alert_price')
+        alert_price_reason = cleaned_data.get('alert_price_reason')
+
+        # Require alert price and reason for watchlist companies
+        if status == Company.Status.WATCHLIST:
+            if not alert_price:
+                self.add_error('alert_price', 'Alert price is required for Watchlist companies.')
+            if not alert_price_reason:
+                self.add_error('alert_price_reason', 'Please explain why you chose this alert price.')
+
+        return cleaned_data
+
     class Meta:
         model = Company
-        fields = ['name', 'description', 'website', 'status', 'sector', 'country', 'thesis']
+        fields = [
+            'name', 'description', 'website', 'status', 'sector', 'country', 'thesis',
+            'alert_price', 'alert_price_reason'
+        ]
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
@@ -46,6 +64,15 @@ class CompanyForm(forms.ModelForm):
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
                 'rows': 5,
                 'placeholder': 'Investment thesis...',
+            }),
+            'alert_price': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': 'Price to trigger deeper research',
+                'step': '0.01',
+            }),
+            'alert_price_reason': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': 'e.g., 10x FCF, below book value, etc.',
             }),
         }
 

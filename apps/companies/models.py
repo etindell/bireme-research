@@ -102,6 +102,32 @@ class Company(SoftDeleteModel, OrganizationMixin):
         help_text='Market cap in USD'
     )
 
+    # Watchlist alert price
+    alert_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Price at which to consider deeper research'
+    )
+    alert_price_reason = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Brief explanation of why this alert price was chosen'
+    )
+    current_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Current stock price (auto-fetched)'
+    )
+    price_last_updated = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When price was last fetched'
+    )
+
     # Full-text search vector
     search_vector = SearchVectorField(null=True, blank=True)
 
@@ -165,6 +191,20 @@ class Company(SoftDeleteModel, OrganizationMixin):
             self.Status.ARCHIVED: 'gray',
         }
         return colors.get(self.status, 'gray')
+
+    @property
+    def is_alert_triggered(self):
+        """Check if current price is at or below alert price."""
+        if self.alert_price and self.current_price:
+            return self.current_price <= self.alert_price
+        return False
+
+    @property
+    def alert_discount_percent(self):
+        """Return percentage below alert price (positive = below alert)."""
+        if self.alert_price and self.current_price and self.alert_price > 0:
+            return ((self.alert_price - self.current_price) / self.alert_price) * 100
+        return None
 
 
 class CompanyTicker(models.Model):

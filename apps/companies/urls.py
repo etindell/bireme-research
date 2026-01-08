@@ -16,6 +16,10 @@ urlpatterns = [
     path('leaderboard/', views.IRRLeaderboardView.as_view(), name='irr_leaderboard'),
     path('leaderboard/refresh-prices/', views.RefreshAllPricesView.as_view(), name='refresh_all_prices'),
 
+    # Watchlist
+    path('watchlist/refresh-prices/', views.RefreshWatchlistPricesView.as_view(), name='refresh_watchlist_prices'),
+    path('<slug:slug>/upgrade-to-on-deck/', views.UpgradeToOnDeckView.as_view(), name='upgrade_to_on_deck'),
+
     # Company detail routes
     path('<slug:slug>/', views.CompanyDetailView.as_view(), name='detail'),
     path('<slug:slug>/edit/', views.CompanyUpdateView.as_view(), name='update'),

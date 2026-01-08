@@ -59,6 +59,23 @@ class CompanyListView(OrganizationViewMixin, ListView):
         context['current_sector'] = self.request.GET.get('sector', '')
         context['current_order'] = self.request.GET.get('order', 'name')
         context['search_query'] = self.request.GET.get('q', '')
+
+        # For watchlist view, separate triggered alerts
+        if self.request.GET.get('status') == 'watchlist':
+            context['is_watchlist_view'] = True
+            # Get companies below alert price (triggered alerts)
+            all_watchlist = Company.objects.filter(
+                organization=self.request.organization,
+                status=Company.Status.WATCHLIST,
+                is_deleted=False,
+                alert_price__isnull=False,
+                current_price__isnull=False
+            ).prefetch_related('tickers')
+
+            context['triggered_alerts'] = [
+                c for c in all_watchlist if c.is_alert_triggered
+            ]
+
         return context
 
     def get_template_names(self):
@@ -347,3 +364,53 @@ class RefreshAllPricesView(OrganizationViewMixin, View):
         if request.htmx:
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
         return redirect('companies:irr_leaderboard')
+
+
+class RefreshWatchlistPricesView(OrganizationViewMixin, View):
+    """Refresh all stock prices for watchlist companies."""
+
+    def post(self, request):
+        from django.utils import timezone
+
+        watchlist_companies = Company.objects.filter(
+            organization=request.organization,
+            status=Company.Status.WATCHLIST,
+            is_deleted=False
+        ).prefetch_related('tickers')
+
+        count = 0
+        for company in watchlist_companies:
+            ticker = company.get_primary_ticker()
+            if ticker:
+                price_data = fetch_stock_price(ticker.symbol)
+                if price_data:
+                    company.current_price = price_data['price']
+                    company.price_last_updated = timezone.now()
+                    company.save(update_fields=['current_price', 'price_last_updated'])
+                    count += 1
+
+        messages.success(request, f'Updated prices for {count} watchlist companies.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        return redirect('companies:list', status='watchlist')
+
+
+class UpgradeToOnDeckView(OrganizationViewMixin, View):
+    """Upgrade a company from Watchlist to On Deck."""
+
+    def post(self, request, slug):
+        company = get_object_or_404(
+            Company.objects.filter(organization=request.organization),
+            slug=slug
+        )
+
+        company.status = Company.Status.ON_DECK
+        company.updated_by = request.user
+        company.save(update_fields=['status', 'updated_by', 'updated_at'])
+
+        messages.success(request, f'{company.name} moved to On Deck.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        return redirect('companies:detail', slug=slug)

@@ -67,6 +67,44 @@
             </div>
         </div>
 
+        <!-- Alert Price (for Watchlist) -->
+        <div class="bg-white shadow rounded-lg p-6" x-data="{ showAlert: document.getElementById('id_status')?.value === 'watchlist' }"
+             x-init="$watch('showAlert', v => {}); document.getElementById('id_status')?.addEventListener('change', e => showAlert = e.target.value === 'watchlist')">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">
+                Alert Price
+                <span class="text-sm font-normal text-gray-500">(required for Watchlist)</span>
+            </h2>
+            <p class="text-sm text-gray-500 mb-4">Set a target price at which you want to research this stock more deeply.</p>
+
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                    <label for="id_alert_price" class="block text-sm font-medium leading-6 text-gray-900">
+                        Alert Price
+                        <span x-show="showAlert" class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-2">
+                        {{ form.alert_price }}
+                    </div>
+                    {% if form.alert_price.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ form.alert_price.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_alert_price_reason" class="block text-sm font-medium leading-6 text-gray-900">
+                        Why this price?
+                        <span x-show="showAlert" class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-2">
+                        {{ form.alert_price_reason }}
+                    </div>
+                    {% if form.alert_price_reason.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ form.alert_price_reason.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
         <!-- Tickers -->
         <div class="bg-white shadow rounded-lg p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">Tickers</h2>
