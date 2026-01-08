@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}IRR Leaderboard - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                IRR Leaderboard
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">Companies ranked by Internal Rate of Return</p>
+        </div>
+        <div class="mt-4 flex gap-x-3 md:ml-4 md:mt-0">
+            <button hx-post="{% url 'companies:refresh_all_prices' %}"
+                    hx-confirm="Refresh all stock prices? This may take a moment."
+                    class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Refresh All Prices
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <div class="flex flex-wrap gap-4 items-center">
+            <!-- Status filter -->
+            <div>
+                <label for="status-filter" class="sr-only">Status</label>
+                <select id="status-filter"
+                        name="status"
+                        hx-get="{% url 'companies:irr_leaderboard' %}"
+                        hx-target="#leaderboard-content"
+                        hx-push-url="true"
+                        hx-include="[name='sector']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Statuses</option>
+                    {% for value, label in statuses %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Sector filter -->
+            <div>
+                <label for="sector-filter" class="sr-only">Sector</label>
+                <select id="sector-filter"
+                        name="sector"
+                        hx-get="{% url 'companies:irr_leaderboard' %}"
+                        hx-target="#leaderboard-content"
+                        hx-push-url="true"
+                        hx-include="[name='status']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Sectors</option>
+                    {% for value, label in sectors %}
+                    <option value="{{ value }}" {% if current_sector == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard table -->
+    <div id="leaderboard-content">
+        {% include "companies/partials/irr_leaderboard_items.html" %}
+    </div>
+</div>
+{% endblock %}

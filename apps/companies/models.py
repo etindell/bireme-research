@@ -144,6 +144,16 @@ class Company(SoftDeleteModel, OrganizationMixin):
         """Return the primary ticker or first ticker."""
         return self.tickers.filter(is_primary=True).first() or self.tickers.first()
 
+    def get_active_valuation(self):
+        """Return the active valuation for this company."""
+        return self.valuations.filter(is_active=True, is_deleted=False).first()
+
+    @property
+    def irr(self):
+        """Return IRR from active valuation."""
+        valuation = self.get_active_valuation()
+        return valuation.calculated_irr if valuation else None
+
     @property
     def status_color(self):
         """Return CSS color class for status."""
@@ -188,4 +198,151 @@ class CompanyTicker(models.Model):
                 company=self.company,
                 is_primary=True
             ).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
+
+
+class CompanyValuation(SoftDeleteModel):
+    """
+    Valuation data for IRR calculation including FCF forecasts and terminal value.
+    One active valuation per company at a time.
+    """
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='valuations'
+    )
+
+    # Share data
+    shares_outstanding = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        help_text='Shares outstanding (in millions)'
+    )
+
+    # FCF Per Share Forecasts (Years 1-5)
+    fcf_year_1 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 1'
+    )
+    fcf_year_2 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 2'
+    )
+    fcf_year_3 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 3'
+    )
+    fcf_year_4 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 4'
+    )
+    fcf_year_5 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 5'
+    )
+
+    # Terminal Value
+    terminal_value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Terminal value per share at end of Year 5'
+    )
+
+    # Stock Price - can be auto-fetched or manually overridden
+    current_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Current stock price (auto-fetched from Yahoo Finance)'
+    )
+    price_override = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Manual price override (takes precedence over fetched price)'
+    )
+    price_last_updated = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When price was last fetched'
+    )
+
+    # Computed IRR (cached for performance)
+    calculated_irr = models.DecimalField(
+        max_digits=8,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Calculated IRR as decimal (e.g., 0.15 = 15%)'
+    )
+    irr_last_calculated = models.DateTimeField(null=True, blank=True)
+
+    # Valuation metadata
+    as_of_date = models.DateField(help_text='Date these estimates are based on')
+    notes = models.TextField(blank=True, help_text='Notes about valuation assumptions')
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Only one active valuation per company'
+    )
+
+    class Meta:
+        db_table = 'company_valuations'
+        ordering = ['-as_of_date', '-created_at']
+        indexes = [
+            models.Index(fields=['company', 'is_active']),
+            models.Index(fields=['-calculated_irr']),
+        ]
+
+    def __str__(self):
+        return f'{self.company.name} valuation ({self.as_of_date})'
+
+    @property
+    def effective_price(self):
+        """Return the price to use for calculations (override or fetched)."""
+        return self.price_override or self.current_price
+
+    def get_cash_flows(self):
+        """Return list of cash flows for IRR calculation."""
+        price = self.effective_price
+        if not price:
+            return None
+        return [
+            -float(price),  # Year 0: negative (investment)
+            float(self.fcf_year_1),
+            float(self.fcf_year_2),
+            float(self.fcf_year_3),
+            float(self.fcf_year_4),
+            float(self.fcf_year_5) + float(self.terminal_value),  # Year 5 includes terminal value
+        ]
+
+    def calculate_irr(self):
+        """Calculate and cache IRR."""
+        from django.utils import timezone
+        cash_flows = self.get_cash_flows()
+        if cash_flows:
+            from apps.companies.services import calculate_irr
+            self.calculated_irr = calculate_irr(cash_flows)
+            self.irr_last_calculated = timezone.now()
+            return self.calculated_irr
+        return None
+
+    def save(self, *args, **kwargs):
+        # Ensure only one active valuation per company
+        if self.is_active and self.company_id:
+            CompanyValuation.objects.filter(
+                company=self.company,
+                is_active=True
+            ).exclude(pk=self.pk).update(is_active=False)
+
+        # Recalculate IRR on save if we have a price
+        if self.effective_price:
+            self.calculate_irr()
+
         super().save(*args, **kwargs)

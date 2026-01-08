@@ -100,6 +100,117 @@
     </div>
     {% endif %}
 
+    <!-- Valuation -->
+    {% with valuation=company.get_active_valuation %}
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-medium text-gray-500">Valuation</h3>
+            {% if valuation %}
+            <a href="{% url 'companies:valuation_update' company.slug valuation.pk %}"
+               class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                Edit valuation
+            </a>
+            {% else %}
+            <a href="{% url 'companies:valuation_create' company.slug %}"
+               class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                Add valuation
+            </a>
+            {% endif %}
+        </div>
+
+        {% if valuation %}
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <!-- IRR -->
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">IRR</p>
+                <p class="mt-1 text-2xl font-bold {% if valuation.calculated_irr >= 15 %}text-green-600{% elif valuation.calculated_irr >= 0 %}text-gray-900{% else %}text-red-600{% endif %}">
+                    {% if valuation.calculated_irr %}{{ valuation.calculated_irr|floatformat:1 }}%{% else %}-{% endif %}
+                </p>
+            </div>
+
+            <!-- Current Price -->
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">Price</p>
+                <p class="mt-1 text-2xl font-semibold text-gray-900">
+                    {% if valuation.effective_price %}${{ valuation.effective_price|floatformat:2 }}{% else %}-{% endif %}
+                </p>
+                {% if valuation.price_override %}
+                <p class="text-xs text-amber-600">Manual override</p>
+                {% endif %}
+            </div>
+
+            <!-- Terminal Value -->
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">Terminal Value</p>
+                <p class="mt-1 text-2xl font-semibold text-gray-900">
+                    ${{ valuation.terminal_value|floatformat:2 }}
+                </p>
+            </div>
+
+            <!-- As of Date -->
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">As of</p>
+                <p class="mt-1 text-lg text-gray-900">
+                    {{ valuation.as_of_date|date:"M d, Y" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- FCF Forecasts -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-3">FCF Per Share Forecasts</p>
+            <div class="grid grid-cols-5 gap-4 text-center">
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs text-gray-500">Year 1</p>
+                    <p class="text-sm font-medium">${{ valuation.fcf_year_1|floatformat:2 }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs text-gray-500">Year 2</p>
+                    <p class="text-sm font-medium">${{ valuation.fcf_year_2|floatformat:2 }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs text-gray-500">Year 3</p>
+                    <p class="text-sm font-medium">${{ valuation.fcf_year_3|floatformat:2 }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs text-gray-500">Year 4</p>
+                    <p class="text-sm font-medium">${{ valuation.fcf_year_4|floatformat:2 }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-xs text-gray-500">Year 5</p>
+                    <p class="text-sm font-medium">${{ valuation.fcf_year_5|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% if valuation.notes %}
+        <div class="mt-6 pt-6 border-t border-gray-200">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Notes</p>
+            <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ valuation.notes }}</p>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-6">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">No valuation yet</h3>
+            <p class="mt-1 text-sm text-gray-500">Add a valuation to calculate IRR.</p>
+            <div class="mt-4">
+                <a href="{% url 'companies:valuation_create' company.slug %}"
+                   class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                    </svg>
+                    Add Valuation
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endwith %}
+
     <!-- Notes -->
     <div class="bg-white shadow rounded-lg">
         <div class="border-b border-gray-200 px-4 py-5 sm:px-6 flex items-center justify-between">

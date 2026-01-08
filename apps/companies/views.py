@@ -8,9 +8,13 @@ from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 
+from django.shortcuts import redirect
+from django.urls import reverse
+
 from core.mixins import OrganizationViewMixin
-from .models import Company
-from .forms import CompanyForm, CompanyTickerFormSet, CompanyStatusForm
+from .models import Company, CompanyValuation
+from .forms import CompanyForm, CompanyTickerFormSet, CompanyStatusForm, CompanyValuationForm
+from .services import fetch_stock_price, update_valuation_prices
 
 
 class CompanyListView(OrganizationViewMixin, ListView):
@@ -188,3 +192,158 @@ class CompanyStatusUpdateView(OrganizationViewMixin, View):
 
 # Import models for Q lookup
 from django.db import models
+
+
+class IRRLeaderboardView(OrganizationViewMixin, ListView):
+    """IRR Leaderboard - companies ranked by IRR."""
+    model = Company
+    template_name = 'companies/irr_leaderboard.html'
+    context_object_name = 'companies'
+
+    def get_queryset(self):
+        qs = super().get_queryset().prefetch_related(
+            'tickers', 'valuations'
+        ).filter(
+            valuations__is_active=True,
+            valuations__is_deleted=False,
+            valuations__calculated_irr__isnull=False
+        ).order_by('-valuations__calculated_irr')
+
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+
+        # Filter by sector
+        sector = self.request.GET.get('sector')
+        if sector:
+            qs = qs.filter(sector=sector)
+
+        return qs.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['statuses'] = Company.Status.choices
+        context['sectors'] = Company.Sector.choices
+        context['current_status'] = self.request.GET.get('status', '')
+        context['current_sector'] = self.request.GET.get('sector', '')
+        return context
+
+    def get_template_names(self):
+        if self.request.htmx:
+            return ['companies/partials/irr_leaderboard_items.html']
+        return [self.template_name]
+
+
+class CompanyValuationCreateView(OrganizationViewMixin, CreateView):
+    """Create valuation for a company."""
+    model = CompanyValuation
+    form_class = CompanyValuationForm
+    template_name = 'companies/valuation_form.html'
+
+    def get_company(self):
+        return get_object_or_404(
+            Company.objects.filter(organization=self.request.organization),
+            slug=self.kwargs['slug']
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['company'] = self.get_company()
+        return context
+
+    def form_valid(self, form):
+        company = self.get_company()
+        form.instance.company = company
+        form.instance.created_by = self.request.user
+
+        # Try to fetch current price if ticker exists
+        ticker = company.get_primary_ticker()
+        if ticker and not form.instance.current_price:
+            price_data = fetch_stock_price(ticker.symbol)
+            if price_data:
+                form.instance.current_price = price_data['price']
+                form.instance.price_last_updated = price_data['timestamp']
+
+        response = super().form_valid(form)
+        messages.success(self.request, 'Valuation created.')
+        return response
+
+    def get_success_url(self):
+        return reverse('companies:detail', kwargs={'slug': self.kwargs['slug']})
+
+
+class CompanyValuationUpdateView(OrganizationViewMixin, UpdateView):
+    """Update valuation."""
+    model = CompanyValuation
+    form_class = CompanyValuationForm
+    template_name = 'companies/valuation_form.html'
+
+    def get_queryset(self):
+        return CompanyValuation.objects.filter(
+            company__organization=self.request.organization,
+            is_deleted=False
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['company'] = self.object.company
+        return context
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, 'Valuation updated.')
+        return response
+
+    def get_success_url(self):
+        return reverse('companies:detail', kwargs={'slug': self.object.company.slug})
+
+
+class RefreshStockPriceView(OrganizationViewMixin, View):
+    """HTMX view to refresh stock price for a valuation."""
+
+    def post(self, request, pk):
+        valuation = get_object_or_404(
+            CompanyValuation.objects.filter(
+                company__organization=request.organization
+            ),
+            pk=pk
+        )
+
+        ticker = valuation.company.get_primary_ticker()
+        if not ticker:
+            return HttpResponse(
+                '<span class="text-red-600">No ticker found</span>',
+                status=200
+            )
+
+        price_data = fetch_stock_price(ticker.symbol)
+        if price_data:
+            valuation.current_price = price_data['price']
+            valuation.price_last_updated = price_data['timestamp']
+            valuation.save()  # This will recalculate IRR
+
+            html = render_to_string(
+                'companies/partials/price_display.html',
+                {'valuation': valuation},
+                request=request
+            )
+            return HttpResponse(html)
+
+        return HttpResponse(
+            '<span class="text-red-600">Failed to fetch price</span>',
+            status=200
+        )
+
+
+class RefreshAllPricesView(OrganizationViewMixin, View):
+    """Refresh all stock prices for organization."""
+
+    def post(self, request):
+        count = update_valuation_prices(organization=request.organization)
+        messages.success(request, f'Updated prices for {count} companies.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        return redirect('companies:irr_leaderboard')
