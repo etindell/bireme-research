@@ -177,6 +177,71 @@
         </div>
         {% endif %}
 
+        <!-- Forecast History -->
+        {% if valuation_history %}
+        <div class="bg-white shadow rounded-lg overflow-hidden" x-data="{ showHistory: false }">
+            <button type="button"
+                    @click="showHistory = !showHistory"
+                    class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 class="text-lg font-medium text-gray-900">Forecast History</h2>
+                    <span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                        {{ valuation_history|length }}
+                    </span>
+                </div>
+                <svg class="h-5 w-5 text-gray-400 transition-transform" :class="{ 'rotate-180': showHistory }" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+            </button>
+            <div x-show="showHistory" x-collapse>
+                <div class="border-t border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y1</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y2</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y3</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y4</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y5</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">TV</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
+                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">IRR</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for history in valuation_history %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-2 text-sm text-gray-900 whitespace-nowrap">
+                                        {{ history.created_at|date:"M d, Y" }}
+                                        <div class="text-xs text-gray-500">{{ history.created_at|time:"H:i" }}</div>
+                                    </td>
+                                    <td class="px-4 py-2 text-sm text-right text-gray-600 font-mono">{{ history.fcf_year_1|floatformat:2 }}</td>
+                                    <td class="px-4 py-2 text-sm text-right text-gray-600 font-mono">{{ history.fcf_year_2|floatformat:2 }}</td>
+                                    <td class="px-4 py-2 text-sm text-right text-gray-600 font-mono">{{ history.fcf_year_3|floatformat:2 }}</td>
+                                    <td class="px-4 py-2 text-sm text-right text-gray-600 font-mono">{{ history.fcf_year_4|floatformat:2 }}</td>
+                                    <td class="px-4 py-2 text-sm text-right text-gray-600 font-mono">{{ history.fcf_year_5|floatformat:2 }}</td>
+                                    <td class="px-4 py-2 text-sm text-right text-gray-600 font-mono">{{ history.terminal_value|floatformat:2 }}</td>
+                                    <td class="px-4 py-2 text-sm text-right text-gray-600 font-mono">
+                                        {% if history.current_price %}${{ history.current_price|floatformat:2 }}{% else %}-{% endif %}
+                                    </td>
+                                    <td class="px-4 py-2 text-sm text-right font-medium {% if history.calculated_irr >= 15 %}text-green-600{% elif history.calculated_irr >= 0 %}text-gray-900{% else %}text-red-600{% endif %}">
+                                        {% if history.calculated_irr %}{{ history.calculated_irr|floatformat:1 }}%{% else %}-{% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Actions -->
         <div class="flex justify-end gap-x-3">
             <a href="{{ company.get_absolute_url }}"

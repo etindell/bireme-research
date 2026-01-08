@@ -300,18 +300,21 @@ class CompanyValuationUpdateView(OrganizationViewMixin, UpdateView):
         return CompanyValuation.objects.filter(
             company__organization=self.request.organization,
             is_deleted=False
-        )
+        ).prefetch_related('history')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['company'] = self.object.company
+        context['valuation_history'] = self.object.history.all()[:20]
         return context
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
-        response = super().form_valid(form)
+        # Save with history tracking
+        valuation = form.save(commit=False)
+        valuation.save(history_user=self.request.user)
         messages.success(self.request, 'Valuation updated.')
-        return response
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse('companies:detail', kwargs={'slug': self.object.company.slug})
