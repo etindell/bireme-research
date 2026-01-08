@@ -119,11 +119,14 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function initImageUpload() {
     const contentTextarea = document.getElementById('id_content');
     const uploadIndicator = document.getElementById('upload-indicator');
 
-    if (!contentTextarea) return;
+    if (!contentTextarea || contentTextarea.dataset.imageUploadInit) return;
+
+    // Mark as initialized to prevent duplicate listeners
+    contentTextarea.dataset.imageUploadInit = 'true';
 
     // Handle paste events
     contentTextarea.addEventListener('paste', async function(e) {
@@ -174,10 +177,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append('image', file);
 
+            // Get fresh CSRF token from cookie
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                || '{{ csrf_token }}';
+
             const response = await fetch('{% url "notes:upload_image" %}', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': csrfToken
                 },
                 body: formData
             });
@@ -217,6 +224,6 @@ document.addEventListener('DOMContentLoaded', function() {
             uploadIndicator.classList.add('hidden');
         }
     }
-});
+})();
 </script>
 {% endblock %}
