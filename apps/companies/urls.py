@@ -20,6 +20,9 @@ urlpatterns = [
     path('watchlist/refresh-prices/', views.RefreshWatchlistPricesView.as_view(), name='refresh_watchlist_prices'),
     path('<slug:slug>/upgrade-to-on-deck/', views.UpgradeToOnDeckView.as_view(), name='upgrade_to_on_deck'),
 
+    # General refresh
+    path('refresh-data/', views.RefreshCompanyPricesView.as_view(), name='refresh_company_data'),
+
     # Company detail routes
     path('<slug:slug>/', views.CompanyDetailView.as_view(), name='detail'),
     path('<slug:slug>/edit/', views.CompanyUpdateView.as_view(), name='update'),

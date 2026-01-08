@@ -1,5 +1,78 @@
 <!-- Company list items (HTMX partial) -->
-{% if is_watchlist_view %}
+{% load company_extras %}
+{% if is_expanded_view %}
+<!-- Portfolio / On Deck expanded view -->
+<div class="space-y-4">
+    {% for company in companies %}
+    <div class="bg-white shadow rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+        <a href="{{ company.get_absolute_url }}" class="block">
+            <div class="p-4">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-x-3">
+                            <h3 class="text-base font-semibold text-gray-900 truncate">{{ company.name }}</h3>
+                            {% include "companies/partials/status_badge.html" with status=company.status %}
+                        </div>
+                        <div class="mt-1 flex items-center gap-x-2 text-sm text-gray-500">
+                            {% for ticker in company.tickers.all|slice:":2" %}
+                            <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-xs">{{ ticker.symbol }}</span>
+                            {% endfor %}
+                            {% if company.sector %}
+                            <span>{{ company.get_sector_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="ml-4 flex-shrink-0 text-right">
+                        <div class="flex items-center gap-4">
+                            {% if company.current_price %}
+                            <div>
+                                <p class="text-lg font-semibold text-gray-900">${{ company.current_price|floatformat:2 }}</p>
+                                <p class="text-xs text-gray-500">Price</p>
+                            </div>
+                            {% endif %}
+                            {% if company.ev_ebitda %}
+                            <div>
+                                <p class="text-lg font-semibold text-gray-900">{{ company.ev_ebitda|floatformat:1 }}x</p>
+                                <p class="text-xs text-gray-500">EV/EBITDA</p>
+                            </div>
+                            {% endif %}
+                            {% if company.market_cap %}
+                            <div>
+                                <p class="text-lg font-semibold text-gray-900">{{ company.market_cap|format_market_cap }}</p>
+                                <p class="text-xs text-gray-500">Mkt Cap</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% if company.business_summary %}
+                <p class="mt-3 text-sm text-gray-600 line-clamp-2">{{ company.business_summary }}</p>
+                {% elif company.description %}
+                <p class="mt-3 text-sm text-gray-600 line-clamp-2">{{ company.description }}</p>
+                {% endif %}
+            </div>
+        </a>
+    </div>
+    {% empty %}
+    <div class="bg-white shadow rounded-lg px-4 py-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No companies</h3>
+        <p class="mt-1 text-sm text-gray-500">Get started by adding a company to track.</p>
+        <div class="mt-6">
+            <a href="{% url 'companies:create' %}"
+               class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                Add Company
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% elif is_watchlist_view %}
 <!-- Watchlist table view -->
 <div class="bg-white shadow rounded-lg overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200">

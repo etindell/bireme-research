@@ -61,7 +61,8 @@ class CompanyListView(OrganizationViewMixin, ListView):
         context['search_query'] = self.request.GET.get('q', '')
 
         # For watchlist view, separate triggered alerts
-        if self.request.GET.get('status') == 'watchlist':
+        current_status = self.request.GET.get('status')
+        if current_status == 'watchlist':
             context['is_watchlist_view'] = True
             # Get companies below alert price (triggered alerts)
             all_watchlist = Company.objects.filter(
@@ -75,6 +76,10 @@ class CompanyListView(OrganizationViewMixin, ListView):
             context['triggered_alerts'] = [
                 c for c in all_watchlist if c.is_alert_triggered
             ]
+
+        # For portfolio and on_deck views, show expanded data
+        if current_status in ['portfolio', 'on_deck']:
+            context['is_expanded_view'] = True
 
         return context
 
@@ -389,11 +394,64 @@ class RefreshWatchlistPricesView(OrganizationViewMixin, View):
                 if price_data:
                     company.current_price = price_data['price']
                     company.ev_ebitda = price_data.get('ev_ebitda')
+                    company.market_cap = price_data.get('market_cap')
+                    if price_data.get('business_summary') and not company.business_summary:
+                        company.business_summary = price_data['business_summary']
                     company.price_last_updated = timezone.now()
-                    company.save(update_fields=['current_price', 'ev_ebitda', 'price_last_updated'])
+                    company.save(update_fields=[
+                        'current_price', 'ev_ebitda', 'market_cap',
+                        'business_summary', 'price_last_updated'
+                    ])
                     count += 1
 
         messages.success(request, f'Updated prices for {count} watchlist companies.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        return redirect('companies:list')
+
+
+class RefreshCompanyPricesView(OrganizationViewMixin, View):
+    """Refresh stock prices for Portfolio and On Deck companies."""
+
+    def post(self, request):
+        from django.utils import timezone
+
+        status_filter = request.GET.get('status', '')
+
+        # Filter by status if provided, otherwise refresh Portfolio and On Deck
+        if status_filter:
+            companies = Company.objects.filter(
+                organization=request.organization,
+                status=status_filter,
+                is_deleted=False
+            ).prefetch_related('tickers')
+        else:
+            companies = Company.objects.filter(
+                organization=request.organization,
+                status__in=[Company.Status.PORTFOLIO, Company.Status.ON_DECK],
+                is_deleted=False
+            ).prefetch_related('tickers')
+
+        count = 0
+        for company in companies:
+            ticker = company.get_primary_ticker()
+            if ticker:
+                price_data = fetch_stock_price(ticker.symbol)
+                if price_data:
+                    company.current_price = price_data['price']
+                    company.ev_ebitda = price_data.get('ev_ebitda')
+                    company.market_cap = price_data.get('market_cap')
+                    if price_data.get('business_summary') and not company.business_summary:
+                        company.business_summary = price_data['business_summary']
+                    company.price_last_updated = timezone.now()
+                    company.save(update_fields=[
+                        'current_price', 'ev_ebitda', 'market_cap',
+                        'business_summary', 'price_last_updated'
+                    ])
+                    count += 1
+
+        messages.success(request, f'Updated data for {count} companies.')
 
         if request.htmx:
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})

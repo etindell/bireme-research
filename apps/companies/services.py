@@ -42,7 +42,7 @@ def fetch_stock_price(symbol: str) -> Optional[dict]:
         symbol: Stock ticker symbol (e.g., 'AAPL')
 
     Returns:
-        Dict with 'price', 'currency', 'timestamp', 'ev_ebitda' or None if fetch fails.
+        Dict with price, metrics, and company info or None if fetch fails.
     """
     try:
         import yfinance as yf
@@ -56,14 +56,25 @@ def fetch_stock_price(symbol: str) -> Optional[dict]:
         # Get EV/EBITDA ratio
         ev_ebitda = info.get('enterpriseToEbitda')
 
+        # Get market cap
+        market_cap = info.get('marketCap')
+
+        # Get business summary (truncate to 1000 chars if too long)
+        business_summary = info.get('longBusinessSummary', '')
+        if business_summary and len(business_summary) > 1000:
+            business_summary = business_summary[:997] + '...'
+
         if price:
             return {
                 'price': Decimal(str(price)),
                 'currency': info.get('currency', 'USD'),
                 'timestamp': timezone.now(),
-                'market_cap': info.get('marketCap'),
+                'market_cap': Decimal(str(market_cap)) if market_cap else None,
                 'shares_outstanding': info.get('sharesOutstanding'),
                 'ev_ebitda': Decimal(str(ev_ebitda)) if ev_ebitda else None,
+                'business_summary': business_summary,
+                'sector': info.get('sector', ''),
+                'industry': info.get('industry', ''),
             }
     except Exception as e:
         logger.error(f"Failed to fetch price for {symbol}: {e}")

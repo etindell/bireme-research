@@ -101,6 +101,10 @@ class Company(SoftDeleteModel, OrganizationMixin):
         blank=True,
         help_text='Market cap in USD'
     )
+    business_summary = models.TextField(
+        blank=True,
+        help_text='Business description from Yahoo Finance'
+    )
 
     # Watchlist alert price
     alert_price = models.DecimalField(
