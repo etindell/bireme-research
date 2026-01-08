@@ -34,6 +34,6 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bireme.co')
 ACCOUNT_EMAIL_VERIFICATION = env('ACCOUNT_EMAIL_VERIFICATION', default='optional')
 
 # Media files (uploaded images, etc.)
-# Note: For production persistence, configure cloud storage (S3, etc.)
+# Uses Railway volume mounted at /app/media for persistence
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = env('MEDIA_ROOT', default=str(BASE_DIR / 'media'))

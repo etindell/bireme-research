@@ -43,5 +43,8 @@ if settings.DEBUG:
 # Serve media files in production (for small-scale use)
 # Note: For high-traffic or persistent storage, configure cloud storage (S3, etc.)
 if not settings.DEBUG:
-    from django.conf.urls.static import static
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    from django.views.static import serve
+    from django.urls import re_path
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
