@@ -48,6 +48,8 @@
     </style>
 
     {% block extra_css %}{% endblock %}
+
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="h-full"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
