@@ -27,6 +27,9 @@ django-weasyprint>=2.4.0
 # Image handling
 Pillow>=10.0.0
 
+# Markdown rendering
+markdown>=3.5.0
+
 # Financial calculations & data
 yfinance>=0.2.0
 numpy-financial>=1.0.0

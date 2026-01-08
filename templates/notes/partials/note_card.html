@@ -1,3 +1,4 @@
+{% load markdown_extras %}
 <!-- Note card with collapsible content -->
 <div class="note-card border-l-4 bg-white"
      style="border-color: {{ note.note_type.color|default:'#9CA3AF' }}"
@@ -62,7 +63,7 @@
 
         {% if note.content %}
         <div class="prose prose-sm max-w-none text-gray-700 mt-3">
-            {{ note.content|linebreaks }}
+            {{ note.content|markdown }}
         </div>
         {% endif %}
 

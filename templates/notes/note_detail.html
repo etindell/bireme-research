@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load markdown_extras %}
 
 {% block title %}{{ note.title|truncatewords:5 }} - Bireme Research{% endblock %}
 
@@ -59,7 +60,7 @@
             <!-- Content -->
             {% if note.content %}
             <div class="mt-6 prose prose-sm max-w-none text-gray-700">
-                {{ note.content|linebreaks }}
+                {{ note.content|markdown }}
             </div>
             {% endif %}
 
