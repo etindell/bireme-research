@@ -193,3 +193,59 @@ class Note(SoftDeleteModel, OrganizationMixin):
         companies = [self.company]
         companies.extend(self.referenced_companies.all())
         return companies
+
+
+def note_image_path(instance, filename):
+    """Generate upload path for note images."""
+    import uuid
+    ext = filename.split('.')[-1] if '.' in filename else 'png'
+    new_filename = f"{uuid.uuid4().hex}.{ext}"
+    return f"note_images/{instance.organization.slug}/{new_filename}"
+
+
+class NoteImage(models.Model):
+    """
+    Uploaded images for notes.
+    Images can be pasted directly into the note editor.
+    """
+    organization = models.ForeignKey(
+        'organizations.Organization',
+        on_delete=models.CASCADE,
+        related_name='note_images'
+    )
+    note = models.ForeignKey(
+        Note,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='images',
+        help_text='Associated note (can be null for newly pasted images)'
+    )
+    image = models.ImageField(upload_to=note_image_path)
+    uploaded_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_note_images'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Optional metadata
+    original_filename = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(default=0)  # in bytes
+
+    class Meta:
+        db_table = 'note_images'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Image {self.pk} - {self.original_filename or 'pasted'}"
+
+    @property
+    def url(self):
+        return self.image.url if self.image else ''
+
+    @property
+    def markdown(self):
+        """Return markdown syntax for embedding this image."""
+        return f"![{self.original_filename or 'image'}]({self.url})"

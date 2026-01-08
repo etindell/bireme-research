@@ -24,5 +24,8 @@ whitenoise>=6.8.0
 weasyprint>=62.0
 django-weasyprint>=2.4.0
 
+# Image handling
+Pillow>=10.0.0
+
 # Development
 django-browser-reload>=1.15.0

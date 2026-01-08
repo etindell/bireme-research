@@ -33,6 +33,15 @@ urlpatterns = [
 
 # Development URLs
 if settings.DEBUG:
+    from django.conf.urls.static import static
     urlpatterns += [
         path('__reload__/', include('django_browser_reload.urls')),
     ]
+    # Serve media files in development
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Serve media files in production (for small-scale use)
+# Note: For high-traffic or persistent storage, configure cloud storage (S3, etc.)
+if not settings.DEBUG:
+    from django.conf.urls.static import static
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

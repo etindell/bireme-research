@@ -48,9 +48,21 @@
                 <label for="id_content" class="block text-sm font-medium leading-6 text-gray-900">
                     Details
                 </label>
-                <p class="text-xs text-gray-500 mb-2">Expanded content shown when the note is clicked.</p>
-                <div class="mt-2">
+                <p class="text-xs text-gray-500 mb-2">
+                    Expanded content shown when the note is clicked.
+                    <span class="text-primary-600">You can paste images directly!</span>
+                </p>
+                <div class="mt-2 relative">
                     {{ form.content }}
+                    <div id="upload-indicator" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-md">
+                        <div class="flex items-center gap-2 text-gray-600">
+                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Uploading image...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -103,4 +115,108 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const contentTextarea = document.getElementById('id_content');
+    const uploadIndicator = document.getElementById('upload-indicator');
+
+    if (!contentTextarea) return;
+
+    // Handle paste events
+    contentTextarea.addEventListener('paste', async function(e) {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+
+                const file = item.getAsFile();
+                if (!file) continue;
+
+                await uploadImage(file);
+                break;
+            }
+        }
+    });
+
+    // Handle drag and drop
+    contentTextarea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        contentTextarea.classList.add('ring-2', 'ring-primary-500');
+    });
+
+    contentTextarea.addEventListener('dragleave', function(e) {
+        contentTextarea.classList.remove('ring-2', 'ring-primary-500');
+    });
+
+    contentTextarea.addEventListener('drop', async function(e) {
+        e.preventDefault();
+        contentTextarea.classList.remove('ring-2', 'ring-primary-500');
+
+        const files = e.dataTransfer?.files;
+        if (!files) return;
+
+        for (const file of files) {
+            if (file.type.startsWith('image/')) {
+                await uploadImage(file);
+            }
+        }
+    });
+
+    async function uploadImage(file) {
+        uploadIndicator.classList.remove('hidden');
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await fetch('{% url "notes:upload_image" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Insert markdown at cursor position
+                const cursorPos = contentTextarea.selectionStart;
+                const textBefore = contentTextarea.value.substring(0, cursorPos);
+                const textAfter = contentTextarea.value.substring(cursorPos);
+
+                // Add newlines if needed
+                const prefix = textBefore.length > 0 && !textBefore.endsWith('\n') ? '\n' : '';
+                const suffix = textAfter.length > 0 && !textAfter.startsWith('\n') ? '\n' : '';
+
+                contentTextarea.value = textBefore + prefix + data.markdown + suffix + textAfter;
+
+                // Move cursor after the inserted text
+                const newPos = cursorPos + prefix.length + data.markdown.length + suffix.length;
+                contentTextarea.setSelectionRange(newPos, newPos);
+                contentTextarea.focus();
+
+                // Show success toast
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: { message: 'Image uploaded!', type: 'success' }
+                }));
+            } else {
+                throw new Error(data.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: { message: error.message || 'Failed to upload image', type: 'error' }
+            }));
+        } finally {
+            uploadIndicator.classList.add('hidden');
+        }
+    }
+});
+</script>
 {% endblock %}

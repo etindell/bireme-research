@@ -32,3 +32,8 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bireme.co')
 
 # Email verification - set to 'mandatory' once email service is configured
 ACCOUNT_EMAIL_VERIFICATION = env('ACCOUNT_EMAIL_VERIFICATION', default='optional')
+
+# Media files (uploaded images, etc.)
+# Note: For production persistence, configure cloud storage (S3, etc.)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

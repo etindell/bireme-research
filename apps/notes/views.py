@@ -1,16 +1,20 @@
 """
 Views for Note management.
 """
+import json
+
 from django.contrib import messages
-from django.http import HttpResponse
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
+from django.views import View
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
 from core.mixins import OrganizationViewMixin
 from apps.companies.models import Company
-from .models import Note, NoteType
+from .models import Note, NoteType, NoteImage
 from .forms import NoteForm, QuickNoteForm
 
 
@@ -185,3 +189,45 @@ class NoteTogglePinView(OrganizationViewMixin, View):
         note.save(update_fields=['is_pinned'])
 
         return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+
+
+class NoteImageUploadView(LoginRequiredMixin, View):
+    """
+    Handle image uploads for notes.
+    Accepts pasted/dropped images and returns the URL for embedding.
+    """
+
+    def post(self, request):
+        if not hasattr(request, 'organization') or not request.organization:
+            return JsonResponse({'error': 'No organization'}, status=400)
+
+        if 'image' not in request.FILES:
+            return JsonResponse({'error': 'No image provided'}, status=400)
+
+        image_file = request.FILES['image']
+
+        # Validate file type
+        allowed_types = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+        if image_file.content_type not in allowed_types:
+            return JsonResponse({'error': 'Invalid image type'}, status=400)
+
+        # Limit file size (5MB)
+        max_size = 5 * 1024 * 1024
+        if image_file.size > max_size:
+            return JsonResponse({'error': 'Image too large (max 5MB)'}, status=400)
+
+        # Create the image record
+        note_image = NoteImage.objects.create(
+            organization=request.organization,
+            image=image_file,
+            uploaded_by=request.user,
+            original_filename=image_file.name,
+            file_size=image_file.size
+        )
+
+        return JsonResponse({
+            'success': True,
+            'url': note_image.url,
+            'markdown': note_image.markdown,
+            'id': note_image.pk
+        })
