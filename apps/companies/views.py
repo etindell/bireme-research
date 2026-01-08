@@ -80,7 +80,7 @@ class CompanyListView(OrganizationViewMixin, ListView):
 
     def get_template_names(self):
         if self.request.htmx:
-            return ['companies/partials/company_list_items.html']
+            return ['companies/partials/company_list_content.html']
         return [self.template_name]
 
 
@@ -385,15 +385,16 @@ class RefreshWatchlistPricesView(OrganizationViewMixin, View):
                 price_data = fetch_stock_price(ticker.symbol)
                 if price_data:
                     company.current_price = price_data['price']
+                    company.ev_ebitda = price_data.get('ev_ebitda')
                     company.price_last_updated = timezone.now()
-                    company.save(update_fields=['current_price', 'price_last_updated'])
+                    company.save(update_fields=['current_price', 'ev_ebitda', 'price_last_updated'])
                     count += 1
 
         messages.success(request, f'Updated prices for {count} watchlist companies.')
 
         if request.htmx:
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
-        return redirect('companies:list', status='watchlist')
+        return redirect('companies:list')
 
 
 class UpgradeToOnDeckView(OrganizationViewMixin, View):

@@ -36,13 +36,13 @@ def calculate_irr(cash_flows: List[float]) -> Optional[Decimal]:
 
 def fetch_stock_price(symbol: str) -> Optional[dict]:
     """
-    Fetch current stock price from Yahoo Finance.
+    Fetch current stock price and valuation metrics from Yahoo Finance.
 
     Args:
         symbol: Stock ticker symbol (e.g., 'AAPL')
 
     Returns:
-        Dict with 'price', 'currency', 'timestamp' or None if fetch fails.
+        Dict with 'price', 'currency', 'timestamp', 'ev_ebitda' or None if fetch fails.
     """
     try:
         import yfinance as yf
@@ -53,6 +53,9 @@ def fetch_stock_price(symbol: str) -> Optional[dict]:
         # Get current price - try multiple fields
         price = info.get('currentPrice') or info.get('regularMarketPrice')
 
+        # Get EV/EBITDA ratio
+        ev_ebitda = info.get('enterpriseToEbitda')
+
         if price:
             return {
                 'price': Decimal(str(price)),
@@ -60,6 +63,7 @@ def fetch_stock_price(symbol: str) -> Optional[dict]:
                 'timestamp': timezone.now(),
                 'market_cap': info.get('marketCap'),
                 'shares_outstanding': info.get('sharesOutstanding'),
+                'ev_ebitda': Decimal(str(ev_ebitda)) if ev_ebitda else None,
             }
     except Exception as e:
         logger.error(f"Failed to fetch price for {symbol}: {e}")

@@ -122,6 +122,13 @@ class Company(SoftDeleteModel, OrganizationMixin):
         blank=True,
         help_text='Current stock price (auto-fetched)'
     )
+    ev_ebitda = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Enterprise Value / EBITDA ratio'
+    )
     price_last_updated = models.DateTimeField(
         null=True,
         blank=True,

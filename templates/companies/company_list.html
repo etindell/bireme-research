@@ -4,92 +4,7 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="md:flex md:items-center md:justify-between">
-        <div class="min-w-0 flex-1">
-            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
-                Companies
-                {% if current_status %}
-                <span class="text-lg font-normal text-gray-500">
-                    / {{ current_status|title }}
-                </span>
-                {% endif %}
-            </h1>
-        </div>
-        <div class="mt-4 flex gap-2 md:ml-4 md:mt-0">
-            {% if is_watchlist_view %}
-            <form hx-post="{% url 'companies:refresh_watchlist_prices' %}" hx-swap="none">
-                {% csrf_token %}
-                <button type="submit"
-                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                    <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z" clip-rule="evenodd" />
-                    </svg>
-                    Refresh Prices
-                </button>
-            </form>
-            {% endif %}
-            <a href="{% url 'companies:create' %}"
-               class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                </svg>
-                Add Company
-            </a>
-        </div>
-    </div>
-
-    <!-- Triggered Alerts (Watchlist only) -->
-    {% if is_watchlist_view and triggered_alerts %}
-    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div class="flex items-center mb-3">
-            <svg class="h-5 w-5 text-green-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
-            </svg>
-            <h2 class="text-lg font-semibold text-green-800">Price Alerts Triggered</h2>
-            <span class="ml-2 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                {{ triggered_alerts|length }}
-            </span>
-        </div>
-        <p class="text-sm text-green-700 mb-4">These stocks have dropped to or below your alert price. Consider moving them to On Deck for deeper research.</p>
-        <div class="space-y-2">
-            {% for company in triggered_alerts %}
-            <div class="bg-white rounded-lg p-3 flex items-center justify-between shadow-sm">
-                <div class="flex items-center gap-4">
-                    <div>
-                        <a href="{{ company.get_absolute_url }}" class="font-medium text-gray-900 hover:text-primary-600">
-                            {{ company.name }}
-                        </a>
-                        <div class="text-sm text-gray-500">
-                            {% if company.get_primary_ticker %}
-                            <span class="font-mono">{{ company.get_primary_ticker.symbol }}</span> |
-                            {% endif %}
-                            <span class="text-green-600 font-medium">${{ company.current_price|floatformat:2 }}</span>
-                            <span class="text-gray-400">/ Alert: ${{ company.alert_price|floatformat:2 }}</span>
-                            {% if company.alert_discount_percent %}
-                            <span class="text-green-600">({{ company.alert_discount_percent|floatformat:1 }}% below)</span>
-                            {% endif %}
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">{{ company.alert_price_reason }}</p>
-                    </div>
-                </div>
-                <form hx-post="{% url 'companies:upgrade_to_on_deck' company.slug %}" hx-swap="none">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="inline-flex items-center rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-yellow-400">
-                        <svg class="-ml-0.5 mr-1.5 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
-                        </svg>
-                        Move to On Deck
-                    </button>
-                </form>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Filters -->
+    <!-- Filters (always visible) -->
     <div class="bg-white shadow rounded-lg p-4">
         <div class="flex flex-wrap gap-4 items-center">
             <!-- Status filter -->
@@ -98,7 +13,7 @@
                 <select id="status-filter"
                         name="status"
                         hx-get="{% url 'companies:list' %}"
-                        hx-target="#company-list"
+                        hx-target="#company-content"
                         hx-push-url="true"
                         hx-include="[name='sector'], [name='q'], [name='order']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
@@ -115,7 +30,7 @@
                 <select id="sector-filter"
                         name="sector"
                         hx-get="{% url 'companies:list' %}"
-                        hx-target="#company-list"
+                        hx-target="#company-content"
                         hx-push-url="true"
                         hx-include="[name='status'], [name='q'], [name='order']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
@@ -135,7 +50,7 @@
                        value="{{ search_query }}"
                        placeholder="Search companies..."
                        hx-get="{% url 'companies:list' %}"
-                       hx-target="#company-list"
+                       hx-target="#company-content"
                        hx-trigger="keyup changed delay:300ms, search"
                        hx-push-url="true"
                        hx-include="[name='status'], [name='sector'], [name='order']"
@@ -148,7 +63,7 @@
                 <select id="order"
                         name="order"
                         hx-get="{% url 'companies:list' %}"
-                        hx-target="#company-list"
+                        hx-target="#company-content"
                         hx-push-url="true"
                         hx-include="[name='status'], [name='sector'], [name='q']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
@@ -159,9 +74,9 @@
         </div>
     </div>
 
-    <!-- Company list -->
-    <div id="company-list">
-        {% include "companies/partials/company_list_items.html" %}
+    <!-- Content area (swapped by HTMX) -->
+    <div id="company-content">
+        {% include "companies/partials/company_list_content.html" %}
     </div>
 </div>
 {% endblock %}
