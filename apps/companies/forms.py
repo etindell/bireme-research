@@ -10,6 +10,11 @@ from .models import Company, CompanyTicker
 class CompanyForm(forms.ModelForm):
     """Form for creating and editing companies."""
 
+    def __init__(self, *args, **kwargs):
+        # Remove organization kwarg passed by OrganizationViewMixin
+        kwargs.pop('organization', None)
+        super().__init__(*args, **kwargs)
+
     class Meta:
         model = Company
         fields = ['name', 'description', 'website', 'status', 'sector', 'country', 'thesis']
