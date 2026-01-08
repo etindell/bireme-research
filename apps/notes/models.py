@@ -1,0 +1,195 @@
+"""
+Note models for research documentation.
+"""
+from django.db import models
+from django.urls import reverse
+from django.utils.text import slugify
+from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.indexes import GinIndex
+
+from core.models import SoftDeleteModel
+from core.mixins import OrganizationMixin
+
+
+class NoteType(models.Model):
+    """
+    Types/categories for notes (e.g., Earnings Call, Management Meeting).
+    Configurable per organization.
+    """
+    organization = models.ForeignKey(
+        'organizations.Organization',
+        on_delete=models.CASCADE,
+        related_name='note_types'
+    )
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
+    color = models.CharField(max_length=7, default='#6B7280')  # Hex color
+    icon = models.CharField(max_length=50, blank=True)  # Icon class name
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'note_types'
+        unique_together = ['organization', 'slug']
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
+class NoteQuerySet(models.QuerySet):
+    """Custom queryset for Note model."""
+
+    def for_organization(self, organization):
+        return self.filter(organization=organization)
+
+    def for_company(self, company):
+        """Notes where company is primary or referenced."""
+        return self.filter(
+            models.Q(company=company) |
+            models.Q(referenced_companies=company)
+        ).distinct()
+
+    def root_notes(self):
+        """Only top-level notes (no parent)."""
+        return self.filter(parent__isnull=True)
+
+    def search(self, query):
+        """Full-text search using SearchVectorField."""
+        from django.contrib.postgres.search import SearchQuery
+        return self.filter(search_vector=SearchQuery(query, search_type='websearch'))
+
+
+class NoteManager(models.Manager):
+    """Custom manager that excludes soft-deleted notes."""
+
+    def get_queryset(self):
+        return NoteQuerySet(self.model, using=self._db).filter(is_deleted=False)
+
+
+class Note(SoftDeleteModel, OrganizationMixin):
+    """
+    A research note with hierarchical structure.
+
+    Notes display as collapsible bullet points:
+    - `title`: The bullet point text (always visible)
+    - `content`: Expanded content (shown when clicked)
+    """
+    # Primary company this note is about
+    company = models.ForeignKey(
+        'companies.Company',
+        on_delete=models.CASCADE,
+        related_name='notes'
+    )
+
+    # Cross-references to other companies
+    referenced_companies = models.ManyToManyField(
+        'companies.Company',
+        related_name='referenced_in_notes',
+        blank=True,
+        help_text='Other companies mentioned in this note'
+    )
+
+    # Note type/category
+    note_type = models.ForeignKey(
+        NoteType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notes'
+    )
+
+    # Hierarchical structure (for nested bullet points)
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children'
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    # Content
+    title = models.CharField(
+        max_length=500,
+        help_text='The bullet point text (always visible)'
+    )
+    content = models.TextField(
+        blank=True,
+        help_text='Expanded content (shown when clicked)'
+    )
+
+    # State
+    is_collapsed = models.BooleanField(default=True)
+    is_pinned = models.BooleanField(default=False)
+
+    # Date of the event being documented
+    note_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Date of the event (e.g., earnings call date)'
+    )
+
+    # Full-text search vector
+    search_vector = SearchVectorField(null=True, blank=True)
+
+    objects = NoteManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        db_table = 'notes'
+        ordering = ['-is_pinned', '-created_at']
+        indexes = [
+            GinIndex(fields=['search_vector']),
+            models.Index(fields=['organization', 'company']),
+            models.Index(fields=['organization', '-created_at']),
+            models.Index(fields=['parent', 'order']),
+        ]
+
+    def __str__(self):
+        return self.title[:50]
+
+    def get_absolute_url(self):
+        return reverse('notes:detail', kwargs={'pk': self.pk})
+
+    def get_children(self):
+        """Get direct children ordered by order field."""
+        return self.children.filter(is_deleted=False).order_by('order')
+
+    def get_descendants(self):
+        """Get all descendant notes recursively."""
+        descendants = []
+        for child in self.get_children():
+            descendants.append(child)
+            descendants.extend(child.get_descendants())
+        return descendants
+
+    def get_ancestors(self):
+        """Get all ancestor notes (from root to direct parent)."""
+        ancestors = []
+        current = self.parent
+        while current:
+            ancestors.append(current)
+            current = current.parent
+        return ancestors[::-1]  # Reverse to get root first
+
+    @property
+    def depth(self):
+        """Calculate depth in the tree (0 = root)."""
+        return len(self.get_ancestors())
+
+    @property
+    def is_root(self):
+        """Whether this is a top-level note."""
+        return self.parent is None
+
+    def get_all_companies(self):
+        """Return primary company plus all referenced companies."""
+        companies = [self.company]
+        companies.extend(self.referenced_companies.all())
+        return companies

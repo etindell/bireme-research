@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Search{% if query %}: {{ query }}{% endif %} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+            Search Results
+        </h1>
+        {% if query %}
+        <p class="mt-1 text-sm text-gray-500">
+            Results for "{{ query }}"
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Search box -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <form action="{% url 'search:global' %}" method="GET">
+            <div class="relative">
+                <input type="search"
+                       name="q"
+                       value="{{ query }}"
+                       placeholder="Search companies and notes..."
+                       class="block w-full rounded-md border-0 py-3 pl-10 pr-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                       autofocus>
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results -->
+    {% include "search/partials/search_results.html" %}
+</div>
+{% endblock %}

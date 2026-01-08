@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                Dashboard
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Welcome back{% if user.first_name %}, {{ user.first_name }}{% endif %}. Here's what's happening in {{ current_organization.name }}.
+            </p>
+        </div>
+    </div>
+
+    <!-- Pipeline Stats -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Portfolio -->
+        <a href="{% url 'companies:list' %}?status=portfolio"
+           class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow sm:px-6">
+            <dt>
+                <div class="absolute rounded-md bg-green-500 p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                    </svg>
+                </div>
+                <p class="ml-16 truncate text-sm font-medium text-gray-500">Portfolio</p>
+            </dt>
+            <dd class="ml-16 flex items-baseline">
+                <p class="text-2xl font-semibold text-gray-900">{{ portfolio_count|default:0 }}</p>
+            </dd>
+        </a>
+
+        <!-- On Deck -->
+        <a href="{% url 'companies:list' %}?status=on_deck"
+           class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow sm:px-6">
+            <dt>
+                <div class="absolute rounded-md bg-yellow-500 p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <p class="ml-16 truncate text-sm font-medium text-gray-500">On Deck</p>
+            </dt>
+            <dd class="ml-16 flex items-baseline">
+                <p class="text-2xl font-semibold text-gray-900">{{ on_deck_count|default:0 }}</p>
+            </dd>
+        </a>
+
+        <!-- Watchlist -->
+        <a href="{% url 'companies:list' %}?status=watchlist"
+           class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow sm:px-6">
+            <dt>
+                <div class="absolute rounded-md bg-blue-500 p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <p class="ml-16 truncate text-sm font-medium text-gray-500">Watchlist</p>
+            </dt>
+            <dd class="ml-16 flex items-baseline">
+                <p class="text-2xl font-semibold text-gray-900">{{ watchlist_count|default:0 }}</p>
+            </dd>
+        </a>
+
+        <!-- Total Notes -->
+        <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6">
+            <dt>
+                <div class="absolute rounded-md bg-gray-500 p-3">
+                    <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                </div>
+                <p class="ml-16 truncate text-sm font-medium text-gray-500">Total Notes</p>
+            </dt>
+            <dd class="ml-16 flex items-baseline">
+                <p class="text-2xl font-semibold text-gray-900">{{ notes_count|default:0 }}</p>
+            </dd>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <!-- Recent Notes -->
+        <div class="rounded-lg bg-white shadow">
+            <div class="border-b border-gray-200 px-4 py-5 sm:px-6">
+                <h3 class="text-base font-semibold leading-6 text-gray-900">Recent Notes</h3>
+            </div>
+            <ul role="list" class="divide-y divide-gray-200">
+                {% for note in recent_notes %}
+                <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                    <a href="{{ note.get_absolute_url }}" class="block">
+                        <div class="flex items-center justify-between">
+                            <p class="truncate text-sm font-medium text-primary-600">{{ note.title }}</p>
+                            <div class="ml-2 flex flex-shrink-0">
+                                {% if note.note_type %}
+                                <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                                      style="background-color: {{ note.note_type.color }}20; color: {{ note.note_type.color }}">
+                                    {{ note.note_type.name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-2 flex justify-between">
+                            <p class="text-sm text-gray-500">{{ note.company.name }}</p>
+                            <p class="text-sm text-gray-400">{{ note.created_at|timesince }} ago</p>
+                        </div>
+                    </a>
+                </li>
+                {% empty %}
+                <li class="px-4 py-8 text-center text-sm text-gray-500">
+                    No notes yet. <a href="{% url 'notes:create' %}" class="text-primary-600 hover:text-primary-500">Create your first note</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Recent Companies -->
+        <div class="rounded-lg bg-white shadow">
+            <div class="border-b border-gray-200 px-4 py-5 sm:px-6">
+                <h3 class="text-base font-semibold leading-6 text-gray-900">Recently Updated Companies</h3>
+            </div>
+            <ul role="list" class="divide-y divide-gray-200">
+                {% for company in recent_companies %}
+                <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                    <a href="{{ company.get_absolute_url }}" class="block">
+                        <div class="flex items-center justify-between">
+                            <p class="truncate text-sm font-medium text-primary-600">{{ company.name }}</p>
+                            {% include "companies/partials/status_badge.html" with status=company.status %}
+                        </div>
+                        <div class="mt-2 flex justify-between">
+                            <p class="text-sm text-gray-500">
+                                {% for ticker in company.tickers.all|slice:":2" %}
+                                    <span class="font-mono">{{ ticker.symbol }}</span>{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    <span class="text-gray-400">No ticker</span>
+                                {% endfor %}
+                            </p>
+                            <p class="text-sm text-gray-400">{{ company.updated_at|timesince }} ago</p>
+                        </div>
+                    </a>
+                </li>
+                {% empty %}
+                <li class="px-4 py-8 text-center text-sm text-gray-500">
+                    No companies yet. <a href="{% url 'companies:create' %}" class="text-primary-600 hover:text-primary-500">Add your first company</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

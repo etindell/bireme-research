@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit Note{% else %}Add Note{% endif %} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                {% if object %}Edit Note{% else %}Add Note{% endif %}
+            </h1>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+
+        <div class="bg-white shadow rounded-lg p-6 space-y-6">
+            <!-- Company -->
+            <div>
+                <label for="id_company" class="block text-sm font-medium leading-6 text-gray-900">
+                    Company *
+                </label>
+                <div class="mt-2">
+                    {{ form.company }}
+                </div>
+                {% if form.company.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.company.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Title -->
+            <div>
+                <label for="id_title" class="block text-sm font-medium leading-6 text-gray-900">
+                    Title *
+                </label>
+                <p class="text-xs text-gray-500 mb-2">This is the "bullet point" that's always visible.</p>
+                <div class="mt-2">
+                    {{ form.title }}
+                </div>
+                {% if form.title.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Content -->
+            <div>
+                <label for="id_content" class="block text-sm font-medium leading-6 text-gray-900">
+                    Details
+                </label>
+                <p class="text-xs text-gray-500 mb-2">Expanded content shown when the note is clicked.</p>
+                <div class="mt-2">
+                    {{ form.content }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <!-- Note Type -->
+                <div>
+                    <label for="id_note_type" class="block text-sm font-medium leading-6 text-gray-900">
+                        Type
+                    </label>
+                    <div class="mt-2">
+                        {{ form.note_type }}
+                    </div>
+                </div>
+
+                <!-- Note Date -->
+                <div>
+                    <label for="id_note_date" class="block text-sm font-medium leading-6 text-gray-900">
+                        Date
+                    </label>
+                    <p class="text-xs text-gray-500 mb-2">Date of the event (e.g., earnings call).</p>
+                    <div class="mt-2">
+                        {{ form.note_date }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referenced Companies -->
+            <div>
+                <label for="id_referenced_companies" class="block text-sm font-medium leading-6 text-gray-900">
+                    Also Tag
+                </label>
+                <p class="text-xs text-gray-500 mb-2">Other companies mentioned in this note.</p>
+                <div class="mt-2">
+                    {{ form.referenced_companies }}
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple.</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-x-3">
+            <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'notes:list' %}{% endif %}"
+               class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit"
+                    class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                {% if object %}Save Changes{% else %}Create Note{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ note.title|truncatewords:5 }} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-2">
+            <li>
+                <a href="{{ note.company.get_absolute_url }}" class="text-sm text-gray-500 hover:text-gray-700">
+                    {{ note.company.name }}
+                </a>
+            </li>
+            {% for ancestor in ancestors %}
+            <li class="flex items-center">
+                <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                </svg>
+                <a href="{{ ancestor.get_absolute_url }}" class="ml-2 text-sm text-gray-500 hover:text-gray-700">
+                    {{ ancestor.title|truncatewords:5 }}
+                </a>
+            </li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Note content -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="border-l-4 p-6" style="border-color: {{ note.note_type.color|default:'#9CA3AF' }}">
+            <!-- Header -->
+            <div class="flex items-start justify-between">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-900">{{ note.title }}</h1>
+                    <div class="mt-2 flex items-center gap-3 text-sm text-gray-500">
+                        {% if note.note_type %}
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                              style="background-color: {{ note.note_type.color }}20; color: {{ note.note_type.color }}">
+                            {{ note.note_type.name }}
+                        </span>
+                        {% endif %}
+                        <span>{{ note.created_at|date:"M j, Y" }}</span>
+                        {% if note.created_by %}
+                        <span>by {{ note.created_by.get_full_name }}</span>
+                        {% endif %}
+                        {% if note.note_date %}
+                        <span>Event: {{ note.note_date|date:"M j, Y" }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'notes:update' note.pk %}"
+                       class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        Edit
+                    </a>
+                </div>
+            </div>
+
+            <!-- Content -->
+            {% if note.content %}
+            <div class="mt-6 prose prose-sm max-w-none text-gray-700">
+                {{ note.content|linebreaks }}
+            </div>
+            {% endif %}
+
+            <!-- Referenced companies -->
+            {% if note.referenced_companies.exists %}
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <h3 class="text-sm font-medium text-gray-500">Also tagged</h3>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    {% for company in note.referenced_companies.all %}
+                    <a href="{{ company.get_absolute_url }}"
+                       class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200">
+                        {{ company.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Child notes -->
+    {% if children %}
+    <div class="space-y-2">
+        <h2 class="text-lg font-medium text-gray-900">Related Notes</h2>
+        {% for child in children %}
+        {% include "notes/partials/note_card.html" with note=child show_company=False %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

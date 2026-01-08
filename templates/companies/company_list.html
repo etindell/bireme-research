@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Companies - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                Companies
+                {% if current_status %}
+                <span class="text-lg font-normal text-gray-500">
+                    / {{ current_status|title }}
+                </span>
+                {% endif %}
+            </h1>
+        </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <a href="{% url 'companies:create' %}"
+               class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                Add Company
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <div class="flex flex-wrap gap-4 items-center">
+            <!-- Status filter -->
+            <div>
+                <label for="status-filter" class="sr-only">Status</label>
+                <select id="status-filter"
+                        name="status"
+                        hx-get="{% url 'companies:list' %}"
+                        hx-target="#company-list"
+                        hx-push-url="true"
+                        hx-include="[name='sector'], [name='q'], [name='order']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Statuses</option>
+                    {% for value, label in statuses %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Sector filter -->
+            <div>
+                <label for="sector-filter" class="sr-only">Sector</label>
+                <select id="sector-filter"
+                        name="sector"
+                        hx-get="{% url 'companies:list' %}"
+                        hx-target="#company-list"
+                        hx-push-url="true"
+                        hx-include="[name='status'], [name='q'], [name='order']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Sectors</option>
+                    {% for value, label in sectors %}
+                    <option value="{{ value }}" {% if current_sector == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Search -->
+            <div class="flex-1 min-w-[200px]">
+                <label for="search" class="sr-only">Search</label>
+                <input type="search"
+                       name="q"
+                       id="search"
+                       value="{{ search_query }}"
+                       placeholder="Search companies..."
+                       hx-get="{% url 'companies:list' %}"
+                       hx-target="#company-list"
+                       hx-trigger="keyup changed delay:300ms, search"
+                       hx-push-url="true"
+                       hx-include="[name='status'], [name='sector'], [name='order']"
+                       class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">
+            </div>
+
+            <!-- Sort -->
+            <div>
+                <label for="order" class="sr-only">Sort</label>
+                <select id="order"
+                        name="order"
+                        hx-get="{% url 'companies:list' %}"
+                        hx-target="#company-list"
+                        hx-push-url="true"
+                        hx-include="[name='status'], [name='sector'], [name='q']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="name" {% if current_order == 'name' %}selected{% endif %}>Name A-Z</option>
+                    <option value="-updated_at" {% if current_order == '-updated_at' %}selected{% endif %}>Recently Updated</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company list -->
+    <div id="company-list">
+        {% include "companies/partials/company_list_items.html" %}
+    </div>
+</div>
+{% endblock %}

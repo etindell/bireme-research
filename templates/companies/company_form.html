@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit {{ object.name }}{% else %}Add Company{% endif %} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                {% if object %}Edit {{ object.name }}{% else %}Add Company{% endif %}
+            </h1>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- Basic Information -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
+
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label for="id_name" class="block text-sm font-medium leading-6 text-gray-900">Company Name *</label>
+                    <div class="mt-2">
+                        {{ form.name }}
+                    </div>
+                    {% if form.name.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_status" class="block text-sm font-medium leading-6 text-gray-900">Status</label>
+                    <div class="mt-2">
+                        {{ form.status }}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="id_sector" class="block text-sm font-medium leading-6 text-gray-900">Sector</label>
+                    <div class="mt-2">
+                        {{ form.sector }}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="id_country" class="block text-sm font-medium leading-6 text-gray-900">Country</label>
+                    <div class="mt-2">
+                        {{ form.country }}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="id_website" class="block text-sm font-medium leading-6 text-gray-900">Website</label>
+                    <div class="mt-2">
+                        {{ form.website }}
+                    </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="id_description" class="block text-sm font-medium leading-6 text-gray-900">Description</label>
+                    <div class="mt-2">
+                        {{ form.description }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tickers -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Tickers</h2>
+
+            {{ ticker_formset.management_form }}
+            <div class="space-y-4" id="ticker-formset">
+                {% for ticker_form in ticker_formset %}
+                <div class="flex items-center gap-4 ticker-form">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Symbol</label>
+                        {{ ticker_form.symbol }}
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Exchange</label>
+                        {{ ticker_form.exchange }}
+                    </div>
+                    <div class="flex items-center gap-2 pt-6">
+                        <label class="flex items-center">
+                            {{ ticker_form.is_primary }}
+                            <span class="ml-2 text-sm text-gray-700">Primary</span>
+                        </label>
+                    </div>
+                    {% if ticker_form.instance.pk %}
+                    <div class="pt-6">
+                        {{ ticker_form.DELETE }}
+                    </div>
+                    {% endif %}
+                    {{ ticker_form.id }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Investment Thesis -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Investment Thesis</h2>
+
+            <div>
+                <label for="id_thesis" class="block text-sm font-medium leading-6 text-gray-900">Thesis</label>
+                <div class="mt-2">
+                    {{ form.thesis }}
+                </div>
+                <p class="mt-2 text-sm text-gray-500">Summarize your investment thesis for this company.</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-x-3">
+            <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'companies:list' %}{% endif %}"
+               class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit"
+                    class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                {% if object %}Save Changes{% else %}Create Company{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

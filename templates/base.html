@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bireme Research{% endblock %}</title>
+
+    <!-- Tailwind CSS via CDN (replace with compiled CSS in production) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+
+    <!-- Custom styles -->
+    <style>
+        [x-cloak] { display: none !important; }
+
+        /* Smooth collapse animation */
+        .htmx-settling {
+            transition: opacity 200ms ease-out;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      hx-boost="true">
+
+    {% if user.is_authenticated %}
+        {% include "components/layout.html" %}
+    {% else %}
+        {% block content %}{% endblock %}
+    {% endif %}
+
+    <!-- Toast notifications -->
+    <div id="toast-container"
+         class="fixed bottom-4 right-4 z-50 space-y-2"
+         x-data="{ toasts: [] }"
+         @toast.window="toasts.push({message: $event.detail.message, type: $event.detail.type || 'success'}); setTimeout(() => toasts.shift(), 5000)">
+        <template x-for="(toast, index) in toasts" :key="index">
+            <div x-show="true"
+                 x-transition:enter="transform ease-out duration-300"
+                 x-transition:enter-start="translate-y-2 opacity-0"
+                 x-transition:enter-end="translate-y-0 opacity-100"
+                 x-transition:leave="transform ease-in duration-200"
+                 x-transition:leave-start="translate-y-0 opacity-100"
+                 x-transition:leave-end="translate-y-2 opacity-0"
+                 :class="{
+                     'bg-green-500': toast.type === 'success',
+                     'bg-red-500': toast.type === 'error',
+                     'bg-yellow-500': toast.type === 'warning',
+                     'bg-blue-500': toast.type === 'info'
+                 }"
+                 class="px-4 py-3 rounded-lg text-white shadow-lg">
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+
+    <!-- Django messages as toasts -->
+    {% if messages %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% for message in messages %}
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: {
+                    message: '{{ message|escapejs }}',
+                    type: '{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}'
+                }
+            }));
+            {% endfor %}
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

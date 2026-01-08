@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Team Members - {{ current_organization.name }} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                Team Members
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Manage your organization's team members and their roles.
+            </p>
+        </div>
+        {% if current_membership.is_admin %}
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <button type="button"
+                    class="ml-3 inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                Invite Member
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                        Member
+                    </th>
+                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Role
+                    </th>
+                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Joined
+                    </th>
+                    <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                        <span class="sr-only">Actions</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+                {% for member in members %}
+                <tr>
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 flex-shrink-0">
+                                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-200">
+                                    <span class="font-medium leading-none text-gray-600">
+                                        {{ member.user.get_short_name|slice:":1"|upper }}
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="ml-4">
+                                <div class="font-medium text-gray-900">{{ member.user.get_full_name }}</div>
+                                <div class="text-gray-500">{{ member.user.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                        <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+                            {% if member.role == 'owner' %}bg-purple-100 text-purple-800
+                            {% elif member.role == 'admin' %}bg-blue-100 text-blue-800
+                            {% elif member.role == 'member' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ member.get_role_display }}
+                        </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {{ member.created_at|date:"M d, Y" }}
+                    </td>
+                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        {% if current_membership.is_admin and member.user != request.user %}
+                        <button class="text-primary-600 hover:text-primary-900">Edit</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
+                        No members found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+<!-- Status badge -->
+{% if status == 'portfolio' %}
+<span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+    Portfolio
+</span>
+{% elif status == 'on_deck' %}
+<span class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+    On Deck
+</span>
+{% elif status == 'watchlist' %}
+<span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+    Watchlist
+</span>
+{% elif status == 'passed' %}
+<span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+    Passed
+</span>
+{% elif status == 'archived' %}
+<span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+    Archived
+</span>
+{% endif %}

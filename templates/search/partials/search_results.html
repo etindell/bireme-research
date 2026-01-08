@@ -1,0 +1,93 @@
+{% if query %}
+    {% if has_results %}
+    <div class="space-y-6">
+        <!-- Companies -->
+        {% if companies %}
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="border-b border-gray-200 px-4 py-3">
+                <h2 class="text-base font-semibold text-gray-900">
+                    Companies
+                    <span class="ml-2 text-sm font-normal text-gray-500">({{ companies|length }})</span>
+                </h2>
+            </div>
+            <ul role="list" class="divide-y divide-gray-200">
+                {% for company in companies %}
+                <li class="hover:bg-gray-50">
+                    <a href="{{ company.get_absolute_url }}" class="block px-4 py-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ company.name }}</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    {% for ticker in company.tickers.all|slice:":2" %}
+                                    <span class="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{{ ticker.symbol }}</span>
+                                    {% endfor %}
+                                    {% if company.sector %}
+                                    <span class="text-xs text-gray-500">{{ company.get_sector_display }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% include "companies/partials/status_badge.html" with status=company.status %}
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        {% if notes %}
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="border-b border-gray-200 px-4 py-3">
+                <h2 class="text-base font-semibold text-gray-900">
+                    Notes
+                    <span class="ml-2 text-sm font-normal text-gray-500">({{ notes|length }})</span>
+                </h2>
+            </div>
+            <ul role="list" class="divide-y divide-gray-200">
+                {% for note in notes %}
+                <li class="hover:bg-gray-50">
+                    <a href="{{ note.get_absolute_url }}" class="block px-4 py-3">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ note.title }}</p>
+                                <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                    <span>{{ note.company.name }}</span>
+                                    {% if note.note_type %}
+                                    <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium"
+                                          style="background-color: {{ note.note_type.color }}20; color: {{ note.note_type.color }}">
+                                        {{ note.note_type.name }}
+                                    </span>
+                                    {% endif %}
+                                    <span>{{ note.created_at|date:"M j, Y" }}</span>
+                                </div>
+                                {% if note.content %}
+                                <p class="mt-1 text-xs text-gray-500 line-clamp-2">{{ note.content|truncatewords:30 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="bg-white shadow rounded-lg px-4 py-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No results found</h3>
+        <p class="mt-1 text-sm text-gray-500">Try searching with different keywords.</p>
+    </div>
+    {% endif %}
+{% else %}
+<div class="bg-white shadow rounded-lg px-4 py-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+    <h3 class="mt-2 text-sm font-semibold text-gray-900">Search companies and notes</h3>
+    <p class="mt-1 text-sm text-gray-500">Enter at least 2 characters to search.</p>
+</div>
+{% endif %}

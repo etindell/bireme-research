@@ -1,0 +1,28 @@
+# Django core
+Django>=5.0,<6.0
+
+# Database
+psycopg[binary,pool]>=3.2.0
+dj-database-url>=2.2.0
+
+# Authentication
+django-allauth>=65.0.0
+
+# Frontend integration
+django-htmx>=1.19.0
+django-compressor>=4.5.1
+
+# Environment & configuration
+django-environ>=0.11.0
+python-dotenv>=1.0.0
+
+# Production
+gunicorn>=23.0.0
+whitenoise>=6.8.0
+
+# PDF export
+weasyprint>=62.0
+django-weasyprint>=2.4.0
+
+# Development
+django-browser-reload>=1.15.0

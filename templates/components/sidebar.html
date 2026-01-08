@@ -1,0 +1,116 @@
+<!-- Sidebar -->
+<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4">
+    <!-- Logo -->
+    <div class="flex h-16 shrink-0 items-center">
+        <a href="{% url 'dashboard' %}" class="text-xl font-bold text-white">
+            Bireme Research
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex flex-1 flex-col">
+        <ul role="list" class="flex flex-1 flex-col gap-y-7">
+            <!-- Main navigation -->
+            <li>
+                <ul role="list" class="-mx-2 space-y-1">
+                    <li>
+                        <a href="{% url 'dashboard' %}"
+                           class="{% if request.resolver_match.url_name == 'dashboard' %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- Pipeline section -->
+            <li>
+                <div class="text-xs font-semibold leading-6 text-gray-400">Pipeline</div>
+                <ul role="list" class="-mx-2 mt-2 space-y-1">
+                    <li>
+                        <a href="{% url 'companies:list' %}?status=portfolio"
+                           class="text-gray-400 hover:bg-gray-800 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-green-500/10 text-green-400">
+                                <span class="text-xs font-medium">P</span>
+                            </span>
+                            Portfolio
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'companies:list' %}?status=on_deck"
+                           class="text-gray-400 hover:bg-gray-800 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-yellow-500/10 text-yellow-400">
+                                <span class="text-xs font-medium">D</span>
+                            </span>
+                            On Deck
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'companies:list' %}?status=watchlist"
+                           class="text-gray-400 hover:bg-gray-800 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-blue-500/10 text-blue-400">
+                                <span class="text-xs font-medium">W</span>
+                            </span>
+                            Watchlist
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'companies:list' %}"
+                           class="text-gray-400 hover:bg-gray-800 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+                            </svg>
+                            All Companies
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- Organization switcher at bottom -->
+            <li class="mt-auto">
+                {% if user_organizations %}
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open"
+                            class="flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-400 hover:bg-gray-800 hover:text-white">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-gray-400">
+                            {{ current_organization.name|slice:":1"|upper }}
+                        </span>
+                        <span class="truncate">{{ current_organization.name }}</span>
+                        <svg class="ml-auto h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                        </svg>
+                    </button>
+
+                    <div x-show="open"
+                         x-cloak
+                         @click.away="open = false"
+                         class="absolute bottom-full left-0 mb-2 w-full rounded-md bg-gray-800 py-1 shadow-lg ring-1 ring-gray-700">
+                        {% for membership in user_organizations %}
+                        <form action="{% url 'organizations:switch' membership.organization.pk %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="{% if membership.organization == current_organization %}bg-gray-700{% endif %} flex w-full items-center gap-x-3 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-gray-600 text-xs">
+                                    {{ membership.organization.name|slice:":1"|upper }}
+                                </span>
+                                {{ membership.organization.name }}
+                            </button>
+                        </form>
+                        {% endfor %}
+                        <hr class="my-1 border-gray-700">
+                        <a href="{% url 'organizations:create' %}"
+                           class="flex w-full items-center gap-x-3 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            New Organization
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </li>
+        </ul>
+    </nav>
+</div>
