@@ -30,5 +30,5 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@bireme.co')
 
-# Require email verification in production
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+# Email verification - set to 'mandatory' once email service is configured
+ACCOUNT_EMAIL_VERIFICATION = env('ACCOUNT_EMAIL_VERIFICATION', default='optional')
