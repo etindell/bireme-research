@@ -47,7 +47,7 @@ def get_quarter_info(reference_date=None):
 
 
 class Command(BaseCommand):
-    help = 'Generate quarterly update todos for Portfolio and Watchlist companies'
+    help = 'Generate quarterly update todos for Portfolio and On Deck companies'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -128,15 +128,15 @@ class Command(BaseCommand):
                 if created:
                     org_created += 1
 
-            # Watchlist companies -> Research todos
-            watchlist_companies = Company.objects.filter(
+            # On Deck companies -> Research todos
+            on_deck_companies = Company.objects.filter(
                 organization=org,
-                status=Company.Status.WATCHLIST,
+                status=Company.Status.ON_DECK,
                 is_deleted=False
             )
-            self.stdout.write(f"  Watchlist companies: {watchlist_companies.count()}")
+            self.stdout.write(f"  On Deck companies: {on_deck_companies.count()}")
 
-            for company in watchlist_companies:
+            for company in on_deck_companies:
                 created = self._create_quarterly_todo(
                     org, company, quarter, fiscal_year, research_cat, dry_run
                 )
