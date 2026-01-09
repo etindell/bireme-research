@@ -15,6 +15,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from apps.companies.models import Company
 from apps.notes.models import Note
+from apps.todos.models import Todo
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -49,6 +50,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['recent_companies'] = Company.objects.filter(
                 organization=org
             ).prefetch_related('tickers').order_by('-updated_at')[:5]
+
+            # Pending todos
+            context['pending_todos'] = Todo.objects.filter(
+                organization=org,
+                is_completed=False
+            ).select_related('company', 'category').order_by('-created_at')[:5]
 
         return context
 

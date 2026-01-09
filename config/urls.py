@@ -21,6 +21,9 @@ urlpatterns = [
     # Notes
     path('notes/', include('apps.notes.urls', namespace='notes')),
 
+    # Todos
+    path('todos/', include('apps.todos.urls', namespace='todos')),
+
     # Organizations
     path('organizations/', include('apps.organizations.urls', namespace='organizations')),
 

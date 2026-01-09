@@ -1,0 +1,90 @@
+<!-- Todos section for company detail page -->
+<div class="bg-white shadow rounded-lg" x-data="{ showQuickAdd: false }">
+    <div class="border-b border-gray-200 px-4 py-5 sm:px-6 flex items-center justify-between">
+        <h3 class="text-base font-semibold leading-6 text-gray-900">
+            Todos
+            {% if todos %}
+            <span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                {{ todos|length }}
+            </span>
+            {% endif %}
+        </h3>
+        <button type="button"
+                @click="showQuickAdd = !showQuickAdd"
+                class="text-sm font-medium text-primary-600 hover:text-primary-500">
+            <span x-show="!showQuickAdd">Add todo</span>
+            <span x-show="showQuickAdd" x-cloak>Cancel</span>
+        </button>
+    </div>
+
+    <!-- Quick add form -->
+    <div x-show="showQuickAdd" x-cloak x-collapse class="border-b border-gray-200 px-4 py-4 sm:px-6">
+        <form hx-post="{% url 'todos:quick_create' company.slug %}"
+              hx-target="#company-todos-list"
+              hx-swap="afterbegin"
+              @htmx:after-request="if(event.detail.successful) { this.reset(); showQuickAdd = false; }">
+            {% csrf_token %}
+            <div class="flex gap-x-2">
+                <input type="text"
+                       name="title"
+                       required
+                       placeholder="What needs to be done?"
+                       class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">
+                <button type="submit"
+                        class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    Add
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Todos list -->
+    <div id="company-todos-list" class="divide-y divide-gray-200">
+        {% for todo in todos %}
+        <div class="px-4 py-3 sm:px-6 flex items-start gap-x-3 {% if todo.is_completed %}bg-gray-50{% endif %}">
+            <button hx-post="{% url 'todos:toggle_complete' todo.pk %}"
+                    hx-target="closest div"
+                    hx-swap="outerHTML"
+                    class="mt-0.5 flex-shrink-0">
+                {% if todo.is_completed %}
+                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                </svg>
+                {% else %}
+                <svg class="h-5 w-5 text-gray-300 hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <circle cx="12" cy="12" r="9" />
+                </svg>
+                {% endif %}
+            </button>
+            <div class="min-w-0 flex-1">
+                <a href="{% url 'todos:detail' todo.pk %}"
+                   class="text-sm {% if todo.is_completed %}text-gray-500 line-through{% else %}text-gray-900{% endif %} hover:text-primary-600">
+                    {{ todo.title }}
+                </a>
+                <div class="flex items-center gap-x-2 mt-0.5">
+                    {% if todo.category %}
+                    <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium"
+                          style="background-color: {{ todo.category.color }}20; color: {{ todo.category.color }}">
+                        {{ todo.category.name }}
+                    </span>
+                    {% endif %}
+                    <span class="text-xs text-gray-500">{{ todo.created_at|timesince }} ago</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="px-4 py-8 text-center text-sm text-gray-500">
+            No todos yet. Click "Add todo" to create one.
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if todos|length > 0 %}
+    <div class="border-t border-gray-200 px-4 py-3 sm:px-6">
+        <a href="{% url 'todos:list' %}?company={{ company.slug }}"
+           class="text-sm font-medium text-primary-600 hover:text-primary-500">
+            View all todos &rarr;
+        </a>
+    </div>
+    {% endif %}
+</div>

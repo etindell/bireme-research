@@ -14,11 +14,13 @@ def organization(request):
     - current_organization: The currently active organization
     - current_membership: User's membership in current organization
     - user_organizations: All organizations the user belongs to
+    - pending_todo_count: Count of pending todos for sidebar badge
     """
     context = {
         'current_organization': getattr(request, 'organization', None),
         'current_membership': getattr(request, 'membership', None),
         'user_organizations': [],
+        'pending_todo_count': 0,
     }
 
     if request.user.is_authenticated:
@@ -27,5 +29,13 @@ def organization(request):
             is_deleted=False,
             organization__is_deleted=False
         ).select_related('organization').order_by('-is_default', 'organization__name')
+
+        # Add pending todo count for sidebar badge
+        if hasattr(request, 'organization') and request.organization:
+            from apps.todos.models import Todo
+            context['pending_todo_count'] = Todo.objects.filter(
+                organization=request.organization,
+                is_completed=False
+            ).count()
 
     return context

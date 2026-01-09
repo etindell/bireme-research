@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Todos - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                Todos
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">
+                {{ pending_count }} pending &middot; {{ completed_count }} completed
+            </p>
+        </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <a href="{% url 'todos:create' %}"
+               class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                Add Todo
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div class="rounded-lg bg-white px-4 py-5 shadow">
+            <p class="text-sm font-medium text-gray-500">Maintenance</p>
+            <p class="mt-1 text-2xl font-semibold text-green-600">{{ maintenance_pending }}</p>
+        </div>
+        <div class="rounded-lg bg-white px-4 py-5 shadow">
+            <p class="text-sm font-medium text-gray-500">Research</p>
+            <p class="mt-1 text-2xl font-semibold text-blue-600">{{ research_pending }}</p>
+        </div>
+        <div class="rounded-lg bg-white px-4 py-5 shadow">
+            <p class="text-sm font-medium text-gray-500">Total Pending</p>
+            <p class="mt-1 text-2xl font-semibold text-gray-900">{{ pending_count }}</p>
+        </div>
+        <div class="rounded-lg bg-white px-4 py-5 shadow">
+            <p class="text-sm font-medium text-gray-500">Completed</p>
+            <p class="mt-1 text-2xl font-semibold text-gray-400">{{ completed_count }}</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <div class="flex flex-wrap gap-4 items-center">
+            <!-- Category filter -->
+            <div>
+                <label for="category-filter" class="sr-only">Category</label>
+                <select id="category-filter"
+                        name="category"
+                        hx-get="{% url 'todos:list' %}"
+                        hx-target="#todo-list"
+                        hx-push-url="true"
+                        hx-include="[name='status'], [name='type'], [name='company']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Categories</option>
+                    <option value="maintenance" {% if current_category == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                    <option value="research" {% if current_category == 'research' %}selected{% endif %}>Research</option>
+                </select>
+            </div>
+
+            <!-- Status filter -->
+            <div>
+                <label for="status-filter" class="sr-only">Status</label>
+                <select id="status-filter"
+                        name="status"
+                        hx-get="{% url 'todos:list' %}"
+                        hx-target="#todo-list"
+                        hx-push-url="true"
+                        hx-include="[name='category'], [name='type'], [name='company']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="" {% if current_status == '' %}selected{% endif %}>All</option>
+                </select>
+            </div>
+
+            <!-- Type filter -->
+            <div>
+                <label for="type-filter" class="sr-only">Type</label>
+                <select id="type-filter"
+                        name="type"
+                        hx-get="{% url 'todos:list' %}"
+                        hx-target="#todo-list"
+                        hx-push-url="true"
+                        hx-include="[name='category'], [name='status'], [name='company']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Types</option>
+                    {% for value, label in todo_types %}
+                    <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Todo list -->
+    <div id="todo-list" class="bg-white shadow rounded-lg divide-y divide-gray-200">
+        {% include "todos/partials/todo_list_content.html" %}
+    </div>
+</div>
+{% endblock %}

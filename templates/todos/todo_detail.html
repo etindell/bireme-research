@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}{{ todo.title }} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li>
+                <a href="{% url 'todos:list' %}" class="text-sm font-medium text-gray-500 hover:text-gray-700">
+                    Todos
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500">{{ todo.title|truncatechars:40 }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-start justify-between gap-x-4">
+            <div class="flex items-start gap-x-4">
+                <!-- Completion checkbox -->
+                <button hx-post="{% url 'todos:toggle_complete' todo.pk %}"
+                        hx-target="closest div"
+                        hx-swap="outerHTML"
+                        class="mt-1 flex-shrink-0">
+                    {% if todo.is_completed %}
+                    <svg class="h-8 w-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                    </svg>
+                    {% else %}
+                    <svg class="h-8 w-8 text-gray-300 hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <circle cx="12" cy="12" r="9" />
+                    </svg>
+                    {% endif %}
+                </button>
+
+                <div>
+                    <h1 class="text-2xl font-bold {% if todo.is_completed %}text-gray-500 line-through{% else %}text-gray-900{% endif %}">
+                        {{ todo.title }}
+                    </h1>
+
+                    <div class="mt-2 flex items-center gap-x-3 flex-wrap">
+                        {% if todo.category %}
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                              style="background-color: {{ todo.category.color }}20; color: {{ todo.category.color }}">
+                            {{ todo.category.name }}
+                        </span>
+                        {% endif %}
+                        {% if todo.is_auto_generated %}
+                        <span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700">
+                            Auto-generated
+                        </span>
+                        {% endif %}
+                        {% if todo.quarter %}
+                        <span class="text-sm text-gray-500">{{ todo.quarter }}</span>
+                        {% endif %}
+                    </div>
+
+                    {% if todo.company %}
+                    <div class="mt-2">
+                        <a href="{{ todo.company.get_absolute_url }}" class="text-sm text-primary-600 hover:text-primary-500">
+                            {{ todo.company.name }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex items-center gap-x-2">
+                {% if todo.todo_type == 'investor_letter' %}
+                <a href="{% url 'todos:investor_letter' todo.pk %}"
+                   class="inline-flex items-center rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 shadow-sm ring-1 ring-inset ring-amber-600/20 hover:bg-amber-100">
+                    Edit Letter Review
+                </a>
+                {% else %}
+                <a href="{% url 'todos:update' todo.pk %}"
+                   class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    Edit
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if todo.description %}
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ todo.description }}</p>
+        </div>
+        {% endif %}
+
+        <div class="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-500">
+            <p>Created {{ todo.created_at|timesince }} ago{% if todo.created_by %} by {{ todo.created_by.email }}{% endif %}</p>
+            {% if todo.is_completed %}
+            <p class="text-green-600">Completed {{ todo.completed_at|timesince }} ago{% if todo.completed_by %} by {{ todo.completed_by.email }}{% endif %}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Investor Letter Content -->
+    {% if todo.todo_type == 'investor_letter' %}
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Letter Notes</h2>
+        {% if todo.investor_letter_notes %}
+        <div class="prose prose-sm max-w-none">
+            <pre class="whitespace-pre-wrap text-sm text-gray-700 font-sans">{{ todo.investor_letter_notes }}</pre>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No notes yet. <a href="{% url 'todos:investor_letter' todo.pk %}" class="text-primary-600 hover:text-primary-500">Add notes</a></p>
+        {% endif %}
+    </div>
+
+    <!-- Watchlist Quick Adds -->
+    {% if watchlist_additions %}
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Companies to Add to Watchlist</h2>
+        <div class="space-y-3">
+            {% for quick_add in watchlist_additions %}
+            <div id="quick-add-{{ quick_add.pk }}" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                    <span class="font-mono font-medium text-gray-900">{{ quick_add.ticker }}</span>
+                    {% if quick_add.alert_price %}
+                    <span class="ml-2 text-sm text-gray-500">@ ${{ quick_add.alert_price }}</span>
+                    {% endif %}
+                    {% if quick_add.note %}
+                    <p class="text-sm text-gray-600 mt-1">{{ quick_add.note }}</p>
+                    {% endif %}
+                </div>
+                <button hx-post="{% url 'todos:process_quick_add' quick_add.pk %}"
+                        hx-target="#quick-add-{{ quick_add.pk }}"
+                        hx-swap="outerHTML"
+                        class="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    Add to Watchlist
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

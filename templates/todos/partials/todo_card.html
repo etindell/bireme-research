@@ -1,0 +1,74 @@
+<div id="todo-{{ todo.pk }}" class="px-4 py-4 sm:px-6 {% if todo.is_completed %}bg-gray-50{% endif %}">
+    <div class="flex items-start gap-x-4">
+        <!-- Checkbox -->
+        <button hx-post="{% url 'todos:toggle_complete' todo.pk %}"
+                hx-target="#todo-{{ todo.pk }}"
+                hx-swap="outerHTML"
+                class="mt-0.5 flex-shrink-0">
+            {% if todo.is_completed %}
+            <svg class="h-6 w-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+            </svg>
+            {% else %}
+            <svg class="h-6 w-6 text-gray-300 hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <circle cx="12" cy="12" r="9" />
+            </svg>
+            {% endif %}
+        </button>
+
+        <!-- Content -->
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-x-2 flex-wrap">
+                <a href="{% url 'todos:detail' todo.pk %}"
+                   class="text-sm font-medium {% if todo.is_completed %}text-gray-500 line-through{% else %}text-gray-900{% endif %} hover:text-primary-600">
+                    {{ todo.title }}
+                </a>
+                {% if todo.category %}
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      style="background-color: {{ todo.category.color }}20; color: {{ todo.category.color }}">
+                    {{ todo.category.name }}
+                </span>
+                {% endif %}
+                {% if todo.is_auto_generated %}
+                <span class="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                    Auto
+                </span>
+                {% endif %}
+                {% if todo.todo_type == 'investor_letter' %}
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    Letter Review
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="mt-1 flex items-center gap-x-4 text-sm text-gray-500 flex-wrap">
+                {% if todo.company %}
+                <a href="{{ todo.company.get_absolute_url }}" class="hover:text-primary-600">
+                    {{ todo.company.name }}
+                </a>
+                {% endif %}
+                {% if todo.quarter %}
+                <span>{{ todo.quarter }}</span>
+                {% endif %}
+                <span>{{ todo.created_at|timesince }} ago</span>
+                {% if todo.is_completed and todo.completed_at %}
+                <span class="text-green-600">Completed {{ todo.completed_at|timesince }} ago</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-x-2 flex-shrink-0">
+            {% if todo.todo_type == 'investor_letter' %}
+            <a href="{% url 'todos:investor_letter' todo.pk %}"
+               class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                Review
+            </a>
+            {% endif %}
+            <a href="{% url 'todos:update' todo.pk %}"
+               class="text-sm text-gray-400 hover:text-gray-500">
+                Edit
+            </a>
+        </div>
+    </div>
+</div>

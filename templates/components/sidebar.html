@@ -77,6 +77,27 @@
                 </ul>
             </li>
 
+            <!-- Tasks section -->
+            <li>
+                <div class="text-xs font-semibold leading-6 text-gray-400">Tasks</div>
+                <ul role="list" class="-mx-2 mt-2 space-y-1">
+                    <li>
+                        <a href="{% url 'todos:list' %}"
+                           class="{% if 'todos' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Todos
+                            {% if pending_todo_count %}
+                            <span class="ml-auto inline-flex items-center rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
+                                {{ pending_todo_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
             <!-- Organization switcher at bottom -->
             <li class="mt-auto">
                 {% if user_organizations %}

@@ -1,0 +1,13 @@
+<div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+    <div>
+        <span class="font-mono font-medium text-green-800">{{ quick_add.ticker }}</span>
+        <span class="ml-2 text-sm text-green-600">Added to watchlist</span>
+        {% if quick_add.alert_price %}
+        <span class="ml-1 text-sm text-green-600">@ ${{ quick_add.alert_price }}</span>
+        {% endif %}
+    </div>
+    <a href="{{ company.get_absolute_url }}"
+       class="inline-flex items-center text-sm font-medium text-green-700 hover:text-green-800">
+        View Company &rarr;
+    </a>
+</div>

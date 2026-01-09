@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ todo.title }} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li>
+                <a href="{% url 'todos:list' %}" class="text-sm font-medium text-gray-500 hover:text-gray-700">
+                    Todos
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                    <a href="{% url 'todos:detail' todo.pk %}" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        {{ todo.title|truncatechars:30 }}
+                    </a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500">Edit</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold leading-7 text-gray-900">
+            {{ todo.title }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500">
+            Document your investor letter insights and add interesting companies to your watchlist.
+        </p>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Notes section -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-2">Investor Letter Notes</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Document key insights from investor letters you've read this quarter. Use bullet points or free-form notes.
+            </p>
+            {{ form.investor_letter_notes }}
+            {% if form.investor_letter_notes.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.investor_letter_notes.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Watchlist quick-add section -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-2">Add to Watchlist</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Quickly capture companies mentioned in letters. Add ticker, optional alert price, and a note about why it's interesting.
+            </p>
+
+            {{ watchlist_formset.management_form }}
+
+            <div class="space-y-4">
+                <!-- Header row -->
+                <div class="hidden sm:grid sm:grid-cols-12 gap-4 text-sm font-medium text-gray-500">
+                    <div class="col-span-2">Ticker</div>
+                    <div class="col-span-2">Alert Price</div>
+                    <div class="col-span-7">Note</div>
+                    <div class="col-span-1">Delete</div>
+                </div>
+
+                {% for formset_form in watchlist_formset %}
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start p-4 bg-gray-50 rounded-lg sm:bg-transparent sm:p-0">
+                    {{ formset_form.id }}
+                    <div class="sm:col-span-2">
+                        <label class="sm:hidden block text-sm font-medium text-gray-500 mb-1">Ticker</label>
+                        {{ formset_form.ticker }}
+                        {% if formset_form.ticker.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ formset_form.ticker.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="sm:hidden block text-sm font-medium text-gray-500 mb-1">Alert Price</label>
+                        {{ formset_form.alert_price }}
+                    </div>
+                    <div class="sm:col-span-7">
+                        <label class="sm:hidden block text-sm font-medium text-gray-500 mb-1">Note</label>
+                        {{ formset_form.note }}
+                    </div>
+                    <div class="sm:col-span-1 flex items-center">
+                        <label class="sm:hidden text-sm font-medium text-gray-500 mr-2">Delete</label>
+                        {{ formset_form.DELETE }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <p class="mt-4 text-sm text-gray-500">
+                After saving, you can process each entry to create a Company in your watchlist.
+            </p>
+        </div>
+
+        <!-- Completion -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <label class="flex items-center gap-x-3">
+                {{ form.is_completed }}
+                <span class="text-sm font-medium text-gray-900">
+                    Mark as completed
+                </span>
+            </label>
+            <p class="mt-1 ml-7 text-sm text-gray-500">
+                Check this when you've finished reviewing letters for this quarter.
+            </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-x-3">
+            <a href="{% url 'todos:detail' todo.pk %}"
+               class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit"
+                    class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

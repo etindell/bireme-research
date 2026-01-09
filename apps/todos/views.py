@@ -1,0 +1,352 @@
+"""
+Views for Todo management.
+"""
+from django.contrib import messages
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
+from django.urls import reverse, reverse_lazy
+from django.views import View
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+
+from core.mixins import OrganizationViewMixin
+from apps.companies.models import Company
+from .models import Todo, TodoCategory, WatchlistQuickAdd
+from .forms import TodoForm, QuickTodoForm, InvestorLetterTodoForm, WatchlistQuickAddFormSet
+
+
+class TodoListView(OrganizationViewMixin, ListView):
+    """Main todo list view - dedicated todo section."""
+    model = Todo
+    template_name = 'todos/todo_list.html'
+    context_object_name = 'todos'
+    paginate_by = 50
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related(
+            'company', 'category', 'created_by', 'completed_by'
+        )
+
+        # Filter by category type
+        category_type = self.request.GET.get('category')
+        if category_type:
+            qs = qs.filter(category__category_type=category_type)
+
+        # Filter by completion
+        status = self.request.GET.get('status')
+        if status == 'pending':
+            qs = qs.pending()
+        elif status == 'completed':
+            qs = qs.completed()
+
+        # Filter by todo type
+        todo_type = self.request.GET.get('type')
+        if todo_type:
+            qs = qs.filter(todo_type=todo_type)
+
+        # Filter by company
+        company_slug = self.request.GET.get('company')
+        if company_slug:
+            qs = qs.filter(company__slug=company_slug)
+
+        # Filter by quarter
+        quarter = self.request.GET.get('quarter')
+        if quarter:
+            qs = qs.filter(quarter=quarter)
+
+        return qs.order_by('is_completed', '-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = TodoCategory.objects.filter(
+            organization=self.request.organization
+        )
+        context['todo_types'] = Todo.TodoType.choices
+        context['current_category'] = self.request.GET.get('category', '')
+        context['current_status'] = self.request.GET.get('status', 'pending')
+        context['current_type'] = self.request.GET.get('type', '')
+        context['current_company'] = self.request.GET.get('company', '')
+
+        # Stats for summary
+        org_todos = Todo.objects.filter(organization=self.request.organization)
+        context['pending_count'] = org_todos.pending().count()
+        context['completed_count'] = org_todos.completed().count()
+        context['maintenance_pending'] = org_todos.pending().maintenance().count()
+        context['research_pending'] = org_todos.pending().research().count()
+
+        return context
+
+    def get_template_names(self):
+        if self.request.htmx:
+            return ['todos/partials/todo_list_content.html']
+        return [self.template_name]
+
+
+class TodoDetailView(OrganizationViewMixin, DetailView):
+    """Todo detail view."""
+    model = Todo
+    template_name = 'todos/todo_detail.html'
+    context_object_name = 'todo'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'company', 'category', 'created_by', 'completed_by'
+        ).prefetch_related('watchlist_additions')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.object.todo_type == Todo.TodoType.INVESTOR_LETTER:
+            context['watchlist_additions'] = self.object.watchlist_additions.filter(
+                is_processed=False
+            )
+        return context
+
+
+class TodoCreateView(OrganizationViewMixin, CreateView):
+    """Create a new custom todo."""
+    model = Todo
+    form_class = TodoForm
+    template_name = 'todos/todo_form.html'
+
+    def get_initial(self):
+        initial = super().get_initial()
+        company_slug = self.request.GET.get('company')
+        if company_slug:
+            try:
+                company = Company.objects.get(
+                    organization=self.request.organization,
+                    slug=company_slug
+                )
+                initial['company'] = company
+                # Auto-select category based on company status
+                if company.status == Company.Status.PORTFOLIO:
+                    cat = TodoCategory.objects.filter(
+                        organization=self.request.organization,
+                        category_type=TodoCategory.CategoryType.MAINTENANCE
+                    ).first()
+                else:
+                    cat = TodoCategory.objects.filter(
+                        organization=self.request.organization,
+                        category_type=TodoCategory.CategoryType.RESEARCH
+                    ).first()
+                if cat:
+                    initial['category'] = cat
+            except Company.DoesNotExist:
+                pass
+        return initial
+
+    def form_valid(self, form):
+        form.instance.organization = self.request.organization
+        form.instance.created_by = self.request.user
+        form.instance.todo_type = Todo.TodoType.CUSTOM
+        response = super().form_valid(form)
+        messages.success(self.request, 'Todo created.')
+        return response
+
+    def get_success_url(self):
+        if self.request.GET.get('company') and self.object.company:
+            return self.object.company.get_absolute_url()
+        return reverse('todos:list')
+
+
+class TodoUpdateView(OrganizationViewMixin, UpdateView):
+    """Update a todo."""
+    model = Todo
+    form_class = TodoForm
+    template_name = 'todos/todo_form.html'
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, 'Todo updated.')
+        return response
+
+    def get_success_url(self):
+        return reverse('todos:detail', kwargs={'pk': self.object.pk})
+
+
+class TodoDeleteView(OrganizationViewMixin, DeleteView):
+    """Soft delete a todo."""
+    model = Todo
+    success_url = reverse_lazy('todos:list')
+
+    def form_valid(self, form):
+        self.object.delete(user=self.request.user)
+        messages.success(self.request, 'Todo deleted.')
+        if self.request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        return redirect(self.success_url)
+
+
+class TodoToggleCompleteView(OrganizationViewMixin, View):
+    """HTMX view to toggle todo completion status."""
+
+    def post(self, request, pk):
+        todo = get_object_or_404(
+            Todo.objects.filter(organization=request.organization),
+            pk=pk
+        )
+
+        if todo.is_completed:
+            todo.mark_incomplete()
+        else:
+            todo.mark_complete(user=request.user)
+
+        html = render_to_string(
+            'todos/partials/todo_card.html',
+            {'todo': todo},
+            request=request
+        )
+        return HttpResponse(html)
+
+
+class QuickTodoCreateView(OrganizationViewMixin, View):
+    """HTMX view for quick todo creation from company page."""
+
+    def post(self, request, company_slug):
+        company = get_object_or_404(
+            Company.objects.filter(organization=request.organization),
+            slug=company_slug
+        )
+
+        form = QuickTodoForm(request.POST, organization=request.organization)
+        if form.is_valid():
+            todo = form.save(commit=False)
+            todo.organization = request.organization
+            todo.company = company
+            todo.created_by = request.user
+            todo.todo_type = Todo.TodoType.CUSTOM
+
+            # Auto-select category based on company status
+            if company.status == Company.Status.PORTFOLIO:
+                todo.category = TodoCategory.objects.filter(
+                    organization=request.organization,
+                    category_type=TodoCategory.CategoryType.MAINTENANCE
+                ).first()
+            else:
+                todo.category = TodoCategory.objects.filter(
+                    organization=request.organization,
+                    category_type=TodoCategory.CategoryType.RESEARCH
+                ).first()
+
+            todo.save()
+
+            html = render_to_string(
+                'todos/partials/todo_card.html',
+                {'todo': todo},
+                request=request
+            )
+            return HttpResponse(html)
+
+        return HttpResponse(status=400)
+
+
+class InvestorLetterTodoUpdateView(OrganizationViewMixin, UpdateView):
+    """Special view for investor letter todos with embedded notes."""
+    model = Todo
+    form_class = InvestorLetterTodoForm
+    template_name = 'todos/investor_letter_form.html'
+
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            todo_type=Todo.TodoType.INVESTOR_LETTER
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['watchlist_formset'] = WatchlistQuickAddFormSet(
+                self.request.POST,
+                instance=self.object
+            )
+        else:
+            context['watchlist_formset'] = WatchlistQuickAddFormSet(instance=self.object)
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        watchlist_formset = context['watchlist_formset']
+
+        form.instance.updated_by = self.request.user
+
+        if watchlist_formset.is_valid():
+            response = super().form_valid(form)
+            watchlist_formset.save()
+            messages.success(self.request, 'Investor letter review updated.')
+            return response
+        else:
+            return self.form_invalid(form)
+
+    def get_success_url(self):
+        return reverse('todos:detail', kwargs={'pk': self.object.pk})
+
+
+class ProcessWatchlistQuickAddView(OrganizationViewMixin, View):
+    """Process a single watchlist quick-add into a full Company."""
+
+    def post(self, request, pk):
+        quick_add = get_object_or_404(
+            WatchlistQuickAdd.objects.filter(
+                todo__organization=request.organization,
+                is_processed=False
+            ),
+            pk=pk
+        )
+
+        # Create the company
+        from apps.companies.models import CompanyTicker
+        company = Company.objects.create(
+            organization=request.organization,
+            name=quick_add.ticker.upper(),
+            status=Company.Status.WATCHLIST,
+            alert_price=quick_add.alert_price,
+            alert_price_reason=quick_add.note,
+            thesis=quick_add.note,
+            created_by=request.user
+        )
+
+        # Create ticker
+        CompanyTicker.objects.create(
+            company=company,
+            symbol=quick_add.ticker.upper(),
+            is_primary=True
+        )
+
+        # Mark as processed
+        quick_add.is_processed = True
+        quick_add.created_company = company
+        quick_add.save()
+
+        messages.success(request, f'{quick_add.ticker.upper()} added to watchlist.')
+
+        if request.htmx:
+            html = render_to_string(
+                'todos/partials/quick_add_processed.html',
+                {'quick_add': quick_add, 'company': company},
+                request=request
+            )
+            return HttpResponse(html)
+
+        return redirect('todos:detail', pk=quick_add.todo.pk)
+
+
+class CompanyTodosPartialView(OrganizationViewMixin, View):
+    """HTMX partial view for todos on company detail page."""
+
+    def get(self, request, company_slug):
+        company = get_object_or_404(
+            Company.objects.filter(organization=request.organization),
+            slug=company_slug
+        )
+
+        todos = Todo.objects.filter(
+            organization=request.organization,
+            company=company
+        ).select_related('category').order_by('is_completed', '-created_at')[:10]
+
+        html = render_to_string(
+            'todos/partials/company_todos.html',
+            {'todos': todos, 'company': company},
+            request=request
+        )
+        return HttpResponse(html)

@@ -145,6 +145,51 @@
         </div>
     </div>
 
+    <!-- Pending Todos -->
+    {% if pending_todos %}
+    <div class="rounded-lg bg-white shadow">
+        <div class="border-b border-gray-200 px-4 py-5 sm:px-6 flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-gray-900">Pending Todos</h3>
+            <a href="{% url 'todos:list' %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                View all
+            </a>
+        </div>
+        <ul role="list" class="divide-y divide-gray-200">
+            {% for todo in pending_todos %}
+            <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                <div class="flex items-center gap-x-3">
+                    <button hx-post="{% url 'todos:toggle_complete' todo.pk %}"
+                            hx-swap="outerHTML"
+                            hx-target="closest li"
+                            class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-gray-300 hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <circle cx="12" cy="12" r="9" />
+                        </svg>
+                    </button>
+                    <div class="min-w-0 flex-1">
+                        <a href="{% url 'todos:detail' todo.pk %}" class="text-sm font-medium text-gray-900 truncate block hover:text-primary-600">
+                            {{ todo.title }}
+                        </a>
+                        <div class="flex items-center gap-x-2 mt-0.5">
+                            {% if todo.category %}
+                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium"
+                                  style="background-color: {{ todo.category.color }}20; color: {{ todo.category.color }}">
+                                {{ todo.category.name }}
+                            </span>
+                            {% endif %}
+                            {% if todo.company %}
+                            <span class="text-xs text-gray-500">{{ todo.company.name }}</span>
+                            {% endif %}
+                            <span class="text-xs text-gray-400">{{ todo.created_at|timesince }} ago</span>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- Recent Activity -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Recent Notes -->

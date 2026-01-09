@@ -1,0 +1,120 @@
+"""
+Forms for Todo management.
+"""
+from django import forms
+from django.forms import inlineformset_factory
+
+from .models import Todo, TodoCategory, WatchlistQuickAdd
+from apps.companies.models import Company
+
+
+class TodoForm(forms.ModelForm):
+    """Full form for creating and editing todos."""
+
+    class Meta:
+        model = Todo
+        fields = ['title', 'description', 'company', 'category']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': 'What needs to be done?',
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'rows': 3,
+                'placeholder': 'Additional details (optional)...',
+            }),
+            'company': forms.Select(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+            }),
+            'category': forms.Select(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+            }),
+        }
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organization:
+            self.fields['company'].queryset = Company.objects.filter(
+                organization=organization,
+                is_deleted=False
+            )
+            self.fields['company'].required = False
+            self.fields['category'].queryset = TodoCategory.objects.filter(
+                organization=organization
+            )
+            self.fields['category'].required = False
+
+
+class QuickTodoForm(forms.ModelForm):
+    """Simplified form for quick todo creation on company page."""
+
+    class Meta:
+        model = Todo
+        fields = ['title']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': 'Add a todo...',
+            }),
+        }
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class InvestorLetterTodoForm(forms.ModelForm):
+    """Form for investor letter todo with embedded notes."""
+
+    class Meta:
+        model = Todo
+        fields = ['investor_letter_notes', 'is_completed']
+        widgets = {
+            'investor_letter_notes': forms.Textarea(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6 font-mono',
+                'rows': 15,
+                'placeholder': '''Notes about investor letters read this quarter...
+
+Example:
+- Buffett's 2024 letter: Key insight about XYZ
+- Klarman Q4: Interesting take on ABC industry
+- Li Lu's talk: Comments on China investing''',
+            }),
+            'is_completed': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600',
+            }),
+        }
+
+
+class WatchlistQuickAddForm(forms.ModelForm):
+    """Form for a single watchlist quick-add entry."""
+
+    class Meta:
+        model = WatchlistQuickAdd
+        fields = ['ticker', 'alert_price', 'note']
+        widgets = {
+            'ticker': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6 uppercase',
+                'placeholder': 'AAPL',
+            }),
+            'alert_price': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': '150.00',
+                'step': '0.01',
+            }),
+            'note': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': 'Why is this interesting?',
+            }),
+        }
+
+
+# Inline formset for watchlist quick-adds (max 10)
+WatchlistQuickAddFormSet = inlineformset_factory(
+    Todo,
+    WatchlistQuickAdd,
+    form=WatchlistQuickAddForm,
+    extra=5,
+    max_num=10,
+    can_delete=True,
+)

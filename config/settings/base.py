@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'apps.organizations',
     'apps.companies',
     'apps.notes',
+    'apps.todos',
     'apps.search',
     'apps.export',
     'core',
