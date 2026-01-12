@@ -21,7 +21,7 @@ class NoteForm(forms.ModelForm):
 
     class Meta:
         model = Note
-        fields = ['company', 'title', 'content', 'note_type', 'referenced_companies', 'note_date']
+        fields = ['company', 'title', 'content', 'note_type', 'referenced_companies', 'note_date', 'written_at']
         widgets = {
             'company': forms.Select(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
@@ -41,6 +41,10 @@ class NoteForm(forms.ModelForm):
             'note_date': forms.DateInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
                 'type': 'date',
+            }),
+            'written_at': forms.DateTimeInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'type': 'datetime-local',
             }),
         }
 

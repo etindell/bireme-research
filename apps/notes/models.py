@@ -135,6 +135,13 @@ class Note(SoftDeleteModel, OrganizationMixin):
         help_text='Date of the event (e.g., earnings call date)'
     )
 
+    # For backdating notes imported from other apps
+    written_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the note was originally written (for imported notes)'
+    )
+
     # Full-text search vector
     search_vector = SearchVectorField(null=True, blank=True)
 
@@ -187,6 +194,11 @@ class Note(SoftDeleteModel, OrganizationMixin):
     def is_root(self):
         """Whether this is a top-level note."""
         return self.parent is None
+
+    @property
+    def display_date(self):
+        """Return written_at if set, otherwise created_at."""
+        return self.written_at or self.created_at
 
     def get_all_companies(self):
         """Return primary company plus all referenced companies."""

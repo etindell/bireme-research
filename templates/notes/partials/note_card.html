@@ -46,7 +46,7 @@
                 </a>
                 {% endif %}
 
-                <span>{{ note.created_at|date:"M j, Y" }}</span>
+                <span>{{ note.display_date|date:"M j, Y" }}</span>
 
                 {% if note.created_by %}
                 <span>{{ note.created_by.get_short_name }}</span>
