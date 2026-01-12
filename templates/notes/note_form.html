@@ -192,45 +192,78 @@
 
 {% block extra_js %}
 <script>
+// Store selection when textarea loses focus (before button click takes effect)
+let savedSelection = { start: 0, end: 0 };
+
+(function initFormatToolbar() {
+    const textarea = document.getElementById('id_content');
+    if (!textarea) return;
+
+    // Save selection whenever it changes or textarea loses focus
+    textarea.addEventListener('blur', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+
+    textarea.addEventListener('select', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+
+    textarea.addEventListener('keyup', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+
+    textarea.addEventListener('mouseup', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+})();
+
 // Formatting toolbar functionality
 function formatText(type) {
     const textarea = document.getElementById('id_content');
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    // Use saved selection since clicking button clears textarea selection
+    const start = savedSelection.start;
+    const end = savedSelection.end;
     const text = textarea.value;
     const selectedText = text.substring(start, end);
 
     let before = '';
     let after = '';
     let insert = '';
-    let cursorOffset = 0;
 
     switch (type) {
         case 'bold':
             before = '**';
             after = '**';
             insert = selectedText || 'bold text';
-            cursorOffset = selectedText ? 0 : 2;
             break;
         case 'italic':
             before = '*';
             after = '*';
             insert = selectedText || 'italic text';
-            cursorOffset = selectedText ? 0 : 1;
             break;
         case 'underline':
-            before = '++';
-            after = '++';
+            before = '__';
+            after = '__';
             insert = selectedText || 'underlined text';
-            cursorOffset = selectedText ? 0 : 2;
             break;
         case 'strikethrough':
             before = '~~';
             after = '~~';
             insert = selectedText || 'strikethrough text';
-            cursorOffset = selectedText ? 0 : 2;
             break;
         case 'bullet':
             // Add bullet at line start
@@ -240,6 +273,7 @@ function formatText(type) {
             textarea.value = prefix + '• ' + suffix;
             textarea.setSelectionRange(lineStart + 2, lineStart + 2);
             textarea.focus();
+            savedSelection = { start: lineStart + 2, end: lineStart + 2 };
             return;
         case 'number':
             // Add number at line start
@@ -249,6 +283,7 @@ function formatText(type) {
             textarea.value = nPrefix + '1. ' + nSuffix;
             textarea.setSelectionRange(nLineStart + 3, nLineStart + 3);
             textarea.focus();
+            savedSelection = { start: nLineStart + 3, end: nLineStart + 3 };
             return;
         case 'link':
             const url = prompt('Enter URL:');
@@ -256,7 +291,6 @@ function formatText(type) {
             before = '[';
             after = '](' + url + ')';
             insert = selectedText || 'link text';
-            cursorOffset = selectedText ? 0 : 1;
             break;
         case 'quote':
             // Add > at line start for blockquote
@@ -266,6 +300,7 @@ function formatText(type) {
             textarea.value = qPrefix + '> ' + qSuffix;
             textarea.setSelectionRange(qLineStart + 2, qLineStart + 2);
             textarea.focus();
+            savedSelection = { start: qLineStart + 2, end: qLineStart + 2 };
             return;
         default:
             return;
@@ -274,14 +309,14 @@ function formatText(type) {
     const newText = text.substring(0, start) + before + insert + after + text.substring(end);
     textarea.value = newText;
 
-    // Set cursor position
-    if (selectedText) {
-        textarea.setSelectionRange(start + before.length, start + before.length + insert.length);
-    } else {
-        const newCursor = start + before.length + cursorOffset;
-        textarea.setSelectionRange(newCursor, newCursor + insert.length - cursorOffset * 2);
-    }
+    // Set cursor position - select the inserted/wrapped text
+    const newStart = start + before.length;
+    const newEnd = newStart + insert.length;
+    textarea.setSelectionRange(newStart, newEnd);
     textarea.focus();
+
+    // Update saved selection
+    savedSelection = { start: newStart, end: newEnd };
 }
 
 // Keyboard shortcuts
