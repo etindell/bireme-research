@@ -394,35 +394,33 @@ class NoteImportView(OrganizationViewMixin, View):
         """
         Parse the markdown file and extract notes.
 
-        Supports two formats:
-        1. Single company (when default_company is provided):
-           Company Name
-           - Date - Note title
-             - Content
+        If default_company is provided (from form), all notes go to that company
+        and company names in the file are ignored.
 
-        2. Batch import (multiple companies):
-           - Company Name (first level)
-             - Date - Note title (second level)
-               - **Content** (third level, bold/underlined)
+        If no default_company, uses batch format where first-level bullets are
+        company names that must match existing companies.
         """
         lines = content.split('\n')
 
-        # Detect format: if first non-empty line is a bullet, it's batch format
-        is_batch_format = False
+        # Detect format: if first non-empty line is a bullet, it's hierarchical format
+        is_hierarchical = False
         for line in lines:
             stripped = line.strip()
             if stripped:
                 if stripped.startswith('-'):
-                    is_batch_format = True
+                    is_hierarchical = True
                 break
 
-        if is_batch_format:
-            return self._parse_batch_format(lines)
+        if is_hierarchical:
+            return self._parse_hierarchical_format(lines, default_company)
         else:
-            return self._parse_single_company_format(lines, default_company)
+            return self._parse_flat_format(lines, default_company)
 
-    def _parse_single_company_format(self, lines, default_company=None):
-        """Parse single company format (original format)."""
+    def _parse_flat_format(self, lines, default_company=None):
+        """
+        Parse flat format where notes are top-level bullets.
+        Company name on first line is ignored if default_company provided.
+        """
         company_name = None
         start_idx = 0
         for i, line in enumerate(lines):
@@ -457,7 +455,7 @@ class NoteImportView(OrganizationViewMixin, View):
                 parsed_date, title = self._extract_date_from_text(entry_text)
 
                 current_note = {
-                    'company_name': company_name,
+                    'company_name': None,  # Will use default_company
                     'written_at': parsed_date,
                     'title': title if title else entry_text,
                     'content': '',
@@ -482,17 +480,22 @@ class NoteImportView(OrganizationViewMixin, View):
 
         return company_name, notes
 
-    def _parse_batch_format(self, lines):
+    def _parse_hierarchical_format(self, lines, default_company=None):
         """
-        Parse batch format with multiple companies.
+        Parse hierarchical bullet format.
 
-        Format:
-        - Company Name (first level bullet)
-          - Date - Note title (second level bullet)
-            - **Bold content** (third level bullet, forms note content)
+        If default_company is provided:
+          - First level bullet = Note title (with date)
+          - Second level bullet = Note content
+          - Company names in file are ignored
+
+        If no default_company (batch mode):
+          - First level bullet = Company name
+          - Second level bullet = Note title (with date)
+          - Third level bullet = Note content
         """
         notes = []
-        current_company = None
+        current_company_name = None
         current_note = None
         current_content_lines = []
 
@@ -527,49 +530,72 @@ class NoteImportView(OrganizationViewMixin, View):
             level = get_indent_level(line)
             bullet_text = stripped[1:].strip()
 
-            if level == 1:
-                # First level = Company name
-                # Save previous note if exists
-                if current_note:
-                    current_note['content'] = '\n'.join(current_content_lines).strip()
-                    notes.append(current_note)
-                    current_note = None
+            if default_company:
+                # Single company mode: level 1 = note title, level 2 = content
+                if level == 1:
+                    # Save previous note if exists
+                    if current_note:
+                        current_note['content'] = '\n'.join(current_content_lines).strip()
+                        notes.append(current_note)
+
+                    parsed_date, title = self._extract_date_from_text(bullet_text)
+
+                    current_note = {
+                        'company_name': None,  # Will use default_company
+                        'written_at': parsed_date,
+                        'title': title if title else bullet_text,
+                        'content': '',
+                    }
                     current_content_lines = []
 
-                current_company = bullet_text
+                elif level >= 2 and current_note:
+                    # Content for the note
+                    current_content_lines.append(bullet_text)
 
-            elif level == 2:
-                # Second level = Note title with date
-                # Save previous note if exists
-                if current_note:
-                    current_note['content'] = '\n'.join(current_content_lines).strip()
-                    notes.append(current_note)
+            else:
+                # Batch mode: level 1 = company, level 2 = note title, level 3 = content
+                if level == 1:
+                    # First level = Company name
+                    # Save previous note if exists
+                    if current_note:
+                        current_note['content'] = '\n'.join(current_content_lines).strip()
+                        notes.append(current_note)
+                        current_note = None
+                        current_content_lines = []
 
-                parsed_date, title = self._extract_date_from_text(bullet_text)
+                    current_company_name = bullet_text
 
-                current_note = {
-                    'company_name': current_company,
-                    'written_at': parsed_date,
-                    'title': title if title else bullet_text,
-                    'content': '',
-                }
-                current_content_lines = []
+                elif level == 2:
+                    # Second level = Note title with date
+                    # Save previous note if exists
+                    if current_note:
+                        current_note['content'] = '\n'.join(current_content_lines).strip()
+                        notes.append(current_note)
 
-            elif level == 3 and current_note:
-                # Third level = Note content (may be bold/underlined)
-                # Strip markdown formatting for cleaner content, or keep it
-                current_content_lines.append(bullet_text)
+                    parsed_date, title = self._extract_date_from_text(bullet_text)
+
+                    current_note = {
+                        'company_name': current_company_name,
+                        'written_at': parsed_date,
+                        'title': title if title else bullet_text,
+                        'content': '',
+                    }
+                    current_content_lines = []
+
+                elif level == 3 and current_note:
+                    # Third level = Note content
+                    current_content_lines.append(bullet_text)
 
         # Save last note
         if current_note:
             current_note['content'] = '\n'.join(current_content_lines).strip()
             notes.append(current_note)
 
-        # Fill in missing dates from next note (within same company)
+        # Fill in missing dates from next note (within same company for batch)
         last_known_date = None
         last_company = None
         for note in reversed(notes):
-            if note['company_name'] != last_company:
+            if not default_company and note['company_name'] != last_company:
                 last_known_date = None
                 last_company = note['company_name']
 
@@ -578,7 +604,7 @@ class NoteImportView(OrganizationViewMixin, View):
             elif last_known_date:
                 note['written_at'] = last_known_date
 
-        return None, notes  # No single company name for batch
+        return None, notes
 
 
 # Need to import render for the import view

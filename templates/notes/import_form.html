@@ -61,24 +61,22 @@
             <!-- Format Instructions -->
             <div class="bg-gray-50 rounded-lg p-4 space-y-4">
                 <div>
-                    <h3 class="text-sm font-medium text-gray-900 mb-2">Format 1: Single Company</h3>
-                    <p class="text-xs text-gray-500 mb-2">Select a company above and use this format:</p>
-                    <pre class="text-xs text-gray-600 font-mono bg-white p-3 rounded border overflow-x-auto">Company Name
-
-- Fri, Nov 21, 2025 First note title
-  - Nested content becomes the note body
-
-- Thu, Nov 20, 2025 Second note title
-  - Content here</pre>
+                    <h3 class="text-sm font-medium text-gray-900 mb-2">Single Company Import</h3>
+                    <p class="text-xs text-gray-500 mb-2">Select a company above. The company name in the file will be ignored:</p>
+                    <pre class="text-xs text-gray-600 font-mono bg-white p-3 rounded border overflow-x-auto">- Company Name (ignored when company selected)
+  - Fri, Nov 21, 2025 Note title
+    - **Content becomes the note body**
+    - More content here
+  - Thu, Nov 20, 2025 Another note
+    - Note content</pre>
                 </div>
 
                 <div class="border-t border-gray-200 pt-4">
-                    <h3 class="text-sm font-medium text-gray-900 mb-2">Format 2: Batch (Multiple Companies)</h3>
-                    <p class="text-xs text-gray-500 mb-2">Leave company blank and use this format:</p>
+                    <h3 class="text-sm font-medium text-gray-900 mb-2">Batch Import (Multiple Companies)</h3>
+                    <p class="text-xs text-gray-500 mb-2">Leave company blank to import notes for multiple companies:</p>
                     <pre class="text-xs text-gray-600 font-mono bg-white p-3 rounded border overflow-x-auto">- Company Name
   - Fri, Nov 21, 2025 Note title
-    - **Bold content becomes the note body**
-    - More content here
+    - **Content becomes the note body**
 
 - Another Company
   - Thu, Nov 20, 2025 Another note
@@ -87,9 +85,10 @@
                 </div>
 
                 <ul class="text-xs text-gray-600 space-y-1 border-t border-gray-200 pt-3">
-                    <li>- Dates can be in various formats: "Fri, Nov 21, 2025", "Nov 21, 2025", "11/21/25"</li>
-                    <li>- Notes without dates inherit from the following note</li>
-                    <li>- Third-level bullets become the note content (markdown preserved)</li>
+                    <li>- First level = Company name (ignored if company selected above)</li>
+                    <li>- Second level = Note title with date</li>
+                    <li>- Third level = Note content (markdown preserved)</li>
+                    <li>- Dates: "Fri, Nov 21, 2025", "Nov 21, 2025", "11/21/25"</li>
                 </ul>
             </div>
         </div>
