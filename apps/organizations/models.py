@@ -139,3 +139,40 @@ class OrganizationMembership(SoftDeleteModel):
     @property
     def can_view(self):
         return True  # All roles can view
+
+
+class OrganizationInvite(SoftDeleteModel):
+    """
+    Pending invitation for users who don't have an account yet.
+    When the user signs up with this email, they'll be added to the organization.
+    """
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='invites'
+    )
+    email = models.EmailField()
+    role = models.CharField(
+        max_length=20,
+        choices=OrganizationMembership.Role.choices,
+        default=OrganizationMembership.Role.MEMBER
+    )
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='sent_invites'
+    )
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'organization_invites'
+        unique_together = ['organization', 'email']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.email} invited to {self.organization.name}'
+
+    @property
+    def is_pending(self):
+        return self.accepted_at is None and not self.is_deleted

@@ -14,4 +14,5 @@ urlpatterns = [
     path('members/', views.OrganizationMembersView.as_view(), name='members'),
     path('members/add/', views.AddMemberView.as_view(), name='add_member'),
     path('members/<int:pk>/remove/', views.RemoveMemberView.as_view(), name='remove_member'),
+    path('invites/<int:pk>/cancel/', views.CancelInviteView.as_view(), name='cancel_invite'),
 ]

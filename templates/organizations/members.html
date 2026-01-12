@@ -94,6 +94,76 @@
         {% endif %}
     </div>
 
+    <!-- Pending Invites -->
+    {% if pending_invites %}
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+        <div class="px-4 py-3 bg-yellow-50 border-b border-yellow-100">
+            <h3 class="text-sm font-semibold text-yellow-800">Pending Invitations</h3>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                        Email
+                    </th>
+                    <th scope="col" class="px-3 py-3 text-left text-sm font-semibold text-gray-900">
+                        Role
+                    </th>
+                    <th scope="col" class="px-3 py-3 text-left text-sm font-semibold text-gray-900">
+                        Invited
+                    </th>
+                    <th scope="col" class="relative py-3 pl-3 pr-4 sm:pr-6">
+                        <span class="sr-only">Actions</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+                {% for invite in pending_invites %}
+                <tr>
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 flex-shrink-0">
+                                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
+                                    <svg class="h-5 w-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="ml-4">
+                                <div class="font-medium text-gray-900">{{ invite.email }}</div>
+                                <div class="text-xs text-gray-500">Invited by {{ invite.invited_by.get_full_name|default:invite.invited_by.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                        <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5
+                            {% if invite.role == 'admin' %}bg-blue-100 text-blue-800
+                            {% elif invite.role == 'member' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ invite.get_role_display }}
+                        </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {{ invite.created_at|date:"M d, Y" }}
+                    </td>
+                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        {% if current_membership.is_admin %}
+                        <form method="post" action="{% url 'organizations:cancel_invite' invite.pk %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-600 hover:text-red-900">
+                                Cancel
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Active Members -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">

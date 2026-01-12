@@ -7,7 +7,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, UpdateView, ListView, View
 
-from .models import Organization, OrganizationMembership
+from .models import Organization, OrganizationMembership, OrganizationInvite
 from .forms import OrganizationForm, AddMemberForm
 
 
@@ -104,6 +104,13 @@ class OrganizationMembersView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['add_member_form'] = AddMemberForm()
+        # Add pending invites
+        if self.request.organization:
+            context['pending_invites'] = OrganizationInvite.objects.filter(
+                organization=self.request.organization,
+                is_deleted=False,
+                accepted_at__isnull=True
+            ).order_by('-created_at')
         return context
 
 
@@ -133,10 +140,29 @@ class AddMemberView(LoginRequiredMixin, View):
 
             # Find user by email
             from apps.users.models import User
-            try:
-                user = User.objects.get(email__iexact=email)
-            except User.DoesNotExist:
-                messages.error(request, f'No user found with email "{email}". They need to sign up first.')
+            user = User.objects.filter(email__iexact=email).first()
+
+            if not user:
+                # User doesn't exist - create an invite
+                existing_invite = OrganizationInvite.objects.filter(
+                    organization=request.organization,
+                    email__iexact=email,
+                    is_deleted=False,
+                    accepted_at__isnull=True
+                ).first()
+
+                if existing_invite:
+                    messages.warning(request, f'An invitation for {email} already exists.')
+                    return redirect('organizations:members')
+
+                OrganizationInvite.objects.create(
+                    organization=request.organization,
+                    email=email,
+                    role=role,
+                    invited_by=request.user,
+                    created_by=request.user
+                )
+                messages.success(request, f'Invitation sent to {email}. They will be added when they sign up.')
                 return redirect('organizations:members')
 
             # Check if already a member
@@ -210,5 +236,40 @@ class RemoveMemberView(LoginRequiredMixin, View):
         # Soft delete the membership
         membership.delete(user=request.user)
         messages.success(request, f'{membership.user.email} has been removed from the organization.')
+
+        return redirect('organizations:members')
+
+
+class CancelInviteView(LoginRequiredMixin, View):
+    """Cancel a pending invitation."""
+
+    def post(self, request, pk):
+        if not request.organization:
+            messages.error(request, 'No organization selected.')
+            return redirect('organizations:members')
+
+        # Check that user is admin
+        current_membership = OrganizationMembership.objects.filter(
+            organization=request.organization,
+            user=request.user,
+            is_deleted=False
+        ).first()
+
+        if not current_membership or not current_membership.is_admin:
+            messages.error(request, 'You do not have permission to cancel invitations.')
+            return redirect('organizations:members')
+
+        # Get the invite to cancel
+        invite = get_object_or_404(
+            OrganizationInvite,
+            pk=pk,
+            organization=request.organization,
+            is_deleted=False,
+            accepted_at__isnull=True
+        )
+
+        # Soft delete the invite
+        invite.delete(user=request.user)
+        messages.success(request, f'Invitation for {invite.email} has been cancelled.')
 
         return redirect('organizations:members')
