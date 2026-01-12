@@ -142,13 +142,19 @@
 <div class="bg-white shadow rounded-lg overflow-hidden">
     <ul role="list" class="divide-y divide-gray-200">
         {% for company in companies %}
-        <li class="hover:bg-gray-50">
+        <li class="{% if company.is_deleted %}bg-gray-50 opacity-60{% else %}hover:bg-gray-50{% endif %}">
             <a href="{{ company.get_absolute_url }}" class="block px-4 py-4 sm:px-6">
                 <div class="flex items-center justify-between">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-x-3">
-                            <p class="text-sm font-semibold leading-6 text-gray-900">{{ company.name }}</p>
+                            <p class="text-sm font-semibold leading-6 {% if company.is_deleted %}text-gray-500 line-through{% else %}text-gray-900{% endif %}">{{ company.name }}</p>
+                            {% if company.is_deleted %}
+                            <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+                                Deleted
+                            </span>
+                            {% else %}
                             {% include "companies/partials/status_badge.html" with status=company.status %}
+                            {% endif %}
                         </div>
                         <div class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500">
                             {% for ticker in company.tickers.all|slice:":3" %}
@@ -159,6 +165,9 @@
                             {% endif %}
                             {% if company.country %}
                             <span class="hidden sm:inline">{{ company.country }}</span>
+                            {% endif %}
+                            {% if company.is_deleted and company.deleted_at %}
+                            <span class="hidden sm:inline text-red-600">Deleted {{ company.deleted_at|timesince }} ago</span>
                             {% endif %}
                         </div>
                     </div>

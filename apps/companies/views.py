@@ -25,11 +25,24 @@ class CompanyListView(OrganizationViewMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = super().get_queryset().prefetch_related('tickers')
+        from datetime import timedelta
+        from django.utils import timezone
 
-        # Filter by status
         status = self.request.GET.get('status')
-        if status:
+
+        # When viewing "All Statuses", include recently deleted companies
+        if not status:
+            two_weeks_ago = timezone.now() - timedelta(weeks=2)
+            qs = Company.all_objects.filter(
+                organization=self.request.organization
+            ).filter(
+                # Not deleted OR deleted within 2 weeks
+                models.Q(is_deleted=False) |
+                models.Q(is_deleted=True, deleted_at__gte=two_weeks_ago)
+            ).prefetch_related('tickers')
+        else:
+            # Status-filtered views exclude deleted companies
+            qs = super().get_queryset().prefetch_related('tickers')
             qs = qs.filter(status=status)
 
         # Filter by sector
@@ -40,7 +53,8 @@ class CompanyListView(OrganizationViewMixin, ListView):
         # Search
         q = self.request.GET.get('q')
         if q:
-            qs = qs.search(q)
+            from django.contrib.postgres.search import SearchQuery
+            qs = qs.filter(search_vector=SearchQuery(q, search_type='websearch'))
 
         # Ordering
         order = self.request.GET.get('order', 'name')
@@ -102,6 +116,8 @@ class CompanyDetailView(OrganizationViewMixin, DetailView):
         context = super().get_context_data(**kwargs)
         # Get notes for this company (primary + mentioned)
         from apps.notes.models import Note
+        from django.db.models.functions import Coalesce
+
         context['notes'] = Note.objects.filter(
             organization=self.request.organization,
             is_deleted=False
@@ -110,7 +126,9 @@ class CompanyDetailView(OrganizationViewMixin, DetailView):
             models.Q(referenced_companies=self.object)
         ).select_related(
             'note_type', 'created_by', 'company'
-        ).order_by('-created_at').distinct()[:50]
+        ).annotate(
+            effective_date=Coalesce('written_at', 'created_at')
+        ).order_by('-effective_date').distinct()[:50]
 
         context['statuses'] = Company.Status.choices
         return context

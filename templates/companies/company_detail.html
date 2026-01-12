@@ -70,6 +70,14 @@
                 </svg>
                 Add Note
             </a>
+            <a href="{% url 'notes:import' %}?company={{ company.slug }}"
+               class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.25 13.25a.75.75 0 001.5 0V4.636l2.955 3.129a.75.75 0 001.09-1.03l-4.25-4.5a.75.75 0 00-1.09 0l-4.25 4.5a.75.75 0 101.09 1.03L9.25 4.636v8.614z" />
+                    <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
+                </svg>
+                Import
+            </a>
             <a href="{% url 'companies:update' company.slug %}"
                class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                 Edit
@@ -81,6 +89,60 @@
                 </svg>
                 Export PDF
             </a>
+            <!-- Delete button with confirmation -->
+            <div x-data="{ confirmDelete: false }" class="relative">
+                <button @click="confirmDelete = true"
+                        type="button"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-50">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.519.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" />
+                    </svg>
+                    Delete
+                </button>
+                <!-- Confirmation modal -->
+                <div x-show="confirmDelete"
+                     x-cloak
+                     class="fixed inset-0 z-50 overflow-y-auto"
+                     aria-labelledby="modal-title"
+                     role="dialog"
+                     aria-modal="true">
+                    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="confirmDelete = false"></div>
+                        <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                            <div class="sm:flex sm:items-start">
+                                <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                    </svg>
+                                </div>
+                                <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                    <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Delete company</h3>
+                                    <div class="mt-2">
+                                        <p class="text-sm text-gray-500">
+                                            Are you sure you want to delete <strong>{{ company.name }}</strong>?
+                                            The company will be hidden and can be recovered from the "All Statuses" view for 2 weeks.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+                                <form hx-post="{% url 'companies:delete' company.slug %}" hx-swap="none">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:w-auto">
+                                        Delete
+                                    </button>
+                                </form>
+                                <button type="button"
+                                        @click="confirmDelete = false"
+                                        class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -230,10 +292,16 @@
             <h3 class="text-base font-semibold leading-6 text-gray-900">
                 Research Notes
             </h3>
-            <a href="{% url 'notes:create' %}?company={{ company.slug }}"
-               class="text-sm font-medium text-primary-600 hover:text-primary-500">
-                Add note
-            </a>
+            <div class="flex items-center gap-x-4">
+                <a href="{% url 'notes:import' %}?company={{ company.slug }}"
+                   class="text-sm font-medium text-gray-500 hover:text-gray-700">
+                    Import notes
+                </a>
+                <a href="{% url 'notes:create' %}?company={{ company.slug }}"
+                   class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                    Add note
+                </a>
+            </div>
         </div>
         <div class="divide-y divide-gray-200">
             {% for note in notes %}

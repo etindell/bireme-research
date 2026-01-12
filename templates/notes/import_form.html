@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Import Notes - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                Import Notes
+            </h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Import notes from a Markdown file. Each top-level bullet point (starting with "-") will become a separate note.
+            </p>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <div class="bg-white shadow rounded-lg p-6 space-y-6">
+            <!-- Company -->
+            <div>
+                <label for="id_company" class="block text-sm font-medium leading-6 text-gray-900">
+                    Company *
+                </label>
+                <p class="text-xs text-gray-500 mb-2">Select the company these notes are about.</p>
+                <div class="mt-2">
+                    {{ form.company }}
+                </div>
+                {% if form.company.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.company.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- File Upload -->
+            <div>
+                <label for="id_file" class="block text-sm font-medium leading-6 text-gray-900">
+                    File *
+                </label>
+                <p class="text-xs text-gray-500 mb-2">Upload a Markdown (.md) or text (.txt) file.</p>
+                <div class="mt-2">
+                    {{ form.file }}
+                </div>
+                {% if form.file.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.file.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Note Type -->
+            <div>
+                <label for="id_note_type" class="block text-sm font-medium leading-6 text-gray-900">
+                    Note Type
+                </label>
+                <p class="text-xs text-gray-500 mb-2">Optional: Assign a type to all imported notes.</p>
+                <div class="mt-2">
+                    {{ form.note_type }}
+                </div>
+            </div>
+
+            <!-- Format Instructions -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-sm font-medium text-gray-900 mb-2">Expected File Format</h3>
+                <pre class="text-xs text-gray-600 font-mono bg-white p-3 rounded border overflow-x-auto">Company Name
+
+- Fri, Nov 21, 2025 First note title
+  - Nested content
+  - More details
+
+- Thu, Nov 20, 2025 Second note title
+  - Content here
+    - Even deeper nesting</pre>
+                <ul class="mt-3 text-xs text-gray-600 space-y-1">
+                    <li>- The first non-empty line is treated as the company name (ignored)</li>
+                    <li>- Each line starting with "- " at column 0 creates a new note</li>
+                    <li>- Dates can be anywhere in the first line (e.g., "Fri, Nov 21, 2025" or "11/21/25")</li>
+                    <li>- Nested bullets become the note's content</li>
+                    <li>- Notes without dates inherit from the following note</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-x-3">
+            <a href="{% url 'notes:list' %}"
+               class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit"
+                    class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                Import Notes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

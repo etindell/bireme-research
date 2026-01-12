@@ -93,3 +93,43 @@ class QuickNoteForm(forms.ModelForm):
             self.fields['note_type'].queryset = NoteType.objects.filter(
                 organization=organization
             )
+
+
+class ImportNotesForm(forms.Form):
+    """Form for importing notes from a Markdown file."""
+
+    company = forms.ModelChoiceField(
+        queryset=Company.objects.none(),
+        widget=forms.Select(attrs={
+            'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+        }),
+        help_text='Select the company these notes are about'
+    )
+
+    file = forms.FileField(
+        widget=forms.FileInput(attrs={
+            'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100',
+            'accept': '.md,.txt',
+        }),
+        help_text='Upload a Markdown (.md) or text (.txt) file'
+    )
+
+    note_type = forms.ModelChoiceField(
+        queryset=NoteType.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+        }),
+        help_text='Optional: Assign a type to all imported notes'
+    )
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organization:
+            self.fields['company'].queryset = Company.objects.filter(
+                organization=organization,
+                is_deleted=False
+            ).order_by('name')
+            self.fields['note_type'].queryset = NoteType.objects.filter(
+                organization=organization
+            )
