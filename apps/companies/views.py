@@ -318,8 +318,8 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
                 current_content_lines = []
 
             elif level >= 3 and current_note:
-                # Note content - first line gets bold/underline
-                if len(current_content_lines) == 0:
+                # Note content - first line gets bold/underline (unless it has #mythoughts)
+                if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
                     # First content line - make it bold and underlined
                     bullet_text = f"**__{bullet_text}__**"
                 current_content_lines.append(bullet_text)
