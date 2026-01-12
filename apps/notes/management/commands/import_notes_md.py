@@ -72,6 +72,40 @@ def get_indent_level(line):
     return indent // 2
 
 
+def extract_date_from_text(text):
+    """
+    Try to extract a date from anywhere in the text.
+    Returns (date, text_without_date) or (None, original_text)
+    """
+    # Clean BOM characters
+    text = text.replace('\ufeff', '').strip()
+
+    # Patterns to try (order matters - more specific first)
+    patterns = [
+        # "Fri, Nov 21, 2025" or "Wed, Nov 12, 2025"
+        (r'([A-Za-z]{3},\s+[A-Za-z]{3}\s+\d{1,2},\s+\d{4})', '%a, %b %d, %Y'),
+        # "Nov 21, 2025"
+        (r'([A-Za-z]{3}\s+\d{1,2},\s+\d{4})', '%b %d, %Y'),
+        # "11/10/25" or "11/10/2025"
+        (r'(\d{1,2}/\d{1,2}/\d{2,4})', None),
+    ]
+
+    for pattern, date_fmt in patterns:
+        match = re.search(pattern, text)
+        if match:
+            date_str = match.group(1)
+            parsed_date = parse_date(date_str)
+            if parsed_date:
+                # Remove the date from text
+                text_without_date = text[:match.start()] + text[match.end():]
+                # Clean up extra spaces and punctuation
+                text_without_date = re.sub(r'\s+', ' ', text_without_date).strip()
+                text_without_date = text_without_date.strip('-').strip()
+                return parsed_date, text_without_date
+
+    return None, text
+
+
 def parse_md_file(content):
     """
     Parse the markdown file and extract notes.
@@ -95,17 +129,6 @@ def parse_md_file(content):
     current_note = None
     current_content_lines = []
 
-    # Pattern to match date entries
-    # Matches: "- Fri, Nov 21, 2025 Title text" or "- 11/10/25 Title text"
-    date_pattern = re.compile(
-        r'^-\s*\ufeff?\s*'  # Bullet and optional BOM
-        r'((?:[A-Za-z]{3,9},?\s+)?'  # Optional day name
-        r'(?:[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}|'  # "Nov 21, 2025" or "November 21, 2025"
-        r'\d{1,2}/\d{1,2}/\d{2,4}))'  # or "11/21/25"
-        r'\ufeff?\s*'  # Optional BOM
-        r'(.*)$'  # Rest is the title
-    )
-
     for i in range(start_idx, len(lines)):
         line = lines[i]
         stripped = line.strip()
@@ -115,32 +138,31 @@ def parse_md_file(content):
                 current_content_lines.append('')
             continue
 
-        # Check if this is a new top-level dated entry
-        if stripped.startswith('-'):
-            match = date_pattern.match(stripped)
-            if match:
-                # Save previous note
-                if current_note:
-                    current_note['content'] = '\n'.join(current_content_lines).strip()
-                    notes.append(current_note)
+        # Check if this is a new top-level entry (starts with "- " at column 0 or 1)
+        # Top-level entries have minimal indentation
+        indent = len(line) - len(line.lstrip())
+        is_top_level_bullet = stripped.startswith('-') and indent <= 2
 
-                date_str = match.group(1)
-                title = match.group(2).strip()
+        if is_top_level_bullet:
+            # Save previous note
+            if current_note:
+                current_note['content'] = '\n'.join(current_content_lines).strip()
+                notes.append(current_note)
 
-                parsed_date = parse_date(date_str)
+            # Remove the leading "- " and try to extract a date
+            entry_text = stripped[1:].strip()
+            parsed_date, title = extract_date_from_text(entry_text)
 
-                current_note = {
-                    'date_str': date_str,
-                    'written_at': parsed_date,
-                    'title': title if title else date_str,
-                    'content': '',
-                }
-                current_content_lines = []
-                continue
+            current_note = {
+                'written_at': parsed_date,
+                'title': title if title else entry_text,
+                'content': '',
+            }
+            current_content_lines = []
+            continue
 
         # This is content for the current note
         if current_note:
-            # Remove leading "- " for cleaner content, preserve structure
             current_content_lines.append(line.rstrip())
 
     # Don't forget the last note
