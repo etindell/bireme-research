@@ -20,6 +20,9 @@ urlpatterns = [
     # Toggle completion (HTMX)
     path('<int:pk>/toggle/', views.TodoToggleCompleteView.as_view(), name='toggle_complete'),
 
+    # Complete with note
+    path('<int:pk>/complete-with-note/', views.CompleteWithNoteView.as_view(), name='complete_with_note'),
+
     # Quick todo from company page (HTMX)
     path('quick/<slug:company_slug>/', views.QuickTodoCreateView.as_view(), name='quick_create'),
 

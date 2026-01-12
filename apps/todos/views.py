@@ -12,7 +12,8 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from core.mixins import OrganizationViewMixin
 from apps.companies.models import Company
 from .models import Todo, TodoCategory, WatchlistQuickAdd
-from .forms import TodoForm, QuickTodoForm, InvestorLetterTodoForm, WatchlistQuickAddFormSet
+from .forms import TodoForm, QuickTodoForm, InvestorLetterTodoForm, WatchlistQuickAddFormSet, CompleteWithNoteForm
+from apps.notes.models import Note
 
 
 class TodoListView(OrganizationViewMixin, ListView):
@@ -100,7 +101,7 @@ class TodoDetailView(OrganizationViewMixin, DetailView):
 
     def get_queryset(self):
         return super().get_queryset().select_related(
-            'company', 'category', 'created_by', 'completed_by'
+            'company', 'category', 'created_by', 'completed_by', 'completion_note'
         ).prefetch_related('watchlist_additions')
 
     def get_context_data(self, **kwargs):
@@ -360,3 +361,59 @@ class CompanyTodosPartialView(OrganizationViewMixin, View):
             request=request
         )
         return HttpResponse(html)
+
+
+class CompleteWithNoteView(OrganizationViewMixin, CreateView):
+    """Complete a todo by creating an attached note as evidence."""
+    model = Note
+    form_class = CompleteWithNoteForm
+    template_name = 'todos/complete_with_note.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.todo = get_object_or_404(
+            Todo.objects.filter(organization=request.organization),
+            pk=kwargs['pk']
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['todo'] = self.todo
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        # Pre-fill title with todo title
+        initial['title'] = f"Completed: {self.todo.title}"
+        return initial
+
+    def form_valid(self, form):
+        # Create the note
+        note = form.save(commit=False)
+        note.organization = self.request.organization
+        note.created_by = self.request.user
+
+        # Use todo's company if available
+        if self.todo.company:
+            note.company = self.todo.company
+        else:
+            # If no company on todo, we need a company for the note
+            # This shouldn't happen often, but handle gracefully
+            messages.error(self.request, 'Cannot create note without a company.')
+            return self.form_invalid(form)
+
+        note.save()
+
+        # Mark the todo complete with the note attached
+        self.todo.mark_complete(user=self.request.user, note=note)
+
+        messages.success(
+            self.request,
+            f'Todo completed with note: "{note.title[:50]}"'
+        )
+
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        # Go to the todo detail to see the completion note
+        return reverse('todos:detail', kwargs={'pk': self.todo.pk})

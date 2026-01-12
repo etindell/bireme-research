@@ -152,6 +152,14 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         blank=True,
         related_name='completed_todos'
     )
+    completion_note = models.ForeignKey(
+        'notes.Note',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='completed_todos',
+        help_text='Note created as evidence of completion'
+    )
 
     # Auto-generation metadata
     is_auto_generated = models.BooleanField(default=False)
@@ -188,19 +196,23 @@ class Todo(SoftDeleteModel, OrganizationMixin):
     def get_absolute_url(self):
         return reverse('todos:detail', kwargs={'pk': self.pk})
 
-    def mark_complete(self, user=None):
-        """Mark this todo as completed."""
+    def mark_complete(self, user=None, note=None):
+        """Mark this todo as completed, optionally with an attached note."""
         self.is_completed = True
         self.completed_at = timezone.now()
         self.completed_by = user
-        self.save(update_fields=['is_completed', 'completed_at', 'completed_by', 'updated_at'])
+        if note:
+            self.completion_note = note
+        self.save(update_fields=['is_completed', 'completed_at', 'completed_by', 'completion_note', 'updated_at'])
 
     def mark_incomplete(self):
-        """Mark this todo as incomplete."""
+        """Mark this todo as incomplete (does not delete the note, just unlinks)."""
         self.is_completed = False
         self.completed_at = None
         self.completed_by = None
-        self.save(update_fields=['is_completed', 'completed_at', 'completed_by', 'updated_at'])
+        # Note: We don't delete the completion_note, just unlink it
+        self.completion_note = None
+        self.save(update_fields=['is_completed', 'completed_at', 'completed_by', 'completion_note', 'updated_at'])
 
     @property
     def category_color(self):

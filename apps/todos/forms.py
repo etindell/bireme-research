@@ -6,6 +6,7 @@ from django.forms import inlineformset_factory
 
 from .models import Todo, TodoCategory, WatchlistQuickAdd
 from apps.companies.models import Company
+from apps.notes.models import Note, NoteType
 
 
 class TodoForm(forms.ModelForm):
@@ -118,3 +119,37 @@ WatchlistQuickAddFormSet = inlineformset_factory(
     max_num=10,
     can_delete=True,
 )
+
+
+class CompleteWithNoteForm(forms.ModelForm):
+    """Form for creating a note to complete a todo."""
+
+    class Meta:
+        model = Note
+        fields = ['title', 'content', 'note_type', 'note_date']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': 'Summary of what was done...',
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'rows': 6,
+                'placeholder': 'Details, findings, notes from completing this task...',
+            }),
+            'note_type': forms.Select(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+            }),
+            'note_date': forms.DateInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'type': 'date',
+            }),
+        }
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organization:
+            self.fields['note_type'].queryset = NoteType.objects.filter(
+                organization=organization
+            )
+            self.fields['note_type'].required = False
