@@ -100,10 +100,11 @@ class ImportNotesForm(forms.Form):
 
     company = forms.ModelChoiceField(
         queryset=Company.objects.none(),
+        required=False,
         widget=forms.Select(attrs={
             'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
         }),
-        help_text='Select the company these notes are about'
+        help_text='Select company for single-company import, or leave blank for batch import'
     )
 
     file = forms.FileField(

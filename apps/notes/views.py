@@ -266,7 +266,7 @@ class NoteImportView(OrganizationViewMixin, View):
         form = ImportNotesForm(request.POST, request.FILES, organization=request.organization)
 
         if form.is_valid():
-            company = form.cleaned_data['company']
+            company = form.cleaned_data.get('company')  # May be None for batch
             uploaded_file = form.cleaned_data['file']
             note_type = form.cleaned_data.get('note_type')
 
@@ -274,18 +274,47 @@ class NoteImportView(OrganizationViewMixin, View):
             content = uploaded_file.read().decode('utf-8')
 
             # Parse the file
-            _, notes_data = self._parse_md_file(content)
+            _, notes_data = self._parse_md_file(content, default_company=company)
+
+            # Build company lookup cache
+            company_cache = {}
 
             # Create notes
             created_count = 0
+            skipped_companies = set()
+
             for note_data in notes_data:
+                # Determine which company to use
+                note_company = company  # Default from form
+
+                if note_data.get('company_name'):
+                    company_name = note_data['company_name']
+
+                    # Try to find company by name (case-insensitive)
+                    if company_name not in company_cache:
+                        found_company = Company.objects.filter(
+                            organization=request.organization,
+                            name__iexact=company_name,
+                            is_deleted=False
+                        ).first()
+                        company_cache[company_name] = found_company
+
+                    note_company = company_cache[company_name]
+
+                    if not note_company:
+                        skipped_companies.add(company_name)
+                        continue
+
+                if not note_company:
+                    continue
+
                 title = note_data['title'][:500] if note_data['title'] else 'Imported note'
                 if len(title) > 100:
                     title = title[:97] + '...'
 
                 Note.objects.create(
                     organization=request.organization,
-                    company=company,
+                    company=note_company,
                     title=title,
                     content=note_data['content'],
                     note_type=note_type,
@@ -294,8 +323,17 @@ class NoteImportView(OrganizationViewMixin, View):
                 )
                 created_count += 1
 
-            messages.success(request, f'Successfully imported {created_count} notes.')
-            return redirect(company.get_absolute_url())
+            # Build success message
+            msg = f'Successfully imported {created_count} notes.'
+            if skipped_companies:
+                msg += f' Skipped notes for unknown companies: {", ".join(sorted(skipped_companies))}'
+
+            messages.success(request, msg)
+
+            # Redirect to company page if single company, otherwise notes list
+            if company:
+                return redirect(company.get_absolute_url())
+            return redirect('notes:list')
 
         return render(request, self.template_name, {'form': form})
 
@@ -352,10 +390,39 @@ class NoteImportView(OrganizationViewMixin, View):
 
         return None, text
 
-    def _parse_md_file(self, content):
-        """Parse the markdown file and extract notes."""
+    def _parse_md_file(self, content, default_company=None):
+        """
+        Parse the markdown file and extract notes.
+
+        Supports two formats:
+        1. Single company (when default_company is provided):
+           Company Name
+           - Date - Note title
+             - Content
+
+        2. Batch import (multiple companies):
+           - Company Name (first level)
+             - Date - Note title (second level)
+               - **Content** (third level, bold/underlined)
+        """
         lines = content.split('\n')
 
+        # Detect format: if first non-empty line is a bullet, it's batch format
+        is_batch_format = False
+        for line in lines:
+            stripped = line.strip()
+            if stripped:
+                if stripped.startswith('-'):
+                    is_batch_format = True
+                break
+
+        if is_batch_format:
+            return self._parse_batch_format(lines)
+        else:
+            return self._parse_single_company_format(lines, default_company)
+
+    def _parse_single_company_format(self, lines, default_company=None):
+        """Parse single company format (original format)."""
         company_name = None
         start_idx = 0
         for i, line in enumerate(lines):
@@ -390,6 +457,7 @@ class NoteImportView(OrganizationViewMixin, View):
                 parsed_date, title = self._extract_date_from_text(entry_text)
 
                 current_note = {
+                    'company_name': company_name,
                     'written_at': parsed_date,
                     'title': title if title else entry_text,
                     'content': '',
@@ -413,6 +481,104 @@ class NoteImportView(OrganizationViewMixin, View):
                 note['written_at'] = last_known_date
 
         return company_name, notes
+
+    def _parse_batch_format(self, lines):
+        """
+        Parse batch format with multiple companies.
+
+        Format:
+        - Company Name (first level bullet)
+          - Date - Note title (second level bullet)
+            - **Bold content** (third level bullet, forms note content)
+        """
+        notes = []
+        current_company = None
+        current_note = None
+        current_content_lines = []
+
+        def get_indent_level(line):
+            """Get the indent level (number of leading spaces/tabs)."""
+            stripped = line.lstrip()
+            if not stripped.startswith('-'):
+                return -1
+            indent = len(line) - len(line.lstrip())
+            # Normalize: 0 = level 1, 2-4 = level 2, 4+ = level 3
+            if indent == 0:
+                return 1
+            elif indent <= 4:
+                return 2
+            else:
+                return 3
+
+        for line in lines:
+            stripped = line.strip()
+
+            if not stripped:
+                if current_note and current_content_lines:
+                    current_content_lines.append('')
+                continue
+
+            if not stripped.startswith('-'):
+                # Non-bullet line - add to content if we have a note
+                if current_note:
+                    current_content_lines.append(stripped)
+                continue
+
+            level = get_indent_level(line)
+            bullet_text = stripped[1:].strip()
+
+            if level == 1:
+                # First level = Company name
+                # Save previous note if exists
+                if current_note:
+                    current_note['content'] = '\n'.join(current_content_lines).strip()
+                    notes.append(current_note)
+                    current_note = None
+                    current_content_lines = []
+
+                current_company = bullet_text
+
+            elif level == 2:
+                # Second level = Note title with date
+                # Save previous note if exists
+                if current_note:
+                    current_note['content'] = '\n'.join(current_content_lines).strip()
+                    notes.append(current_note)
+
+                parsed_date, title = self._extract_date_from_text(bullet_text)
+
+                current_note = {
+                    'company_name': current_company,
+                    'written_at': parsed_date,
+                    'title': title if title else bullet_text,
+                    'content': '',
+                }
+                current_content_lines = []
+
+            elif level == 3 and current_note:
+                # Third level = Note content (may be bold/underlined)
+                # Strip markdown formatting for cleaner content, or keep it
+                current_content_lines.append(bullet_text)
+
+        # Save last note
+        if current_note:
+            current_note['content'] = '\n'.join(current_content_lines).strip()
+            notes.append(current_note)
+
+        # Fill in missing dates from next note (within same company)
+        last_known_date = None
+        last_company = None
+        for note in reversed(notes):
+            if note['company_name'] != last_company:
+                last_known_date = None
+                last_company = note['company_name']
+
+            if note['written_at']:
+                last_known_date = note['written_at']
+            elif last_known_date:
+                note['written_at'] = last_known_date
+
+        return None, notes  # No single company name for batch
 
 
 # Need to import render for the import view

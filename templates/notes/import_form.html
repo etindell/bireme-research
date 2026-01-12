@@ -10,7 +10,7 @@
                 Import Notes
             </h1>
             <p class="mt-2 text-sm text-gray-600">
-                Import notes from a Markdown file. Each top-level bullet point (starting with "-") will become a separate note.
+                Import notes from a Markdown file. Supports single-company and batch (multi-company) formats.
             </p>
         </div>
     </div>
@@ -22,9 +22,9 @@
             <!-- Company -->
             <div>
                 <label for="id_company" class="block text-sm font-medium leading-6 text-gray-900">
-                    Company *
+                    Company
                 </label>
-                <p class="text-xs text-gray-500 mb-2">Select the company these notes are about.</p>
+                <p class="text-xs text-gray-500 mb-2">Select a company for single-company import, or leave blank for batch import (companies from file).</p>
                 <div class="mt-2">
                     {{ form.company }}
                 </div>
@@ -59,23 +59,37 @@
             </div>
 
             <!-- Format Instructions -->
-            <div class="bg-gray-50 rounded-lg p-4">
-                <h3 class="text-sm font-medium text-gray-900 mb-2">Expected File Format</h3>
-                <pre class="text-xs text-gray-600 font-mono bg-white p-3 rounded border overflow-x-auto">Company Name
+            <div class="bg-gray-50 rounded-lg p-4 space-y-4">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-900 mb-2">Format 1: Single Company</h3>
+                    <p class="text-xs text-gray-500 mb-2">Select a company above and use this format:</p>
+                    <pre class="text-xs text-gray-600 font-mono bg-white p-3 rounded border overflow-x-auto">Company Name
 
 - Fri, Nov 21, 2025 First note title
-  - Nested content
-  - More details
+  - Nested content becomes the note body
 
 - Thu, Nov 20, 2025 Second note title
-  - Content here
-    - Even deeper nesting</pre>
-                <ul class="mt-3 text-xs text-gray-600 space-y-1">
-                    <li>- The first non-empty line is treated as the company name (ignored)</li>
-                    <li>- Each line starting with "- " at column 0 creates a new note</li>
-                    <li>- Dates can be anywhere in the first line (e.g., "Fri, Nov 21, 2025" or "11/21/25")</li>
-                    <li>- Nested bullets become the note's content</li>
+  - Content here</pre>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4">
+                    <h3 class="text-sm font-medium text-gray-900 mb-2">Format 2: Batch (Multiple Companies)</h3>
+                    <p class="text-xs text-gray-500 mb-2">Leave company blank and use this format:</p>
+                    <pre class="text-xs text-gray-600 font-mono bg-white p-3 rounded border overflow-x-auto">- Company Name
+  - Fri, Nov 21, 2025 Note title
+    - **Bold content becomes the note body**
+    - More content here
+
+- Another Company
+  - Thu, Nov 20, 2025 Another note
+    - Note content</pre>
+                    <p class="text-xs text-gray-500 mt-2">Companies must exist in the system (matched by name).</p>
+                </div>
+
+                <ul class="text-xs text-gray-600 space-y-1 border-t border-gray-200 pt-3">
+                    <li>- Dates can be in various formats: "Fri, Nov 21, 2025", "Nov 21, 2025", "11/21/25"</li>
                     <li>- Notes without dates inherit from the following note</li>
+                    <li>- Third-level bullets become the note content (markdown preserved)</li>
                 </ul>
             </div>
         </div>
