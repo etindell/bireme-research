@@ -1,0 +1,308 @@
+Playtech PLC
+
+- ﻿﻿Fri, Nov 21, 2025﻿ Expert call with former CCO of Playtech USA
+  - Gemini call structure
+    - **Detailed Question List1. Introduction (5 min)**
+      - Briefly describe the scope of your role as CCO of Playtech USA. Did you have visibility into global operations, or was it strictly ring-fenced to North America?
+      - *Compliance Check:* Please refrain from sharing non-public material financial information or specific confidential client data.
+    - **2. US Market Penetration & Strategy (10 min)**
+    - **Market Entry:** How would you characterize Playtech's momentum in the US compared to initial internal expectations? What were the primary bottlenecks to faster expansion (e.g., licensing, studio build-outs, or operator demand)?
+    - **Strategic Focus:** In the US, is Playtech leading with the **IMS Platform** (B2B backend) or **Live Casino** content? Which product is the more effective "Trojan Horse" to get into a Tier-1 US operator?
+    - **Regulatory Moats:** You pioneered launches in NJ. How difficult is it for a new entrant (like Pragmatic) to replicate Playtech's regulatory infrastructure in states with strict live studio requirements (NJ, PA, MI)?
+    - **3. Competitive Landscape: Playtech vs. Evolution (15 min)**
+      - **Win/Loss Analysis:** In head-to-head RFPs for Live Casino in the US, how often does Playtech beat Evolution?
+        - *Follow up:* When Playtech loses, is it due to product quality (latency/UI), game variety, or commercial terms?
+      - **Product Parity:** Candidly, how does Playtech's Live Casino product compare to Evolution's Lightning series or Crazy Time? Is there a technology gap, or is it purely a brand perception gap?
+      - **Dual-Sourcing:** Most US operators (FanDuel, DraftKings, BetMGM) use Evolution as their primary. What is the pitch to get them to add Playtech as a secondary supplier? Is it strictly for redundancy, or are there specific games driving the demand?
+    - **4. Commercials, Contracts & Economics (15 min)**
+      - **Pricing Power:** How does Playtech's revenue share model compare to Evolution's in the US? Is Playtech discounting heavily to gain market share?
+      - **Renegotiations:** You mentioned involvement in renegotiating contracts. What are the biggest friction points with operators right now? Are operators pushing back on revenue share percentages?
+      - **Studio Economics:** Can you walk through the unit economics of opening a new Live Studio in a state like Michigan? What is the break-even timeline, and how much volume (occupancy) is needed to make a table profitable?
+    - **5. The IMS Platform & Switching Costs (10 min)**
+      - **The "Sticky" Factor:** For operators using Playtech's IMS (Information Management System), how high are the switching costs? If an operator wanted to switch from IMS to a competitor (like GiG or bespoke), how long and painful is that migration?
+      - **Bundling:** Does Playtech successfully bundle Live Casino with IMS? For example, "If you use our IMS, you get a discount on Live Casino tables."
+      - **Tech Debt:** How does the IMS tech stack hold up against modern, microservices-based platforms? Is it viewed as a "legacy" system by US CTOs, or is it still best-in-class?
+    - **6. Closing & Risks (5 min)**
+      - **Bear Case:** If you were shorting Playtech stock, what would be your thesis? Where is the hidden fragility in the business model?
+      - **Execution Risk:** What is the biggest internal challenge Playtech faces in scaling its US operations over the next 24 months?
+      - **Pre-Call Prep for You (The User)**To get the most out of Marcus, keep these "Insider" dynamics in mind:
+      - **The "Evolution Monopoly":** Evolution Gaming has historically dominated Live Casino. Marcus's job was essentially to break that monopoly. Push him on *exactly* how hard that was.
+      - **The IMS/PAM Distinction:** Playtech isn't just games; they provide the "Player Account Management" (PAM) system called IMS. This is the operating system of the casino. It is much harder to rip out a PAM than it is to switch game providers. **Ask him if the IMS is the anchor that keeps clients from leaving.**
+      - **US vs. Europe:** Playtech is a giant in Europe/Asia but a challenger in the US. Ensure his answers distinguish between "Global Playtech" (mature, cash cow) and "US Playtech" (startup mode, high investment).
+    - **Next Step **Would you like me to generate a specific set of **"Red Flag" indicators** to listen for during the call that might suggest Playtech is struggling with US adoption?
+  - ChatGPT structure
+    - Overall objectives for the call
+      - Focus the hour on things that actually move the valuation of Playtech PLC:
+      - Quality and durability of Playtech Live & the platform (IMS / PAM+) – vs Evolution and Pragmatic.
+      - Growth and profitability of B2B (especially Americas) – whether the strong 2024 numbers and US ramp are sustainable.
+      - Management quality, culture, and risk (regulatory, legal, competitive) – including the Evolution/Black Cube dispute and what it signals.
+      - Everything below (questions, ordering, emphasis) is my own suggested structure based on public info and educated judgment; factual statements are sourced where cited.
+- ﻿﻿Thu, Nov 20, 2025﻿ Expert call w Torrospin CEO
+  - Briefly explain Torrospin's business model
+  - How was your experience at Playtech and why did you leave?
+    - What did you think of management?
+    - tough to collect revenue, africa, zamia botswana, nowadays its easier to collect
+      - Payhound was used, Maltese license
+      - CEO "proof is in the pudding"
+  - IMS platform
+    - Comments
+      - used to give so many tools to the casino
+      - reporting, bonuses, etc etc
+      - anything you can imagine is supporting
+      - bet365 great example of a migration off playtech
+        - "want to become a techie company"
+        - "hired people to develop their own platform"
+        - started migrating players in 2022-2023
+        - pay 10-15%
+      - playtech "won't take me"
+        - licensed or unlicensed operator
+        - Germany is impossible today
+        - UK GKC is tough, need to implement AML, BetBuddy, etc
+        - "that's the tendency all over the world"
+      - Caliente
+        - "soft belly" of Playtech
+        - majority of pure net income from Caliente
+        - 31% ownership
+        - Caliente own a bank
+- ﻿﻿Wed, Nov 19, 2025﻿ comps to investigate plus annual report
+  - Annual report 2024 notes
+    - Europe saw slight decline in 2024
+      - Contract loss in Greece
+      - Tighter regulation in Netherlands
+    - UK revenue +5% in CC, "growth across multiple operators"
+    - Product launches in 2024
+    - B2B revenue driven by Europe, UK, and growth big in USA
+    - 155m of unregulated revenue, but this includes Canada and Brazil
+    - Live Casino -- 450 games and 14 studios
+    - 65 unique slot games launched in 2024
+  - Key customers
+    - Paddy Power
+    - Caliente (monetized now via equity stake primarily)
+    - bet365
+      - Private company, owned by the Coats family
+      - Considered going public or IPO for 9b GBP
+      - bet365 was a pioneer in online gaming and beat William Hill and Ladbrokes
+      - Debuted "Super Mega Ultra" in 2024
+      - Expanded into Pennsylvania
+  - comps
+    - Rush Street Interactive
+    - DKNG
+    - Flutter
+    - Bettson
+    - Evolution
+    - ITG
+    - Paddy Power
+    - Kambi
+    - Pokerstars
+    - MGM
+    - Entain
+    - LNW
+    - ALL
+    - Bet365
+- Caliente stake value
+  - ﻿﻿Tue, Nov 18, 2025
+    - Gemini thinks Caliente is worth $1-3b depending on the results of the tax situation
+    - Govt passed a hike from 30-50% of GGR, "existential for operators"
+    - ChatGPT says annual EBITDA on the order of $250-300m
+    - Attemped to go public via SPAC for $2.5b but that fell through, since then Mexico market is +30-40%
+    - Hard Rock iGaming business is worth $8b according to one analysis. Has a monopoly in online gaming in Florida worth billions of revenue, and has expanded into NJ. Playtech owns "a low single digit percent"
+- Buying Playtech #writeup ﻿Wed, Nov 12, 2025
+  - Classic example of availability bias
+    - Stock fell 30% on reveal on the EVO short report owner, despite no clear impact on business, had already been falling
+    - We think this unlikely to cause license loss
+      - Malta regulator, "allegations in media reports do not pertain to activity falling under the MGA's regulatory overisght"
+    - Shareholders all hate the stock
+      - Raper capital
+      - All the Evolution shareholders
+      - my friend Elliot
+  - Business (ex-Caliente)
+    - Key technology provider to online gambling world
+      - Products: Player Management system, online games, "live" online casino offerings
+      - Quotes from Paddy power employee
+        - IMS platform and bonusing
+        - Using Playtech for live casino games
+    - B2B business grown from $550m revenue in 2021 to $700m annualized in 2025 (6% CAGR)
+    - B2B EBITDA ex-Caliente is up from 90m in 2021 to 150m in 2024, guiding to 190m or so in the medium term
+  - Valuation
+    - Market cap of 750m GBP /  850 EUR
+      - essentially no net debt
+    - Core B2B business doing 150m of EBITDA = 1b GBP of value
+      - probably 85m of EBIT is probably worth more than the current market cap (would be 5x EBITDA and 8x EBIT), where as Evolution AB trades for 8x EBITDA and 9x EBIT despite having >50% of revenue coming from unregulated markets (vs <20% for Playtech).
+        - Maintenance capex is around 65m
+      - Medium term guidance
+        - 150m EBITDA to 275m over "medium term"
+          - 15m US losses to go positive
+          - 20m in underperforming market improvements
+          - growth in regulated markets
+    - Caliente stake probably worth 1b GBP
+      - At 14x PE, Caliente would be worth 3.5b EUR
+        - Q2 2025: 246m revenue and 62m net income
+        - Therefore, annualized would be 1b EUR and 250m Operating Income
+        - At 3.5b EUR valuation, Playtech stake would be 1.1b EUR. This is 20-30% higher than the current market cap.
+        - Playtech received a 20m quarterly dividend from caliente corresponding to their Q2 share of profits.
+      - Mexican B2B revenues grown tremendously over time (pre change of agreement)
+      - Mexican gambling market set to grow 21% in 2025
+      - Caliente uses Playtech IMS and various other products / games etc
+      - ChatGPT values the stake at 1.1b GBP in a base case
+  - Capital allocation / buyback / management purchases
+    - Management buying back >200k shares per day plus 10m block
+    - Total 11.7m shares (around 4% of outstanding) since Oct 21, 2025
+    - 30m share buyback auth from last annual meeting
+    - Nov 11, management exercised options on 133k shares and said they were paying the taxes out of pocket. Taxes probably on the order of 100k GBP.
+  - Management
+    - The truth is that various actions by management are the reason for the price discount, but none of the decisions are about core business management but rather executive compensation and legal / regulatory strategy (EVO report)
+    - Sold Snaitech for 2.3b EUR, 9x EBITDA, 3x initial investment
+      - Flutter will move Snaitech to their own tech but this is only a 10m EUR headwind
+    - Management secured 100m EUR payout, protested by some shareholders
+    - Management commissioned 2021 report on Evolution, revealed in 2025 and caused massive drop in Playtech price
+- Things to follow up on
+  - Shareholders
+    - Spring Owl
+- In practise interview ﻿Wed, Nov 12, 2025
+  - Playtech has "very powerful IM platform"
+  - "Playtech IMS is powerful and developed over many years"
+  - "Playtech IMS only works for their own games"
+  - "Playtech system for player management is more turnkey"
+  - "We use Playtech because we had an existing relationship"
+  - "Playtech is an expensive supplier but they are one of only a few suppliers"
+  - "Playtech IMS platform is what hooked Parx"
+  - Evan: deal with Parx is still active, got extended into Maryland
+- Q2 2025 call ﻿Tue, Nov 11, 2025
+  - US is "in a growth phase"
+    - business has 15m of EBITDA losses due to buildout of the live casino business
+    - 3 studios operational in the US
+    - But they see a "clear pathway" to profitability
+    - Grew 300%
+    - Partnering with MGM and DraftKings
+  - Underperforming businesses
+    - 20m of losses
+    - Includes Happybet
+    - Working to divest, shutdown, or improve this business
+  - Unregulated US states
+    - "1% of total revenue"
+  - Capital allocation
+    - "We feel comfortable at 1-2x net debt to EBITDA" -- but basically zero net debt right now
+  - Growth markets
+    - Brazil
+      - Didn't grow as quick in the ST due to harsh KYC
+  - Efficiencies
+  - Adjusted EBITDA 2024 is 150m
+- baseline valuation
+  - 2024 continuing ops -- 850m revenue and adjusted ebitda 215m
+    - adjusted PBT of 100m
+  - 2025 H1 revenue 387m and EBITDA 92m, down from 110m
+  - 2025 H1 B2B results
+    - Adjusted EBITDA 73m, down from 112m
+    - "This primarily reflected the revised Caliente arrangements"
+    - Excluding Caliente,
+      - Revenues +3%, 6% in CC
+      - B2B EBITDA +3%, with "good cost control partly offset by increased investments in the US and Brazil"
+      - This means Calient was 40m EBITDA
+  - DB has 182m EBITDA in 2025
+    - PBT of 64m, in line with street estimates of 46m for net income
+    - This seems to exclude Caliente
+    - Values the firm at 8x EBITDA = 1.4b = 28x earnings
+    - DB has 98m of depreciation in 2025
+    - Company now guides to 80-90m capex in 2025
+  - Levers to acheive medium term EBITDA target
+    - US profitability
+    - address underperforming businesses
+    - Growth in regulated markets
+    - Partner with leading operators
+  - FY 2025 expectations
+  - Caliente
+    - EUR 726m stake, 30.8% ownership
+    - Hard Rock digital 150m EUR
+    - 860m revenue in CY 2024
+    - 20.3m in income from Caliplay in H1 2025
+    - 223m EUR in operating profit in 2023
+    - Service fee
+      - Caliplay paid $80m for the year ended Dec 2024 to playtech as a service fee
+    - 2025 -- Playtech no longer entitled to the B2B service fee
+    - Received $20m in income and dividends in H1 2025, implying 120m EUR runrate of profits for 2025
+  - in practise report
+    - "playtech IMS is a really good bonusing system in their games, we are trying to build out something similar in sports betting etc"
+    - "Evolution and Netent offer higher quality games"
+    - "Product is king" -- you have to offer the right games
+    - "Sports customers play live casino but it is complex to acquire live casino customers"
+    - "We use Playtech and Evolution as our two live casino suppliers, but going with Playtech for our dedicated live gaming studio"
+    - "there are not that many live casino suppliers"
+    - "playtech was considered to be an expensive supplier but they were one of only a few suppliers with a broad portfolio of games"
+    - "having playtech's IMS system on top of the games is an important factor"
+    - "Evolution has no advantage over Playtech in Blackjack or traditional table games"
+    - "very unlikely that land based casinos develop live/online casinos due to efficiency and expertise of current operators"
+  - VIC report
+  - Hard Rock stake -- single digits of potentially large business
+    - "Unique monopoly" on gaming in Florida, potentially worth a few hundred million
+- 11/10/25 more thoughts on EVO lawsuit / license loss
+  - NJ closed the complaint because it EVO didn't "sanction, promote, permit, or materially benefit" from the behavior
+  - UK regulator opened in investigation in Dec 2024 over access to Evolution games on unlicensed sites... a different but similar issue. The similarity is that Evolution seems to lack control or lack a desire to control who can access their games
+- ﻿﻿Fri, Nov 7, 2025﻿ regulators and possibility of license loss
+  - precedents
+    - Bet-at-home lost UK license in 2022 "after regulators found severe deficiencies in its responsible gambling safeguards and AML controls"
+    - Genesis Global -- firm was being wound down
+    - Stake.com lost its UK license over unethical promotions and ease of bypassing gambling rules
+  - "why licenses get rejected" blog post
+- Background and initial pass ﻿Tue, Nov 4, 2025
+  - Their products
+    - B2B
+      - Company sells modulles like PAM+
+      - Content is a la carte like RNG Casino (slots/table RNG)
+      - Live Casino, Bingo iPoker
+        - ipoker
+          - Owned by Playtech, one of the largest poker networks (1.5m players)
+          - licensed operators run skins
+          - Regulated market coverage (UK, Italy, Spain, etc)
+          - Bet 3654, Betfair, William HIll all offer it
+          - offered as a revenue share
+      - Type of client -- Full stack
+      - Type of client -- content only
+      - Live only -- DKNG uses them
+      - Network products like Bingo and poker
+        - Mecca, Sky Bingo, Paddy Power, Buzz, etc
+      - Other client types
+  - Sell side research
+    - Deutsche Bank Sept 2025
+      - Adjusted for Caliente, B2B and revs grew 3%
+      - Americas grew 14%
+      - Brazil regulation more of a headwind than expected
+      - Outlook -- "on track" to be ahead of expectations
+        - DB raised their outlook to 182m
+      - Price target of 433p -- 50% of book value for Caliente and 8x multiple on B2B EBITDA
+  - Recent results
+    - "On track to deliver FY 25 adjusted EBITDA ahead of expectations"
+    - revenue down 10% in H1 2025
+    - sold a business called Snaitech -- B2C italy
+  - unregulated markets are <20% of the B2B total
+  - capital allocation
+    - buybacks
+      - have 50m EUR buyback in place to March 2026
+      - Bought to date -- 4.5m shares of 300m total and 30m buyback auth
+    - "disciplined M&A strategy"
+  - Levers to acheive medium term EBITDA target
+    - US profitability
+    - address underperforming businesses
+    - Growth in regulated markets
+    - Partner with leading operators
+  - FY 2025 expectations
+  - Caliente
+    - EUR 726m stake, 30.8% ownership
+    - Hard Rock digital 150m EUR
+    - 860m revenue in CY 2024
+    - 20.3m in income from Caliplay in H1 2025
+    - 223m EUR in operating profit in 2023
+    - Service fee
+      - Caliplay paid $80m for the year ended Dec 2024 to playtech as a service fee
+    - 2025 -- Playtech no longer entitled to the B2B service fee
+    - Received $20m in income and dividends in H1 2025, implying 120m EUR runrate of profits for 2025
+  - in practise report
+    - "playtech IMS is a really good bonusing system in their games, we are trying to build out something similar in sports betting etc"
+    - "Evolution and Netent offer higher quality games"
+    - "Product is king" -- you have to offer the right games
+    - "Sports customers play live casino but it is complex to acquire live casino customers"
+    - "We use Playtech and Evolution as our two live casino suppliers, but going with Playtech for our dedicated live gaming studio"
+    - "there are not that many live casino suppliers"
+    - "playtech was considered to be an expensive supplier but they were one of only a few suppliers with a broad portfolio of games"
+    - "having playtech's IMS system on top of the games is an important factor"
+    - "Evolution has no advantage over Playtech in Blackjack or traditional table games"
+    - "very unlikely that land based casinos develop live/online casinos due to efficiency and expertise of current operators"
