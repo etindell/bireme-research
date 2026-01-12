@@ -52,7 +52,63 @@
                     Expanded content shown when the note is clicked.
                     <span class="text-primary-600">You can paste images directly!</span>
                 </p>
-                <div class="mt-2 relative">
+
+                <!-- Formatting Toolbar -->
+                <div class="mt-2 mb-1 flex items-center gap-1 border border-gray-300 border-b-0 rounded-t-md bg-gray-50 px-2 py-1.5">
+                    <button type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('italic')" title="Italic (Ctrl+I)"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4h4m-2 0l-4 16m0 0h4"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('underline')" title="Underline (Ctrl+U)"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v7a5 5 0 0010 0V4M5 20h14"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('strikethrough')" title="Strikethrough"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v6m0 4v6M4 12h16"></path>
+                        </svg>
+                    </button>
+                    <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                    <button type="button" onclick="formatText('bullet')" title="Bullet List"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h.01M8 6h12M4 12h.01M8 12h12M4 18h.01M8 18h12"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('number')" title="Numbered List"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <text x="2" y="8" font-size="7" font-weight="bold">1.</text>
+                            <text x="2" y="15" font-size="7" font-weight="bold">2.</text>
+                            <text x="2" y="22" font-size="7" font-weight="bold">3.</text>
+                            <line x1="11" y1="5" x2="22" y2="5" stroke="currentColor" stroke-width="2"/>
+                            <line x1="11" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="11" y1="19" x2="22" y2="19" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                    <button type="button" onclick="formatText('link')" title="Insert Link"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </button>
+                    <span class="ml-auto text-xs text-gray-400">Formatting supported</span>
+                </div>
+
+                <div class="relative">
                     {{ form.content }}
                     <div id="upload-indicator" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-md">
                         <div class="flex items-center gap-2 text-gray-600">
@@ -119,6 +175,112 @@
 
 {% block extra_js %}
 <script>
+// Formatting toolbar functionality
+function formatText(type) {
+    const textarea = document.getElementById('id_content');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    let before = '';
+    let after = '';
+    let insert = '';
+    let cursorOffset = 0;
+
+    switch (type) {
+        case 'bold':
+            before = '**';
+            after = '**';
+            insert = selectedText || 'bold text';
+            cursorOffset = selectedText ? 0 : 2;
+            break;
+        case 'italic':
+            before = '*';
+            after = '*';
+            insert = selectedText || 'italic text';
+            cursorOffset = selectedText ? 0 : 1;
+            break;
+        case 'underline':
+            before = '++';
+            after = '++';
+            insert = selectedText || 'underlined text';
+            cursorOffset = selectedText ? 0 : 2;
+            break;
+        case 'strikethrough':
+            before = '~~';
+            after = '~~';
+            insert = selectedText || 'strikethrough text';
+            cursorOffset = selectedText ? 0 : 2;
+            break;
+        case 'bullet':
+            // Add bullet at line start
+            const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const prefix = text.substring(0, lineStart);
+            const suffix = text.substring(lineStart);
+            textarea.value = prefix + '- ' + suffix;
+            textarea.setSelectionRange(lineStart + 2, lineStart + 2);
+            textarea.focus();
+            return;
+        case 'number':
+            // Add number at line start
+            const nLineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const nPrefix = text.substring(0, nLineStart);
+            const nSuffix = text.substring(nLineStart);
+            textarea.value = nPrefix + '1. ' + nSuffix;
+            textarea.setSelectionRange(nLineStart + 3, nLineStart + 3);
+            textarea.focus();
+            return;
+        case 'link':
+            const url = prompt('Enter URL:');
+            if (!url) return;
+            before = '[';
+            after = '](' + url + ')';
+            insert = selectedText || 'link text';
+            cursorOffset = selectedText ? 0 : 1;
+            break;
+        default:
+            return;
+    }
+
+    const newText = text.substring(0, start) + before + insert + after + text.substring(end);
+    textarea.value = newText;
+
+    // Set cursor position
+    if (selectedText) {
+        textarea.setSelectionRange(start + before.length, start + before.length + insert.length);
+    } else {
+        const newCursor = start + before.length + cursorOffset;
+        textarea.setSelectionRange(newCursor, newCursor + insert.length - cursorOffset * 2);
+    }
+    textarea.focus();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    const textarea = document.getElementById('id_content');
+    if (!textarea || document.activeElement !== textarea) return;
+
+    if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+            case 'b':
+                e.preventDefault();
+                formatText('bold');
+                break;
+            case 'i':
+                e.preventDefault();
+                formatText('italic');
+                break;
+            case 'u':
+                e.preventDefault();
+                formatText('underline');
+                break;
+        }
+    }
+});
+
 (function initImageUpload() {
     const contentTextarea = document.getElementById('id_content');
     const uploadIndicator = document.getElementById('upload-indicator');

@@ -29,6 +29,7 @@ Pillow>=10.0.0
 
 # Markdown rendering
 markdown>=3.5.0
+bleach>=6.1.0
 
 # Financial calculations & data
 yfinance>=0.2.0
