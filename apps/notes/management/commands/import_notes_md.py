@@ -170,6 +170,15 @@ def parse_md_file(content):
         current_note['content'] = '\n'.join(current_content_lines).strip()
         notes.append(current_note)
 
+    # Second pass: fill in missing dates from the next note that has a date
+    # (notes without dates inherit from the note after them)
+    last_known_date = None
+    for note in reversed(notes):
+        if note['written_at']:
+            last_known_date = note['written_at']
+        elif last_known_date:
+            note['written_at'] = last_known_date
+
     return company_name, notes
 
 
