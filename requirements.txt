@@ -35,5 +35,8 @@ bleach>=6.1.0
 yfinance>=0.2.0
 numpy-financial>=1.0.0
 
+# AI
+anthropic>=0.39.0
+
 # Development
 django-browser-reload>=1.15.0
