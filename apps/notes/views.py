@@ -531,9 +531,18 @@ class NoteImportView(OrganizationViewMixin, View):
             bullet_text = stripped[1:].strip()
 
             if default_company:
-                # Single company mode: level 1 = note title, level 2 = content
+                # Single company mode: level 1 = company (ignored), level 2 = note title, level 3 = content
                 if level == 1:
-                    # Save previous note if exists
+                    # Company name - ignore it, save previous note if exists
+                    if current_note:
+                        current_note['content'] = '\n'.join(current_content_lines).strip()
+                        notes.append(current_note)
+                        current_note = None
+                        current_content_lines = []
+                    # Skip company name - we use default_company
+
+                elif level == 2:
+                    # Note title with date
                     if current_note:
                         current_note['content'] = '\n'.join(current_content_lines).strip()
                         notes.append(current_note)
@@ -548,8 +557,8 @@ class NoteImportView(OrganizationViewMixin, View):
                     }
                     current_content_lines = []
 
-                elif level >= 2 and current_note:
-                    # Content for the note
+                elif level >= 3 and current_note:
+                    # Content for the note (bold/underlined text)
                     current_content_lines.append(bullet_text)
 
             else:
