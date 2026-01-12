@@ -8,7 +8,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, UpdateView, ListView, View
 
 from .models import Organization, OrganizationMembership
-from .forms import OrganizationForm
+from .forms import OrganizationForm, AddMemberForm
 
 
 class OrganizationCreateView(LoginRequiredMixin, CreateView):
@@ -100,3 +100,115 @@ class OrganizationMembersView(LoginRequiredMixin, ListView):
             organization=self.request.organization,
             is_deleted=False
         ).select_related('user').order_by('user__email')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['add_member_form'] = AddMemberForm()
+        return context
+
+
+class AddMemberView(LoginRequiredMixin, View):
+    """Add an existing user to the organization by email."""
+
+    def post(self, request):
+        # Check that user is admin of current organization
+        if not request.organization:
+            messages.error(request, 'No organization selected.')
+            return redirect('organizations:members')
+
+        membership = OrganizationMembership.objects.filter(
+            organization=request.organization,
+            user=request.user,
+            is_deleted=False
+        ).first()
+
+        if not membership or not membership.is_admin:
+            messages.error(request, 'You do not have permission to add members.')
+            return redirect('organizations:members')
+
+        form = AddMemberForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            role = form.cleaned_data['role']
+
+            # Find user by email
+            from apps.users.models import User
+            try:
+                user = User.objects.get(email__iexact=email)
+            except User.DoesNotExist:
+                messages.error(request, f'No user found with email "{email}". They need to sign up first.')
+                return redirect('organizations:members')
+
+            # Check if already a member
+            existing = OrganizationMembership.objects.filter(
+                organization=request.organization,
+                user=user,
+                is_deleted=False
+            ).first()
+
+            if existing:
+                messages.warning(request, f'{user.email} is already a member of this organization.')
+                return redirect('organizations:members')
+
+            # Add member
+            request.organization.add_member(
+                user=user,
+                role=role,
+                created_by=request.user
+            )
+
+            messages.success(request, f'{user.email} has been added as {role}.')
+        else:
+            messages.error(request, 'Invalid form submission.')
+
+        return redirect('organizations:members')
+
+
+class RemoveMemberView(LoginRequiredMixin, View):
+    """Remove a member from the organization."""
+
+    def post(self, request, pk):
+        if not request.organization:
+            messages.error(request, 'No organization selected.')
+            return redirect('organizations:members')
+
+        # Check that user is admin
+        current_membership = OrganizationMembership.objects.filter(
+            organization=request.organization,
+            user=request.user,
+            is_deleted=False
+        ).first()
+
+        if not current_membership or not current_membership.is_admin:
+            messages.error(request, 'You do not have permission to remove members.')
+            return redirect('organizations:members')
+
+        # Get the membership to remove
+        membership = get_object_or_404(
+            OrganizationMembership,
+            pk=pk,
+            organization=request.organization,
+            is_deleted=False
+        )
+
+        # Prevent removing yourself
+        if membership.user == request.user:
+            messages.error(request, 'You cannot remove yourself from the organization.')
+            return redirect('organizations:members')
+
+        # Prevent removing the last owner
+        if membership.role == OrganizationMembership.Role.OWNER:
+            owner_count = OrganizationMembership.objects.filter(
+                organization=request.organization,
+                role=OrganizationMembership.Role.OWNER,
+                is_deleted=False
+            ).count()
+            if owner_count <= 1:
+                messages.error(request, 'Cannot remove the last owner of the organization.')
+                return redirect('organizations:members')
+
+        # Soft delete the membership
+        membership.delete(user=request.user)
+        messages.success(request, f'{membership.user.email} has been removed from the organization.')
+
+        return redirect('organizations:members')

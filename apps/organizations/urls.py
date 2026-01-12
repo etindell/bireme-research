@@ -12,4 +12,6 @@ urlpatterns = [
     path('settings/', views.OrganizationUpdateView.as_view(), name='settings'),
     path('switch/<int:pk>/', views.OrganizationSwitchView.as_view(), name='switch'),
     path('members/', views.OrganizationMembersView.as_view(), name='members'),
+    path('members/add/', views.AddMemberView.as_view(), name='add_member'),
+    path('members/<int:pk>/remove/', views.RemoveMemberView.as_view(), name='remove_member'),
 ]
