@@ -374,10 +374,11 @@ class CompanyDeleteView(OrganizationViewMixin, DeleteView):
     model = Company
     success_url = reverse_lazy('companies:list')
 
-    def form_valid(self, form):
-        self.object.delete(user=self.request.user)
-        messages.success(self.request, f'Company "{self.object.name}" deleted.')
-        return HttpResponse(status=204, headers={'HX-Redirect': self.success_url})
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete(user=request.user)
+        messages.success(request, f'Company "{self.object.name}" deleted.')
+        return HttpResponse(status=204, headers={'HX-Redirect': str(self.success_url)})
 
 
 class CompanyStatusUpdateView(OrganizationViewMixin, View):
