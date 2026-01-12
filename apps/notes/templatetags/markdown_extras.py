@@ -37,6 +37,11 @@ def process_strikethrough(text):
     return re.sub(r'~~(.+?)~~', r'<s>\1</s>', text)
 
 
+def process_bullets(text):
+    """Convert • bullets to - for markdown list parsing."""
+    return re.sub(r'^• ', '- ', text, flags=re.MULTILINE)
+
+
 @register.filter(name='markdown')
 def render_markdown(value):
     """
@@ -60,6 +65,7 @@ def render_markdown(value):
         return ''
 
     # Pre-process custom syntax
+    value = process_bullets(value)
     value = process_underline(value)
     value = process_strikethrough(value)
 

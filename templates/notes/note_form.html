@@ -220,7 +220,7 @@ function formatText(type) {
             const lineStart = text.lastIndexOf('\n', start - 1) + 1;
             const prefix = text.substring(0, lineStart);
             const suffix = text.substring(lineStart);
-            textarea.value = prefix + '- ' + suffix;
+            textarea.value = prefix + '• ' + suffix;
             textarea.setSelectionRange(lineStart + 2, lineStart + 2);
             textarea.focus();
             return;
@@ -262,6 +262,52 @@ function formatText(type) {
 document.addEventListener('keydown', function(e) {
     const textarea = document.getElementById('id_content');
     if (!textarea || document.activeElement !== textarea) return;
+
+    // Handle Enter for list continuation
+    if (e.key === 'Enter' && !e.shiftKey) {
+        const text = textarea.value;
+        const cursorPos = textarea.selectionStart;
+
+        // Find the start of the current line
+        const lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1;
+        const currentLine = text.substring(lineStart, cursorPos);
+
+        // Check for bullet list (• )
+        const bulletMatch = currentLine.match(/^(• )(.*)$/);
+        if (bulletMatch) {
+            e.preventDefault();
+            // If line only has bullet (empty item), remove the bullet
+            if (bulletMatch[2].trim() === '') {
+                textarea.value = text.substring(0, lineStart) + text.substring(cursorPos);
+                textarea.setSelectionRange(lineStart, lineStart);
+            } else {
+                // Continue the list
+                const newText = text.substring(0, cursorPos) + '\n• ' + text.substring(cursorPos);
+                textarea.value = newText;
+                textarea.setSelectionRange(cursorPos + 3, cursorPos + 3);
+            }
+            return;
+        }
+
+        // Check for numbered list (1. , 2. , etc.)
+        const numberMatch = currentLine.match(/^(\d+)\. (.*)$/);
+        if (numberMatch) {
+            e.preventDefault();
+            const nextNum = parseInt(numberMatch[1]) + 1;
+            // If line only has number (empty item), remove the number
+            if (numberMatch[2].trim() === '') {
+                textarea.value = text.substring(0, lineStart) + text.substring(cursorPos);
+                textarea.setSelectionRange(lineStart, lineStart);
+            } else {
+                // Continue the list with incremented number
+                const prefix = nextNum + '. ';
+                const newText = text.substring(0, cursorPos) + '\n' + prefix + text.substring(cursorPos);
+                textarea.value = newText;
+                textarea.setSelectionRange(cursorPos + 1 + prefix.length, cursorPos + 1 + prefix.length);
+            }
+            return;
+        }
+    }
 
     if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
