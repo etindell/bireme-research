@@ -18,12 +18,16 @@ from core.mixins import OrganizationMixin
 
 class TodoCategory(models.Model):
     """
-    Categories for todos: Maintenance (existing portfolio) vs Research (new ideas).
+    Categories for todos.
+    - Maintenance: Auto-generated quarterly updates for portfolio companies
+    - Deep Dives: One-off research tasks
+    - Marketing: Marketing and client-related tasks
     Seeded per organization.
     """
     class CategoryType(models.TextChoices):
         MAINTENANCE = 'maintenance', 'Maintenance'
-        RESEARCH = 'research', 'Research'
+        DEEP_DIVES = 'deep_dives', 'Deep Dives'
+        MARKETING = 'marketing', 'Marketing'
 
     organization = models.ForeignKey(
         'organizations.Organization',
@@ -35,7 +39,7 @@ class TodoCategory(models.Model):
     category_type = models.CharField(
         max_length=20,
         choices=CategoryType.choices,
-        default=CategoryType.RESEARCH
+        default=CategoryType.DEEP_DIVES
     )
     color = models.CharField(max_length=7, default='#6B7280')
     icon = models.CharField(max_length=50, blank=True)
@@ -73,8 +77,11 @@ class TodoQuerySet(models.QuerySet):
     def maintenance(self):
         return self.filter(category__category_type=TodoCategory.CategoryType.MAINTENANCE)
 
-    def research(self):
-        return self.filter(category__category_type=TodoCategory.CategoryType.RESEARCH)
+    def deep_dives(self):
+        return self.filter(category__category_type=TodoCategory.CategoryType.DEEP_DIVES)
+
+    def marketing(self):
+        return self.filter(category__category_type=TodoCategory.CategoryType.MARKETING)
 
     def auto_generated(self):
         return self.filter(is_auto_generated=True)

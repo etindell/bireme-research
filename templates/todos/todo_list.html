@@ -26,26 +26,50 @@
     </div>
 
     <!-- Stats cards -->
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div class="rounded-lg bg-white px-4 py-5 shadow">
-            <p class="text-sm font-medium text-gray-500">Maintenance</p>
-            <p class="mt-1 text-2xl font-semibold text-green-600">{{ maintenance_pending }}</p>
-        </div>
-        <div class="rounded-lg bg-white px-4 py-5 shadow">
-            <p class="text-sm font-medium text-gray-500">Research</p>
-            <p class="mt-1 text-2xl font-semibold text-blue-600">{{ research_pending }}</p>
-        </div>
-        <div class="rounded-lg bg-white px-4 py-5 shadow">
-            <p class="text-sm font-medium text-gray-500">Total Pending</p>
-            <p class="mt-1 text-2xl font-semibold text-gray-900">{{ pending_count }}</p>
-        </div>
-        <div class="rounded-lg bg-white px-4 py-5 shadow">
-            <p class="text-sm font-medium text-gray-500">Completed</p>
-            <p class="mt-1 text-2xl font-semibold text-gray-400">{{ completed_count }}</p>
-        </div>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <a href="?category=maintenance&status=pending" class="rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow {% if current_category == 'maintenance' %}ring-2 ring-green-500{% endif %}">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 rounded-md bg-green-100 p-3">
+                    <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Maintenance</p>
+                    <p class="mt-1 text-2xl font-semibold text-green-600">{{ maintenance_pending }}</p>
+                </div>
+            </div>
+        </a>
+        <a href="?category=deep_dives&status=pending" class="rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow {% if current_category == 'deep_dives' %}ring-2 ring-blue-500{% endif %}">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 rounded-md bg-blue-100 p-3">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Deep Dives</p>
+                    <p class="mt-1 text-2xl font-semibold text-blue-600">{{ deep_dives_pending }}</p>
+                </div>
+            </div>
+        </a>
+        <a href="?category=marketing&status=pending" class="rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow {% if current_category == 'marketing' %}ring-2 ring-purple-500{% endif %}">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 rounded-md bg-purple-100 p-3">
+                    <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Marketing</p>
+                    <p class="mt-1 text-2xl font-semibold text-purple-600">{{ marketing_pending }}</p>
+                </div>
+            </div>
+        </a>
     </div>
 
-    <!-- Filters -->
+    <!-- Filters (shown when viewing filtered list) -->
+    {% if not show_sections %}
     <div class="bg-white shadow rounded-lg p-4">
         <div class="flex flex-wrap gap-4 items-center">
             <!-- Category filter -->
@@ -60,7 +84,8 @@
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Categories</option>
                     <option value="maintenance" {% if current_category == 'maintenance' %}selected{% endif %}>Maintenance</option>
-                    <option value="research" {% if current_category == 'research' %}selected{% endif %}>Research</option>
+                    <option value="deep_dives" {% if current_category == 'deep_dives' %}selected{% endif %}>Deep Dives</option>
+                    <option value="marketing" {% if current_category == 'marketing' %}selected{% endif %}>Marketing</option>
                 </select>
             </div>
 
@@ -96,11 +121,17 @@
                     {% endfor %}
                 </select>
             </div>
+
+            <!-- Clear filters -->
+            <a href="{% url 'todos:list' %}" class="text-sm text-gray-500 hover:text-gray-700">
+                Clear filters
+            </a>
         </div>
     </div>
+    {% endif %}
 
     <!-- Todo list -->
-    <div id="todo-list" class="bg-white shadow rounded-lg divide-y divide-gray-200">
+    <div id="todo-list">
         {% include "todos/partials/todo_list_content.html" %}
     </div>
 </div>

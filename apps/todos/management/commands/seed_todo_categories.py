@@ -16,11 +16,18 @@ DEFAULT_CATEGORIES = [
         'order': 1
     },
     {
-        'name': 'Research',
-        'slug': 'research',
-        'category_type': 'research',
+        'name': 'Deep Dives',
+        'slug': 'deep-dives',
+        'category_type': 'deep_dives',
         'color': '#3B82F6',  # Blue
         'order': 2
+    },
+    {
+        'name': 'Marketing',
+        'slug': 'marketing',
+        'category_type': 'marketing',
+        'color': '#8B5CF6',  # Purple
+        'order': 3
     },
 ]
 
