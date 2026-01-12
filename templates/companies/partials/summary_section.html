@@ -28,7 +28,7 @@
 
     {% if company.ai_summary %}
     <div class="prose prose-sm max-w-none text-gray-700">
-        {{ company.ai_summary|render_markdown }}
+        {{ company.ai_summary|markdown }}
     </div>
     {% else %}
     <div class="text-center py-8">
