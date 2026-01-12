@@ -1,0 +1,559 @@
+Teamviewer #TMV
+
+- ﻿﻿Mon, Nov 24, 2025﻿ questions for management
+  - Openers
+    - **Oliver -- how have the last 6 years gone vs expectations?**
+      - *company had a lot of expectations in terms of digitization of remote management but was not the most heavily followed industry. COVID brought a boom in revenues and a boom in the stock price but also increased competition and increased expectations. Growth investors sold in the 50s or 60s when the price spiked, and the investor based rolled over. Hiccups with 1E and move to single digit growth has created an air pocket.*
+    - **Why they bought 1E**
+      - *1E* *had a very good position in endpoint management in particular automated endpoint management, growing 15-20% pretty consistently. Also they were profitable which we liked. The main competitor in this area was NextThing but they were too big for us to buy. We ended up paying 8x sales because that 's what you have to pay for this sort of business, and we didn't want to get into an auction situation. We felt there was a really good opportunity to integrate this porduct into our sales team and also use things like AI support summaries for the traditional teamviewer product to feed into 1E's automated support and maintenance capabilities. 1E has a small number of customers, maybe 300 total at very large ACV to create their 70m of ARR. We made a few mistakes which included for example trying to bring the product downmarket to our larger SMB customers instead of executing on product roadmaps that 1E had been talking about with customers.*
+    - What exactly do you want TeamViewer to be known for in 5–10 years?
+    - Strategic priorities ranking
+      - Question: If you had to rank your top three strategic priorities for the next 2–3 years (AI, 1E integration, OT expansion, enterprise move-up, etc.), what are they and why?
+    - *Use this to acknowledge their recent wins before pivoting to the challenges.***"First, congratulations on being named a Leader in the 2025 Gartner Magic Quadrant for DEX. That’s a major external validation, especially coming so soon after the 1E acquisition. Are you finding that this recognition is effectively shortening sales cycles with enterprise CIOs who might have previously viewed TeamViewer only as a remote support tool?"**
+      - **Why ask this?** It validates their strategy and lets them start on a positive note. It also subtly tests if "prestige" is actually translating into "revenue" (which connects to your later questions about the 1E revenue stumble).
+    - 2028 target -- can you still hit 1.05b EUR revenue with 44.5% margins 2028 targets?
+    - Why did Permira drop out?
+  - 1E integration and strategy
+    - **Loss of employees at 1E**
+      - *we lost some key salespeople at 1E, including some that had promised us they would stay. Although interestingly, 2 of the sales people have now returned which we think bodes well for us going forward. We lost some of the leadership that had been put in under PE ownership, but have replaced them with internal people that have been there for a long time and which we think are well placed to continue the growth of the company. Nothing that has happened makes us question the long term trajectory for this business.*
+    - how can i get comfortable with the trajectory of 1E vs competitors?
+    - Pipeline
+      - "With 1E performing below expectations, what gives you confidence in the Q4 turnaround? Are you seeing existing TeamViewer enterprise customers actually piloting 1E products, or is the cross-sell motion still theoretical at this stage?"
+    - DEX competition
+      - Why was 1E winning historically? Why do customers choose 1E / teamviewer?
+      - The DEX space is crowded with specialized players like Nexthink and giants like Microsoft Intune. If 1E is struggling to grow on its own, what is the specific 'right to win' when bundled with TeamViewer? Why would a CIO choose your bundled solution over a native Microsoft integration?"
+    - **Will we be able to track 1E revenue growth over the next few years or will it get absorbed in the larger financials?**
+      - *it will not be split out*
+    - **What kind of growth at 1E did you expect to pay 10x sales or whatever the price was?**
+      - *10-15% growth going forward*
+    - Do you see uptake from SMBs on 1E, or is it solely Enterprise?
+  - Guidance
+    - Cost cutting -- are we cutting into sales and R&D muscle that is needed to fix the 1E growth problem?
+  - SMB segment
+    - SMB vs Enterprise -- can you talk me through the 15m euro upsell?
+      - 
+    - Have we hit a ceiling on SMB price raises? 
+      - *entry level -- lots of competition w splashtop etc*
+      - *no point to lower price at the low end*
+      - *above 1500 eur ACV is very different and we see less competition at that level*
+      - *used to take price at contract renewal, going to correct going forward*
+    - How are cheaper rivals like Splashtop affecting your business? 
+    - Churn -- 14% to 16%
+    - Is the best way to think of the SMB segment is as shrinking in the low end?
+    - How would you compare the Atera and NinjaOne remote monitoring / management products in terms of value to price? Is Teamviewer Remote losing relevance as a standalone product?
+      - ChatGPT thoughts
+        - TMV still the leader
+        - NinjaOne no longer supporting Teamviewer inside its solution
+          - 
+        - NinjaOne costs $3.75 but its per endpoint rather than per user, not clear that its better if you have more than 3 endpoints per user
+          - 
+        - Teamviewer still rated highly in remote access
+          - 
+  - Enterprise 
+    - Can you walk me through a typical Enterprise customer sales pitch? Say its a European company with a few thousand employees. 
+    - **What Enterprise likes**
+      - *full access , manageability, open to outside the org, integration into SSO, ServiceNow, etc Teamviewer core is remote support remote tool*
+  - Capital allocation /other
+    - **What's the priority for buybacks vs M&A goin forward**
+      - *Priority for now is deleveraging*
+    - Why did Permira sell?
+  - AI and innovation
+    - "I saw the recent data on 'TeamViewer Intelligence'—specifically the 4x growth in AI session summaries. That is impressive adoption. As you move toward 'agentic AI' and autonomous support, do you see this primarily as a retention tool to keep customers sticky, or is there a clear path to monetizing these AI features as a standalone revenue stream in 2026?"
+    - **What's the technology stack behind TMV Intelligence (session summaries, Copilot etc)**
+      - *they use OpenAI via Microsoft. Like to use Microsoft where they can due to existing relationships. 1E also works well with MSFT Intune*
+    - Do you expect AI-specific products and services can become a material revenue generator? Or will they be free add-ons that increase retention?
+    - Is session summarization the primary AI product here?
+    - Frontline (AR/VR) seems to have taken a backseat growthwise. Is it still a growth pillar, or is it more niche?
+    - Press release [here](https://ir.teamviewer.com/news-details/teamviewer-reports-rapid-customer-adoption-of-its-al-offering/b47fd872-09ab-4927-b25c-67f02c379004)
+      - Session summary -- 270k summarized
+    - How was the session at Microsoft Ignite?
+      - 
+    - From ChatGPT
+      - 
+  - Closing softball
+    - If we look three years ago and the current strategy has succeeded, what does the company look like? Talk about SMB vs Enterprise, AI products, Frontline, etc.
+- ﻿﻿Mon, Nov 10, 2025﻿ sell side reports
+  - DB -- "Credibility crunch" hold rated
+    - lowered guidance amid sales team losses at 1E and underperformance from that business
+    - Applies 10x FY 2026 PE and 8x EV / EBITDA
+      - 
+    - Notes that Enterprise business grew solidly , 8% CC y/y, and ARR was +12% YoY
+      - 
+    - "Despite the low valuation, will take several quarters of mid single digit growth to renew investor interest"
+  - Barclays -- "Dissapointing but value remains"
+    - "now trading at a very depressed multiple of 5x 2027 headline PE"
+    - 212m equity FCF in 2025 estimated
+    - 
+  - JPM -- "FY 25 ARR guide lowered"
+    - 1E below expectations
+    - FY 2026 outlook for 2-6% growth, which will drive negative revisions
+    - "for a tech company, the direction of growth is what matters"
+      - 
+- ﻿﻿Mon, Nov 10, 2025﻿ valuation
+  - forward PE is 5.5x, EV/EBIT is 7x
+  - market cap is 942m EUR
+    - Q1 2024 market cap 2.4b and EV 2.9b
+    - Since March 2024
+      - FY 2023 results -- 627m EUR revenue
+        - adjusted EBITDA 261m vs 230m the year prior. Guidance for 290m adjusted EBITDA in 2024
+          - Actual EBITDA --- 222m vs 198m
+          - 
+        - SMB subs 627,000
+          - 14.8% churn
+          - 
+          - 
+          - 
+        - SMB churn at today's 16% is roughly flat vs 2021
+          - 
+        - Share count to 174m from 200m
+          - 
+      - FY 2025 results
+        - SMB numbers -- 640k customers, churn rate now 16%
+          - 
+        - adj  EBITDA of 253m in 9m vs 227m last year
+          - 
+        - Guidance 790m revenue, Teamviewer 710m and 44% EBITDA margin or 350m of EBITDA
+          - 
+          - 
+      - T12 EBITDA gone from $235m to $350m... maybe $20m EBITDA for 1E so still seen growth from $235m to $320m
+      - 
+- ﻿﻿Mon, Nov 10, 2025﻿ more on 1E acquisition
+  - #todo look at forrester survey
+  - #questions
+    - How is HP partnership going? Leading to revenue?
+    - status of government deployments? like [here](https://www.1e.com/newsroom/press-releases/1e-announces-worlds-largest-dex-deployment-other-growth-milestones/)
+  - IE product
+    - SaaS endpoint management system
+    - DEX is the acronym for this
+    - Makes software distribution, issue diagnosis (google-like search) very easy
+      - 
+  - Editions and pricing
+    - $25-55 per endpoint per year
+    - focus is on large organizations
+  - Customers and use cases
+    - Large business 500 organizations worldwide
+    - at $40 per seat, they prob have 15-20m total users on the platform
+    - AT&T and Nestle apparently use it
+    - HP inc and Nike are large US customers
+    - HP embedding their tech in HP Workforce Experience
+    - VA deal announced in 2024 is for $12/ year
+      - 
+  - Carlyle bought the company for $270m in June 2021 see [here](https://techcrunch.com/2021/06/09/carlyle-acquires-1e-com-an-endpoint-and-hybrid-working-specialist-in-270m-deal/#:~:text=Overall%20the%20company%20amassed%20some,banks%20that%20can%E2%80%99t%20be%20named)
+    - Grew 28% in 2021, and "was profitable"
+    - Business started as a consultancy in 1997
+      - 
+    - Nomad is a bandwidth management tool for server storage
+      - 
+    - Used by "a number of big banks that can't be named"
+      - 
+  - 2024 earnings were $17m, so Teamviewer paid about 50x
+    - 
+- update ﻿Tue, Nov 4, 2025﻿ 
+  - ChatGPT discussion of different types of Teamviewer delivery models
+    - 
+  - Q3 2025 saw revenue up 4% in CC, and ARR up 4% in CC
+  - Teamviewer standalone enterprise ARR up 18% CC 
+  - Quotes etc 
+    - "Further progress with product innovations"
+  - Guidance -- lowered
+    - 1E standalone below expectations due to ongoing transformation
+    - 780m - 800m ARR
+    - Adj EBITDA margin of 44%
+    - 
+    - "management highly committed to ARR growth in 2026 and beyond"
+    - Revenue expected to grow 2-6% YoY in 2026
+  - IE acquisition
+    - IE is very seasonal causing some issues with cash conversion
+      - 
+    - IE churn
+      - One was a partnership that didn't continue post acquisition
+      - One was DOGE relatd
+      - One was "delivery related"
+        - 
+    - Comments on the integration of IE
+      - 
+    - Lost the main US salesperson
+      - 
+    - Had been targeting 20% annual sales growth
+      - 
+    - 
+    - 
+    - 
+  - Suspending some price increases on SMB segment (lower tiers)
+    - "gone too far in terms of strict monetization too early"
+    - 
+  - AI impact? Question on call
+    - "not seeing declines in remote support needs"
+    - 
+  - valuation
+    - market cap 1b EUR
+    - debt of 1b
+    - interest expense of about 40m EUR run rate
+    - 2024 figures
+      - FCFE of 215m EUR last year (pre deal)
+      - 297m in adusted EBITDA in 2024
+        - 
+      - adjusting items were 44.1m
+        - 
+      - IFRS 2 charges: 16m, stock comp 15m, other of 14m
+    - H1 2025 EBITDA: 145m including RSUs
+      - Ad
+- update ﻿Tue, Jul 8, 2025﻿ 
+  - Paid $700m or 10x sales for 1E, a "digital employee experience management" business
+    - 
+  - estimates
+    - estimates are for +100m EUR in revenue in 2025, so growth rate of the core business appears to be around 3-4%
+  - FY 2025 guidance
+    - guidance for 700-712m teamviewer standalone revenue and 80m 1E rvenue, along with flat EBITDA margins (43%). T
+      - implied EBITDA is EUR 305m stand alone
+      - *This is basically flat from mid 2024 estimates*
+        - 
+    - 
+  - Sell side notes
+    - SMB churn in 2024 - 15% annually
+    - guidance equates to 5-7% organic growth 
+    - **medium term guidance EUR 1050 by 2028**, and "investor expectations are below these targets"
+    - IE deal closed in January
+    - Q1 -- SMB core was "weak" at +2%, has seen declining customers
+  - Last few quarters from ChatGPT
+    - Biggest note is that enterprise continues growing 20% but SMB business is flat
+    - 
+  - Valuation is roughly half of European peers
+    - 
+- Questions for Teamviewer IR ﻿Sun, Nov 24, 2024﻿ 
+  - General and customer info
+    - Can you take us through the last couple of years?
+      - *invested in the sales organization to serve the Enterprise customer*
+      - *prior to COVID, focused on SMB*
+      - *enterprise sales: requirements much higher on security levels, integration needs are higher eg ServiceNow. Sometimes clients have very decentralized IT buying, and here you would replace some competitors in some countries.*
+      - *industrial equipment -- need to convince the client that this is something worthwhile*
+      - *smart devices *
+        - *teamviewer tensor OT*
+        - *Chibali -- online help, self help, diagnostic analysis*
+        - *BeyondTrust is the key competitor *
+      - *OT -- coffee machines, printers, tractors, whatever*
+        - *Lots of opportunity in the german industrial area *
+        - *pricing of this?*
+    - What is Teamviewer Remote vs Tensor vs Frontline?
+      - *Tensor has Remote, but larger use case *
+        - *thousands of devices*
+      - *Frontline*
+        - *also enterprise, but more focused to digital workflows *
+      - *10k ARR in appendix -- Enterprise 10-50k start*
+        - 
+      - 
+    - 2021 analyst day
+      - 18% TAM CAGR from 19b EUR -- did this happen? Lost share?
+        - *we updated many of our projections when the new CEO came on board*
+        - 
+        - 
+      - What happened with project Remax?
+        - 
+      - Churn 8% at highest level
+        - 
+      - Is anydesk still the main competitor?
+      - Which areas from 2021 have seen most progress?
+        - 
+      - How much progress on AR?
+        - 
+    - Do you have a sense of whether you have been gaining or losing share in virtual desktop / remote access? Has the market been growing?
+    - What did management learn from the Man U deal?
+      - What does the marketing budget look like now?
+    - What does it take for customers to switch?
+    - What percentage of deals are multi-year vs monthly or annually?
+    - what percentage of enterprise customers use the add on products?
+    - How is AI integration going? How many clients use the features? Only in Tensor?
+  - SMB vs enterprise
+    - Why is growth so much better in Enterprise?
+      - 
+    - What is the pricing strategy of SMB vs Enterprise
+      - 3% pricing cagr is what mgmt guides for SMB for 2025 (vs 10% last year)
+      - no mention of enterprise pricing growth in recent filings (but looking at the average sale price per enterprise customer it is low single digits
+      - can you talk about the composition of the enterprise customers (we saw it   10k EUR was the cut off, was percentage is tensor?)
+    - In terms of the penetration of the enterprise space, you currently have around 4,500 customers, how untapped is this market? and do you think this high growth can be maintained?
+    - Is the growth in SMB being mainly driven by pricing? 
+    - Customer wins--could aks for more details
+      - 
+  - Competition
+    - How would you compare your moat to a company like Zoom?
+    - Do you worry MSFT could improve the RDP?
+    - Who is the hardest competitor in the SMB, and the enterprise space?
+    - When customers do churn, what reasons do they give and who do they go to?
+    - Why do you think customers pick Teamviewer vs competitors?
+  - Capital Allocation / the stock
+    - What do you think investors are misunderstanding about the business?
+    - PE firm Permira Advisers LLP still owns 14.41%
+    - How do you think about the valuation of the stock?
+    - What are the management's thoughts on capital allocation and the continuation of a buyback program?
+      - 94% through the share buyback program for this year. Still generating a lot of cash and FCF to increase by approximately 8% year-on-year.
+  - Can you talk about management changes?
+  - Churn (15% for smb and undisclosed for Enterprise)
+    - What is enterprise churn?
+    - As a customer uses more of Teamviewer's features/add ons is there a decrease in churn? (eg add ons like Asset Management, Device Monitoring, TeamViewer Assist AR Lite, Mobile Device Management)
+  - The Technology field trip in the UK, who are the customers that will be presenting (do they use both Tensor and Frontline, what sort of industries?)
+- Questions for Expert
+  - Usage
+    - How do you currently use Teamviewer?
+      - How many seats do you have roughly and how was that changed over time?
+    - What did you use before Teamviewer?
+      - *RHub*
+      - *Splashdot*
+      - *Bonger / BeyondTrust*
+      - Reliable, good UX, etc. Teamviewer charges per managed devices, and you buy bundle. Easier to grow into Teamviewer economically.
+    - In your setup, does Teamviewer need to integrate with other portions of the IT stack?
+    - Can you talk about Teamviewers asset management product and how you use it?
+    - have your use cases of Teamviewer changed over time?
+      - added MWBytes, AR recently
+    - How long have you used Teamviewer?
+    - What devices add endpoint security?
+    - Do you use any of Teamviewer's AI related products, AI session summaries, etc
+  - Overall Teamviewer relationship
+    - How is your relationship with Teamviewer?
+    - how is Teamviewer customer service?
+  - Pricing
+    - What does Teamviewer cost you on a per seat basis?
+    - Does TeamViewer increase prices often? and how much could this impact your choice going forward? (management mentions 10% last year, and 3% going forward as of the Nov 2024 call)
+  - Competition
+    - What is Teamviewers reputation vs others?
+    - Why do you use Teamviewer vs competitors? 
+    - Can you walk us through the last proof of concept or bake off that you did?
+    - What would make you switch? Would it be easy or hard? 
+    - Is teamviewer more trusted from a security standpoint vs comps?
+    - Is there any new features that Teamviewer should introduce?
+  - Answers to screening quetions
+    - How does your company use TeamViewer?
+    - "These are being used by our IT department to provide remote support for our employees as well as remote support of our server environment. We have four data centers and many servers that are remote to our team. We also have a larger Tech Support team that manages workstations and servers at our customer's sites. We have over 4000 enterprise customers, a few hundred thousand clients, and a few thousand servers, and the team uses these tools to screen share and do remote support."
+    - Are you familiar with other options the company may have considered?
+    - "Yes, I am deeply involved in the selection process, I have evaluated various vendors, set the selection criteria, did proof of concepts and am very familiar with the technology capabilities and features of the vendors"
+    - Does your company use TeamViewer's enterprise functionality outside or remote desktop?
+    - "Yes, we use other functionalities like asset management, monitoring and alerting on device issues; for a subset of devices, we use Endpoint protection. For the internal devices, we also use the MDM capabilities to manage and onboard phones."
+- #todo teamviewer research tasks
+  - try to contact corporate clients via LinkedIn. #diligence
+    - What I really want is to speak with customers with non-PC use cases, for example Siemens healthcare machines with remote support capabilities via Teamviewer
+      - ﻿﻿Fri, Oct 4, 2024﻿ Good candidates 
+        - Who are customers with non-pc usage?
+          - Braukon GmbH
+            - [Christian Kull](https://www.linkedin.com/in/christian-kull-2a906385/overlay/about-this-profile/)
+            - Head of Quality Assurance Technology, Development bei BrauKon GmbH
+            - Emailed on ﻿Mon, Oct 7, 2024﻿ 
+          - [Verichek](https://verichek.net/oes-services/emergency-spectrometer-repair)
+          - Siemens Healthcare
+            - Email format for Siemens heathineers is [first.last@siemens-healthineers.com](mailto:first.last@siemens-healthineers.com)
+            - [Branislav Kostic](https://www.linkedin.com/in/branislav-kostic-5a1a2262/overlay/about-this-profile/) (head of CS at healthineers serbia)
+              - @[siemens-healthineers.com](http://siemens-healthineers.com/)
+            - Marc Muehlen 
+            - [Victor Pasquin](https://www.linkedin.com/in/victor-pasquin/overlay/about-this-profile/) (Head of Service Operations USA @ Siemens Healthineers)
+              - 
+            - [Vincent Baldassare](https://www.linkedin.com/in/vincent-baldassare-8201763/overlay/about-this-profile/) (National Customer Success Manager at Siemens Healthineers)
+              - 
+            - [Eddie Katt](https://www.linkedin.com/in/eddie-katt-5291216/overlay/about-this-profile/) (Customer Success Director at Siemens Healthineers)
+              - 
+            - [Zac Kollegger](https://www.linkedin.com/in/zac-kollegger-043b4a127/overlay/about-this-profile/)[ ](https://www.linkedin.com/in/zac-kollegger-043b4a127/overlay/about-this-profile/) (Siemens Customer/ Field Service Engineer CSE (MRI))
+              - 
+            - [Tom Barber](https://www.linkedin.com/in/tombarber1/overlay/about-this-profile/) (Experienced Customer Services Leader @ Siemens Healthineers)
+              - 
+            - [Waldermar Ortiz-Vazquez](https://www.linkedin.com/in/waldermarortiz/overlay/about-this-profile/) (Vice President, Head of Service - East Zone)
+              - 
+          - Amada
+            - flast@[amada.com](http://amada.com/)
+            - [Ryan McClanahan](https://www.linkedin.com/in/ryan-mcclanahan-86255414a/overlay/about-this-profile/) (Customer Support Engineer at AMADA AMERICA, INC.)
+            - [Jeremy Dixon](https://www.linkedin.com/in/jeremyldixon/overlay/about-this-profile/) (Customer Support Engineer Bending at AMADA AMERICA, INC.)
+            - [David Beltran](https://www.linkedin.com/in/david-beltran-15a5b1213/overlay/about-this-profile/) (Customer Service Engineer at AMADA AMERICA, INC)
+            - [Christopher Harvey](https://www.linkedin.com/in/christopher-harvey-365943151/overlay/about-this-profile/)  (Customer Support Engineer)
+            - [David Owen](https://www.linkedin.com/in/david-owen-06a15959/overlay/about-this-profile/) (Customer Service Engineer at AMADA AMERICA, INC.)
+            - Have emailed all of the above ﻿Mon, Oct 7, 2024﻿ 
+          - PFG
+          - Mercy Ships
+            - 
+          - EMI (US based)
+            - [https://www.teamviewer.com/en-us/success-stories/emi/](https://www.teamviewer.com/en-us/success-stories/emi/)
+              - Kelly Covarrubio
+                - [https://www.linkedin.com/in/kelly-covarrubio-459030164/](https://www.linkedin.com/in/kelly-covarrubio-459030164/)
+              - Christy McEwan
+                - [https://www.linkedin.com/in/christy-mcewen-b602b7180/](https://www.linkedin.com/in/christy-mcewen-b602b7180/)
+          - AMS Controls
+            - [Jeffrey Burger](https://www.linkedin.com/in/jeffrey-burger-02399579/overlay/about-this-profile/) 
+            - Director of OEM Sales and Support at AMS Controls
+          - ABM International (makes quilting machines)
+          - AMETEK MOCON (gas measurement, sensors, and analyzers)
+        - Some customer sentiment (bad)
+          - [https://www.reddit.com/r/msp/comments/12zelxj/teamviewer_has_totally_changed_their_methodology/](https://www.reddit.com/r/msp/comments/12zelxj/teamviewer_has_totally_changed_their_methodology/)
+          - [https://www.youtube.com/watch?v=zbrPQsMK2gU](https://www.youtube.com/watch?v=zbrPQsMK2gU)
+- ﻿﻿Fri, Nov 8, 2024﻿ Update Q3 results
+  - Results
+    - 8% CC revenue growth 
+    - Enterprise revenue +22%
+    - EBIDTA up 15% YoY
+    - 
+  - Subscribers +3%, Billings +2%, EBITDA +12%
+    - 
+    - ARR + 7%
+  - New enterprise customers
+    - Coop, YPF
+      - 
+  - Adjusted EBITDA margin reached 48% in Q3 2024
+  - Street takeaway "Drops on billings miss in tough market"
+    - 
+  - Current valuation
+    - Trades at 11x PE and 8x EBITDA
+      - 
+    - This is basically the lowest valuation its ever traded for
+      - 
+- ﻿﻿Fri, Sep 13, 2024﻿ Sumzero post [here](https://sumzero.com/pro/research/ideas/20040) from Aug 2021
+  - Elevator pitch
+    - Thinks the business is worth 100 EUR
+    - Users
+      - 620m free users and 623k subscribers
+    - Risks include competition from Mag7
+    - Private equity firm Permira owns 20% and has sold down from 58%
+  - Products
+    - Teamviewer -- secure connectivity across OS's
+    - Remove Access - entry level TeamViewer
+    - Tensor - Enterprise solution to meet the needs of large companies that need multi-tenant support, deeper integration
+    - Remote Management - automates backend IT processes and centralizes management of all IT devices
+    - Meeting
+    - Web monitoring
+    - IOT
+    - Pilot -- Augment reality
+    - Frontline -- remote assistance deploying AR smart glasses and wearables to assist manual picking processes
+  - Growth opportunities
+    - Expanding portfolio into more AR and IOT applications
+    - Entrprise customers
+      - +50% of Fortune 500 as current or former customers
+      - 2,200 entprise customers
+      - Integration w Apple, Google, MSFT etc
+      - Integrating w SAP
+    - Bolt on M&A
+      - Ubimax -- AR and IOT
+      - Xaleon -- customer engagement software 
+    - Continued migrations from licenses to subscriptions (this is over now as of 2024)
+    - Guidance
+      - revenue 530m EUR, w adjusted EBITDA 50%
+      - "ambitious target of 1b 2023 billings" w growth of "at least 25% annually" after 2023
+      - #questions what happened to the 2023 target?
+        - 
+  - Risks
+    - Competition (Mag7 or otherwise)
+      - 
+    - Marketing spend -- spend $45m per year on the ManU shirt deal
+  - Forecast
+    - Revenue forecast of 532m --->1.4b by 2025
+    - Operating profit 192m --> 450m by 2025
+    - Obviously, these projections were way too optimistic. Growth never re-accelerated from 17% rev growth of 2021. Today its growing high single digits on +1/2% subscriber counts.
+      - 
+    - FCF 100m -->373m by 2025
+      - 
+        - 
+  - Oct 2021 update 
+    - Revenue guidance slashed 8% or so
+    - Adj EBITDA margin guid at 45%
+    - Slashed LT guidance
+      - 2023 1b EUR number scrapped
+      - "high teens billings growth" expected
+    - "Additional risk is credibility of management" due to re-affirmation of LT guidance at 2021 shareholder / analyst meeting
+      - 
+  - 2022 update
+    - Announce 300m EUR buyback, and 2022 guidance in line with previous
+    - Ended up growing 13% in 2022
+    - 
+  - 2023 update
+    - Affirmed full year guidance for sales 10-14% and EBITDA margin of aroudn 40%. Stock fell.
+    - exiting manU deal
+    - 
+- ﻿﻿Thu, Sep 12, 2024﻿ non-endpoint use cases
+  - Teamviewer frontline
+    - xPick -- pick by vidion for order picking
+    - xInspect -- digitalized inspection and maintenance tasks
+    - xMake -- AR guided assembly
+    - xAssist -- virtual troubleshooting
+  - Examples of enteprise customers
+    - Armada -- Japanese metalworking machine customer
+      - Use tensor to remotely access their machines for aftersales service
+      - 
+      - 
+    - Performance food Group -- leading US food and beverage distributor
+      - Chose teamviewer to ensure smooth and secure operations
+      - 
+    - Enterprise growing at 21%
+      - 
+- Intro ﻿Tue, Sep 10, 2024﻿ 
+  - #questions 
+    - why have margins declined over time?
+      - EBITDA margins per Bloomberg declined from 55% in 2018 to 37% in 2021 before stabilizing
+    - How has brand building (mentioned at 2021 analyst day) gone?
+      - As of 2021, most use cases "awareness" and was at 0%, 16% aided awareness for main support use cases
+    - why end main shirt sponsor with Manchester United?
+      - 
+    - How have use cases changed?
+    - How has pricing changed over time?
+    - How many users?
+      - 300m as of 2019, including free users
+    - What is churn in 2024?
+      - Was 10% in 2018
+    - What happened to the 1b in billings goal by 2023?
+      - 
+    - Why doesn't MSFT disintermediate the product?
+    - Global paid device penetration of 4.5% in 2018 -- how has this trended?
+  - Business
+    - Make a remote work software product
+    - SSubscribers grew consistenly in 2020 and 2021, wiht fastest growth in Enterprise
+      - 
+    - Subscribers only grew 1% in 2023
+      - Grew 1% in H1 2024
+        - 
+    - Remote screen connect is still the primary product
+  - Financials and Valuation
+    - Market cap of $2b, gone nowhere since 12/31/21
+    - peaked at 9b EUR in late 2021
+    - Revenue grown from 400m EUR in 2019 to 670m today
+    - 200m EUR EBIT estimate for 2024 vs $2.4b EV. So EV/EBIT of 12x
+    - Guidance
+      - Company reiterated 660-685m range for 2024 revenue
+      - still says >43% EBITDA margin
+        - 
+      - revamped deal with Manchester United adding to profits -- they used to be the primary shirt holder but now 
+  - Cashflows
+    - around 100m earnings in 2023
+    - 55m D&A, only 5.6m capex
+      - 
+    - 40m EUR of amortization per year
+      - 
+    - 15m depreciation, but looks like only 10m of maintenance capex at best
+    - 15m capex expected for next few years, 9m historical average
+      - 
+  - Prospectus notes
+    - platform is "cloud native, secure and scalable"
+      - 2 billion devices activated
+      - 45 million devices online concurrently
+      - "offered free of charge for private use"
+    - Subscribers
+      - 300k paying subscribers in 180 countries
+      - "recently migrated from perpetual licenses to subscriptions"
+        - Subscriptions 99.7% of billings in H1 2019
+      - Gross churn rate of <10% in 2018
+      - Enterprise
+        - Tensor product, release in 2018, was geared toward Enterprise customers
+        - >10k EUR customers went from 257 in June 2018 to 438 in June 2019
+      - workforces are "increasingly distributed"
+        - 2.5 days outside main HQ per week
+    - Billings
+      - EMEA is the biggest geography
+        - Paid device penetration is 12% in Germany, 7% in US, and 2% in India
+      - "Transition to annual billing increased customer lifetime value despite 20-40% discounts relative to a customer that bought a new license annually"
+      - CLV = 8500 EUR vs CAC of 250 in 2018
+    - Industry
+      - Total TAM supposed to grow from $10b to $30b by 2023
+      - Competition
+        - Remote support: LogMeIn, BeyondTrust, Citrix VPN, SonicWall
+          - LogMeIn / GoTo group sold for $4b
+            - Business had $1.3b of sales, $370m of trailing EBITDA, so was like 11x
+            - Sold  to "Evergreen Coast Capital"
+              - 
+            - Citrix spun off GoTo and merged it with LogMeIn in Jan 2017
+              - Citrix itself was bought by Vista Equity and Elliott partners for $14b -- 27x EBITDA in Oct 2022 (announced in Jan)
+                - 
+              - Was in the middle of transition to subscription model with half of the revenue from subscriptions
+              - Revenue had been projected to grow 2-3% in 2022
+              - EBITDA estimates for 2022 had fall from $1.3b to $1.0b, and the stock had dropped from $140 to $80 before they did the deal
+                - 
+        - IT management competitors: Solarwinds, Kaseya, Connectwise
