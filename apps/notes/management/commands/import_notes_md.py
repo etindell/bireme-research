@@ -138,10 +138,10 @@ def parse_md_file(content):
                 current_content_lines.append('')
             continue
 
-        # Check if this is a new top-level entry (starts with "- " at column 0 or 1)
-        # Top-level entries have minimal indentation
+        # Check if this is a new top-level entry (starts with "- " at column 0)
+        # Only lines with NO indentation are top-level notes
         indent = len(line) - len(line.lstrip())
-        is_top_level_bullet = stripped.startswith('-') and indent <= 2
+        is_top_level_bullet = stripped.startswith('-') and indent == 0
 
         if is_top_level_bullet:
             # Save previous note
