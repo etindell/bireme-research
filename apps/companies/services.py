@@ -2,12 +2,170 @@
 Services for company valuation calculations and external data fetching.
 """
 import logging
+import os
+from datetime import timedelta
 from decimal import Decimal
 from typing import Optional, List
 
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+
+SUMMARY_PROMPT_TEMPLATE = """Summarize the following research notes for {company_name}.
+
+IMPORTANT DATE HANDLING INSTRUCTIONS:
+1. For TIME-SENSITIVE metrics (valuation, IRR, price targets, model assumptions, market cap, earnings estimates, sell-side ratings):
+   - ONLY use information from notes dated within the last 60 days
+   - Always state the date when these metrics were recorded (e.g., "As of Oct 2025...")
+   - NEVER use words like "current", "today", or "now" for metrics older than 30 days
+
+2. For HISTORICAL events (earnings releases, management changes, acquisitions, regulatory decisions):
+   - You may reference older notes but always include the date (e.g., "In Jan 2025, Nigeria approved...")
+   - Frame these as past events, not current state
+
+3. For TIMELESS information (business model, investment thesis, risk factors, competitive dynamics):
+   - Synthesize across all notes
+   - These don't need date attribution unless the situation has changed
+
+OUTPUT FORMAT:
+Use markdown with these sections:
+- **Business Overview**: 2-3 sentences on what the company does
+- **Valuation & Estimates**: Only from recent notes, with dates
+- **Investment Thesis**: Key reasons to own the stock
+- **Key Events Timeline**: Important developments with dates
+- **Risks**: Main risk factors
+- **Recent Developments**: From most recent 1-2 notes
+
+Keep the summary concise (400-600 words).
+
+TODAY'S DATE: {today_date}
+
+NOTES (most recent first):
+{notes_content}
+"""
+
+
+def generate_company_summary(company) -> Optional[str]:
+    """
+    Generate an AI summary of research notes for a company using Claude 3 Haiku.
+
+    Args:
+        company: Company model instance
+
+    Returns:
+        Generated summary string or None if generation fails.
+    """
+    try:
+        import anthropic
+    except ImportError:
+        logger.error("anthropic package not installed. Run: pip install anthropic")
+        return None
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        logger.error("ANTHROPIC_API_KEY environment variable not set")
+        return None
+
+    # Fetch notes for this company, ordered by date (most recent first)
+    from apps.notes.models import Note
+    from django.db.models.functions import Coalesce
+
+    notes = Note.objects.filter(
+        company=company,
+        is_deleted=False
+    ).annotate(
+        effective_date=Coalesce('written_at', 'created_at')
+    ).order_by('-effective_date')
+
+    if not notes.exists():
+        logger.info(f"No notes found for {company.name}")
+        return None
+
+    # Build notes content with dates
+    notes_content = []
+    for note in notes:
+        note_date = note.written_at or note.created_at
+        date_str = note_date.strftime('%Y-%m-%d') if note_date else 'Unknown date'
+
+        note_text = f"---\n[{date_str}] {note.title}\n"
+        if note.content:
+            note_text += f"{note.content}\n"
+        note_text += "---\n"
+        notes_content.append(note_text)
+
+    # Build prompt
+    today_date = timezone.now().strftime('%Y-%m-%d')
+    prompt = SUMMARY_PROMPT_TEMPLATE.format(
+        company_name=company.name,
+        today_date=today_date,
+        notes_content="\n".join(notes_content)
+    )
+
+    # Call Claude 3 Haiku
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+
+        message = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=1024,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        summary = message.content[0].text
+
+        # Update company with summary
+        company.ai_summary = summary
+        company.summary_updated_at = timezone.now()
+        company.save(update_fields=['ai_summary', 'summary_updated_at'])
+
+        logger.info(f"Generated summary for {company.name}")
+        return summary
+
+    except Exception as e:
+        logger.error(f"Failed to generate summary for {company.name}: {e}")
+        return None
+
+
+def summary_is_stale(company, days: int = 7) -> bool:
+    """
+    Check if a company's summary needs regeneration.
+
+    Returns True if:
+    - No summary exists
+    - Summary is older than `days` days
+    - Notes have been added/updated since summary was generated
+    """
+    if not company.ai_summary or not company.summary_updated_at:
+        return True
+
+    # Check if summary is older than threshold
+    threshold = timezone.now() - timedelta(days=days)
+    if company.summary_updated_at < threshold:
+        return True
+
+    # Check if any notes are newer than the summary
+    from apps.notes.models import Note
+    from django.db.models.functions import Coalesce
+
+    latest_note = Note.objects.filter(
+        company=company,
+        is_deleted=False
+    ).annotate(
+        effective_date=Coalesce('written_at', 'created_at')
+    ).order_by('-effective_date', '-updated_at').first()
+
+    if latest_note:
+        note_date = max(
+            latest_note.written_at or latest_note.created_at,
+            latest_note.updated_at
+        )
+        if note_date > company.summary_updated_at:
+            return True
+
+    return False
 
 
 def calculate_irr(cash_flows: List[float]) -> Optional[Decimal]:

@@ -142,6 +142,17 @@ class Company(SoftDeleteModel, OrganizationMixin):
     # Full-text search vector
     search_vector = SearchVectorField(null=True, blank=True)
 
+    # AI-generated summary
+    ai_summary = models.TextField(
+        blank=True,
+        help_text='AI-generated summary of research notes'
+    )
+    summary_updated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the AI summary was last generated'
+    )
+
     objects = CompanyManager()
     all_objects = models.Manager()
 

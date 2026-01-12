@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from core.mixins import OrganizationViewMixin
@@ -493,4 +493,32 @@ class UpgradeToOnDeckView(OrganizationViewMixin, View):
 
         if request.htmx:
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        return redirect('companies:detail', slug=slug)
+
+
+class GenerateSummaryView(OrganizationViewMixin, View):
+    """Generate AI summary for a company's notes."""
+
+    def post(self, request, slug):
+        from apps.companies.services import generate_company_summary
+
+        company = get_object_or_404(
+            Company.objects.filter(organization=request.organization),
+            slug=slug
+        )
+
+        summary = generate_company_summary(company)
+
+        if summary:
+            messages.success(request, 'Summary generated successfully.')
+        else:
+            messages.error(request, 'Failed to generate summary. Check that ANTHROPIC_API_KEY is set.')
+
+        if request.htmx:
+            # Return the updated summary partial
+            return render(
+                request,
+                'companies/partials/summary_section.html',
+                {'company': company}
+            )
         return redirect('companies:detail', slug=slug)
