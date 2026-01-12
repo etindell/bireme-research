@@ -10,16 +10,34 @@ from .models import Company, CompanyTicker, CompanyValuation
 class CompanyForm(forms.ModelForm):
     """Form for creating and editing companies."""
 
+    # Optional file upload for importing notes when creating a company
+    notes_file = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100',
+            'accept': '.md,.txt',
+        }),
+        help_text='Optional: Import notes from a Markdown file. Company name will be taken from the file.'
+    )
+
     def __init__(self, *args, **kwargs):
         # Remove organization kwarg passed by OrganizationViewMixin
         kwargs.pop('organization', None)
         super().__init__(*args, **kwargs)
+        # Make name optional - can come from uploaded file
+        self.fields['name'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
+        name = cleaned_data.get('name')
+        notes_file = cleaned_data.get('notes_file')
         status = cleaned_data.get('status')
         alert_price = cleaned_data.get('alert_price')
         alert_price_reason = cleaned_data.get('alert_price_reason')
+
+        # Require either a name or a notes file (which contains the name)
+        if not name and not notes_file:
+            self.add_error('name', 'Company name is required (or upload a notes file).')
 
         # Require alert price and reason for watchlist companies
         if status == Company.Status.WATCHLIST:

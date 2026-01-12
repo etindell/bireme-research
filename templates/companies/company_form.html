@@ -12,8 +12,30 @@
         </div>
     </div>
 
-    <form method="post" class="space-y-8">
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
         {% csrf_token %}
+
+        {% if not object %}
+        <!-- Import Notes (only on create) -->
+        <div class="bg-blue-50 shadow rounded-lg p-6">
+            <h2 class="text-lg font-medium text-blue-900 mb-2">Import Notes</h2>
+            <p class="text-sm text-blue-700 mb-4">
+                Optionally upload a Markdown file to import notes. The company name will be taken from the first bullet point in the file.
+            </p>
+
+            <div>
+                <label for="id_notes_file" class="block text-sm font-medium leading-6 text-blue-900">
+                    Notes File
+                </label>
+                <div class="mt-2">
+                    {{ form.notes_file }}
+                </div>
+                <p class="mt-2 text-xs text-blue-600">
+                    Format: First level = company name, second level = note title with date, third level = note content
+                </p>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Basic Information -->
         <div class="bg-white shadow rounded-lg p-6">
@@ -21,7 +43,12 @@
 
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div class="sm:col-span-2">
-                    <label for="id_name" class="block text-sm font-medium leading-6 text-gray-900">Company Name *</label>
+                    <label for="id_name" class="block text-sm font-medium leading-6 text-gray-900">
+                        Company Name {% if object %}*{% endif %}
+                    </label>
+                    {% if not object %}
+                    <p class="text-xs text-gray-500 mb-1">Leave blank if importing from file (name will be taken from file)</p>
+                    {% endif %}
                     <div class="mt-2">
                         {{ form.name }}
                     </div>

@@ -148,9 +148,35 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
             context['ticker_formset'] = CompanyTickerFormSet()
         return context
 
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+
+        # Handle file upload - need to pass FILES to form
+        if request.FILES.get('notes_file'):
+            form = CompanyForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
     def form_valid(self, form):
         context = self.get_context_data()
         ticker_formset = context['ticker_formset']
+
+        # Check if we have a notes file to import
+        notes_file = self.request.FILES.get('notes_file')
+        notes_data = []
+        company_name_from_file = None
+
+        if notes_file:
+            content = notes_file.read().decode('utf-8')
+            company_name_from_file, notes_data = self._parse_notes_file(content)
+
+            # If company name field is empty, use name from file
+            if not form.cleaned_data.get('name') and company_name_from_file:
+                form.instance.name = company_name_from_file
 
         form.instance.organization = self.request.organization
         form.instance.created_by = self.request.user
@@ -159,10 +185,156 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
             response = super().form_valid(form)
             ticker_formset.instance = self.object
             ticker_formset.save()
-            messages.success(self.request, f'Company "{self.object.name}" created.')
+
+            # Import notes if we have any
+            if notes_data:
+                from apps.notes.models import Note
+                created_count = 0
+                for note_data in notes_data:
+                    title = note_data['title'][:500] if note_data['title'] else 'Imported note'
+                    if len(title) > 100:
+                        title = title[:97] + '...'
+
+                    Note.objects.create(
+                        organization=self.request.organization,
+                        company=self.object,
+                        title=title,
+                        content=note_data['content'],
+                        written_at=note_data['written_at'],
+                        created_by=self.request.user,
+                    )
+                    created_count += 1
+
+                messages.success(self.request, f'Company "{self.object.name}" created with {created_count} imported notes.')
+            else:
+                messages.success(self.request, f'Company "{self.object.name}" created.')
+
             return response
         else:
             return self.form_invalid(form)
+
+    def _parse_notes_file(self, content):
+        """
+        Parse notes file for company creation.
+        Format:
+        - Company Name (first level - used as company name)
+          - Date - Note title (second level)
+            - Content (third level)
+        """
+        import re
+        from datetime import datetime
+        from django.utils import timezone
+
+        lines = content.split('\n')
+        notes = []
+        company_name = None
+        current_note = None
+        current_content_lines = []
+
+        def get_indent_level(line):
+            stripped = line.lstrip()
+            if not stripped.startswith('-'):
+                return -1
+            indent = len(line) - len(line.lstrip())
+            if indent == 0:
+                return 1
+            elif indent <= 4:
+                return 2
+            else:
+                return 3
+
+        def parse_date(date_str):
+            date_str = date_str.replace('\ufeff', '').strip()
+            formats = [
+                "%a, %b %d, %Y", "%A, %b %d, %Y", "%a, %B %d, %Y",
+                "%b %d, %Y", "%B %d, %Y", "%m/%d/%y", "%m/%d/%Y", "%Y-%m-%d",
+            ]
+            for fmt in formats:
+                try:
+                    dt = datetime.strptime(date_str, fmt)
+                    return timezone.make_aware(datetime.combine(dt.date(), datetime.min.time()))
+                except ValueError:
+                    continue
+            return None
+
+        def extract_date_from_text(text):
+            text = text.replace('\ufeff', '').strip()
+            patterns = [
+                (r'([A-Za-z]{3},\s+[A-Za-z]{3}\s+\d{1,2},\s+\d{4})', '%a, %b %d, %Y'),
+                (r'([A-Za-z]{3}\s+\d{1,2},\s+\d{4})', '%b %d, %Y'),
+                (r'(\d{1,2}/\d{1,2}/\d{2,4})', None),
+            ]
+            for pattern, _ in patterns:
+                match = re.search(pattern, text)
+                if match:
+                    date_str = match.group(1)
+                    parsed_date = parse_date(date_str)
+                    if parsed_date:
+                        text_without_date = text[:match.start()] + text[match.end():]
+                        text_without_date = re.sub(r'\s+', ' ', text_without_date).strip()
+                        text_without_date = text_without_date.strip('-').strip()
+                        return parsed_date, text_without_date
+            return None, text
+
+        for line in lines:
+            stripped = line.strip()
+
+            if not stripped:
+                if current_note and current_content_lines:
+                    current_content_lines.append('')
+                continue
+
+            if not stripped.startswith('-'):
+                if current_note:
+                    current_content_lines.append(stripped)
+                continue
+
+            level = get_indent_level(line)
+            bullet_text = stripped[1:].strip()
+
+            if level == 1:
+                # Company name
+                if current_note:
+                    current_note['content'] = '\n'.join(current_content_lines).strip()
+                    notes.append(current_note)
+                    current_note = None
+                    current_content_lines = []
+
+                company_name = bullet_text
+
+            elif level == 2:
+                # Note title with date
+                if current_note:
+                    current_note['content'] = '\n'.join(current_content_lines).strip()
+                    notes.append(current_note)
+
+                parsed_date, title = extract_date_from_text(bullet_text)
+
+                current_note = {
+                    'written_at': parsed_date,
+                    'title': title if title else bullet_text,
+                    'content': '',
+                }
+                current_content_lines = []
+
+            elif level >= 3 and current_note:
+                # Note content
+                current_content_lines.append(bullet_text)
+
+        # Save last note
+        if current_note:
+            current_note['content'] = '\n'.join(current_content_lines).strip()
+            notes.append(current_note)
+
+        # Fill in missing dates
+        last_known_date = None
+        for note in reversed(notes):
+            if note['written_at']:
+                last_known_date = note['written_at']
+            elif last_known_date:
+                note['written_at'] = last_known_date
+
+        return company_name, notes
 
 
 class CompanyUpdateView(OrganizationViewMixin, UpdateView):
