@@ -216,32 +216,32 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
     def _parse_notes_file(self, content):
         """
         Parse notes file for company creation.
-        Format:
-        - Company Name (first level - used as company name)
-          - Date - Note title (second level)
-            - Content (third level)
+
+        Supports two formats:
+
+        Format 1 (plain text company name):
+        Company Name
+        - Date - Note title
+          - Content (bold/underlined)
+
+        Format 2 (bullet company name):
+        - Company Name
+          - Date - Note title
+            - Content (bold/underlined)
         """
         import re
         from datetime import datetime
         from django.utils import timezone
 
         lines = content.split('\n')
-        notes = []
-        company_name = None
-        current_note = None
-        current_content_lines = []
 
-        def get_indent_level(line):
-            stripped = line.lstrip()
-            if not stripped.startswith('-'):
-                return -1
-            indent = len(line) - len(line.lstrip())
-            if indent == 0:
-                return 1
-            elif indent <= 4:
-                return 2
-            else:
-                return 3
+        # Detect format: check if first non-empty line is a bullet
+        is_bullet_format = False
+        for line in lines:
+            stripped = line.strip()
+            if stripped:
+                is_bullet_format = stripped.startswith('-')
+                break
 
         def parse_date(date_str):
             date_str = date_str.replace('\ufeff', '').strip()
@@ -276,53 +276,113 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
                         return parsed_date, text_without_date
             return None, text
 
-        for line in lines:
-            stripped = line.strip()
-
-            if not stripped:
-                if current_note and current_content_lines:
-                    current_content_lines.append('')
-                continue
-
+        def get_indent_level(line):
+            stripped = line.lstrip()
             if not stripped.startswith('-'):
-                if current_note:
-                    current_content_lines.append(stripped)
-                continue
+                return -1
+            indent = len(line) - len(line.lstrip())
+            if indent == 0:
+                return 1
+            elif indent <= 4:
+                return 2
+            else:
+                return 3
 
-            level = get_indent_level(line)
-            bullet_text = stripped[1:].strip()
+        notes = []
+        company_name = None
+        current_note = None
+        current_content_lines = []
 
-            if level == 1:
-                # Company name
-                if current_note:
-                    current_note['content'] = '\n'.join(current_content_lines).strip()
-                    notes.append(current_note)
-                    current_note = None
+        if is_bullet_format:
+            # Format 2: - Company Name / - Note title / - Content
+            for line in lines:
+                stripped = line.strip()
+
+                if not stripped:
+                    if current_note and current_content_lines:
+                        current_content_lines.append('')
+                    continue
+
+                if not stripped.startswith('-'):
+                    if current_note:
+                        current_content_lines.append(stripped)
+                    continue
+
+                level = get_indent_level(line)
+                bullet_text = stripped[1:].strip()
+
+                if level == 1:
+                    # Company name
+                    if current_note:
+                        current_note['content'] = '\n'.join(current_content_lines).strip()
+                        notes.append(current_note)
+                        current_note = None
+                        current_content_lines = []
+                    company_name = bullet_text
+
+                elif level == 2:
+                    # Note title with date
+                    if current_note:
+                        current_note['content'] = '\n'.join(current_content_lines).strip()
+                        notes.append(current_note)
+
+                    parsed_date, title = extract_date_from_text(bullet_text)
+                    current_note = {
+                        'written_at': parsed_date,
+                        'title': title if title else bullet_text,
+                        'content': '',
+                    }
                     current_content_lines = []
 
-                company_name = bullet_text
+                elif level >= 3 and current_note:
+                    # Note content - first line gets bold/underline
+                    if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
+                        bullet_text = f"**__{bullet_text}__**"
+                    current_content_lines.append(bullet_text)
+        else:
+            # Format 1: Company Name (plain text) / - Note title / - Content
+            found_company = False
+            for line in lines:
+                stripped = line.strip()
 
-            elif level == 2:
-                # Note title with date
-                if current_note:
-                    current_note['content'] = '\n'.join(current_content_lines).strip()
-                    notes.append(current_note)
+                if not stripped:
+                    if current_note and current_content_lines:
+                        current_content_lines.append('')
+                    continue
 
-                parsed_date, title = extract_date_from_text(bullet_text)
+                # First non-empty, non-bullet line is company name
+                if not found_company and not stripped.startswith('-'):
+                    company_name = stripped
+                    found_company = True
+                    continue
 
-                current_note = {
-                    'written_at': parsed_date,
-                    'title': title if title else bullet_text,
-                    'content': '',
-                }
-                current_content_lines = []
+                if not stripped.startswith('-'):
+                    if current_note:
+                        current_content_lines.append(stripped)
+                    continue
 
-            elif level >= 3 and current_note:
-                # Note content - first line gets bold/underline (unless it has #mythoughts)
-                if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
-                    # First content line - make it bold and underlined
-                    bullet_text = f"**__{bullet_text}__**"
-                current_content_lines.append(bullet_text)
+                level = get_indent_level(line)
+                bullet_text = stripped[1:].strip()
+
+                if level == 1:
+                    # Note title with date
+                    if current_note:
+                        current_note['content'] = '\n'.join(current_content_lines).strip()
+                        notes.append(current_note)
+
+                    parsed_date, title = extract_date_from_text(bullet_text)
+                    current_note = {
+                        'written_at': parsed_date,
+                        'title': title if title else bullet_text,
+                        'content': '',
+                    }
+                    current_content_lines = []
+
+                elif level >= 2 and current_note:
+                    # Note content - first line gets bold/underline
+                    if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
+                        bullet_text = f"**__{bullet_text}__**"
+                    current_content_lines.append(bullet_text)
 
         # Save last note
         if current_note:
