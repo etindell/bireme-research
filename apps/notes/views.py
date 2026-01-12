@@ -557,10 +557,14 @@ class NoteImportView(OrganizationViewMixin, View):
                     }
                     current_content_lines = []
 
-                elif level >= 3 and current_note:
-                    # Content for the note - first line gets bold/underline (unless #mythoughts)
-                    if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
+                elif level == 3 and current_note:
+                    # Content at section header level - bold/underline (unless #mythoughts)
+                    if '#mythoughts' not in bullet_text.lower():
                         bullet_text = f"**__{bullet_text}__**"
+                    current_content_lines.append(bullet_text)
+
+                elif level > 3 and current_note:
+                    # Deeper content - no formatting
                     current_content_lines.append(bullet_text)
 
             else:
@@ -593,10 +597,14 @@ class NoteImportView(OrganizationViewMixin, View):
                     }
                     current_content_lines = []
 
-                elif level >= 3 and current_note:
-                    # Third level = Note content - first line gets bold/underline (unless #mythoughts)
-                    if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
+                elif level == 3 and current_note:
+                    # Content at section header level - bold/underline (unless #mythoughts)
+                    if '#mythoughts' not in bullet_text.lower():
                         bullet_text = f"**__{bullet_text}__**"
+                    current_content_lines.append(bullet_text)
+
+                elif level > 3 and current_note:
+                    # Deeper content - no formatting
                     current_content_lines.append(bullet_text)
 
         # Save last note

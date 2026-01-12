@@ -334,10 +334,14 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
                     }
                     current_content_lines = []
 
-                elif level >= 3 and current_note:
-                    # Note content - first line gets bold/underline
-                    if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
+                elif level == 3 and current_note:
+                    # Note content at section header level - bold/underline (unless #mythoughts)
+                    if '#mythoughts' not in bullet_text.lower():
                         bullet_text = f"**__{bullet_text}__**"
+                    current_content_lines.append(bullet_text)
+
+                elif level > 3 and current_note:
+                    # Deeper content - no formatting
                     current_content_lines.append(bullet_text)
         else:
             # Format 1: Company Name (plain text) / - Note title / - Content
@@ -378,10 +382,14 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
                     }
                     current_content_lines = []
 
-                elif level >= 2 and current_note:
-                    # Note content - first line gets bold/underline
-                    if len(current_content_lines) == 0 and '#mythoughts' not in bullet_text.lower():
+                elif level == 2 and current_note:
+                    # Note content at section header level - bold/underline (unless #mythoughts)
+                    if '#mythoughts' not in bullet_text.lower():
                         bullet_text = f"**__{bullet_text}__**"
+                    current_content_lines.append(bullet_text)
+
+                elif level > 2 and current_note:
+                    # Deeper content - no formatting
                     current_content_lines.append(bullet_text)
 
         # Save last note
