@@ -77,3 +77,4 @@ coverage.xml
 # Misc
 *.bak
 *.tmp
+tmpclaude-*
