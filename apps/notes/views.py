@@ -95,6 +95,20 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
     model = Note
     form_class = NoteForm
     template_name = 'notes/note_form.html'
+    preselected_company = None
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        # Pre-fetch company from URL parameter for use throughout view
+        company_slug = request.GET.get('company')
+        if company_slug and getattr(request, 'organization', None):
+            try:
+                self.preselected_company = Company.objects.get(
+                    organization=request.organization,
+                    slug=company_slug
+                )
+            except Company.DoesNotExist:
+                pass
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -105,17 +119,10 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         from apps.todos.models import Todo
 
         initial = super().get_initial()
-        # Pre-select company if provided in URL
-        company_slug = self.request.GET.get('company')
-        if company_slug:
-            try:
-                company = Company.objects.get(
-                    organization=self.request.organization,
-                    slug=company_slug
-                )
-                initial['company'] = company
-            except Company.DoesNotExist:
-                pass
+
+        # Use preselected company from URL
+        if self.preselected_company:
+            initial['company'] = self.preselected_company
 
         # Pre-select todo if provided in URL (for completing from todo page)
         todo_id = self.request.GET.get('todo')
@@ -129,8 +136,9 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 )
                 initial['complete_todo'] = todo
                 # Also pre-select the company from the todo if not already set
-                if not company_slug and todo.company:
+                if not self.preselected_company and todo.company:
                     initial['company'] = todo.company
+                    self.preselected_company = todo.company
             except (Todo.DoesNotExist, ValueError):
                 pass
 
@@ -141,16 +149,9 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         if 'cash_flow_form' not in context:
             context['cash_flow_form'] = NoteCashFlowForm()
 
-        # Pass company to context for profitability_metric label
-        company_slug = self.request.GET.get('company')
-        if company_slug:
-            try:
-                context['company'] = Company.objects.get(
-                    organization=self.request.organization,
-                    slug=company_slug
-                )
-            except Company.DoesNotExist:
-                pass
+        # Pass preselected company to context for profitability_metric label
+        if self.preselected_company:
+            context['company'] = self.preselected_company
 
         return context
 
