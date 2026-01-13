@@ -102,6 +102,8 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         return kwargs
 
     def get_initial(self):
+        from apps.todos.models import Todo
+
         initial = super().get_initial()
         # Pre-select company if provided in URL
         company_slug = self.request.GET.get('company')
@@ -114,6 +116,24 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 initial['company'] = company
             except Company.DoesNotExist:
                 pass
+
+        # Pre-select todo if provided in URL (for completing from todo page)
+        todo_id = self.request.GET.get('todo')
+        if todo_id:
+            try:
+                todo = Todo.objects.get(
+                    pk=todo_id,
+                    organization=self.request.organization,
+                    is_completed=False,
+                    is_deleted=False
+                )
+                initial['complete_todo'] = todo
+                # Also pre-select the company from the todo if not already set
+                if not company_slug and todo.company:
+                    initial['company'] = todo.company
+            except (Todo.DoesNotExist, ValueError):
+                pass
+
         return initial
 
     def get_context_data(self, **kwargs):
@@ -155,7 +175,14 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
             cash_flow.calculated_irr = cash_flow.calculate_irr()
             cash_flow.save()
 
-        messages.success(self.request, 'Note created.')
+        # Handle todo completion
+        complete_todo = form.cleaned_data.get('complete_todo')
+        if complete_todo:
+            complete_todo.mark_complete(user=self.request.user, note=self.object)
+            messages.success(self.request, f'Note created and todo "{complete_todo.title[:50]}" marked complete.')
+        else:
+            messages.success(self.request, 'Note created.')
+
         return response
 
     def get_success_url(self):

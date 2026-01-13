@@ -5,6 +5,7 @@ from django import forms
 
 from .models import Note, NoteType
 from apps.companies.models import Company
+from apps.todos.models import Todo
 
 
 class NoteForm(forms.ModelForm):
@@ -17,6 +18,15 @@ class NoteForm(forms.ModelForm):
             'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
         }),
         help_text='Tag other companies mentioned in this note'
+    )
+
+    complete_todo = forms.ModelChoiceField(
+        queryset=Todo.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+        }),
+        help_text='Complete a todo with this note'
     )
 
     class Meta:
@@ -64,6 +74,12 @@ class NoteForm(forms.ModelForm):
             self.fields['note_type'].queryset = NoteType.objects.filter(
                 organization=organization
             )
+            # Populate pending todos for this organization
+            self.fields['complete_todo'].queryset = Todo.objects.filter(
+                organization=organization,
+                is_completed=False,
+                is_deleted=False
+            ).select_related('company', 'category').order_by('company__name', '-created_at')
 
 
 class QuickNoteForm(forms.ModelForm):
