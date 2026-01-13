@@ -481,6 +481,7 @@ class QuarterlySettingsView(OrganizationViewMixin, View):
             # Update organization settings
             request.organization.set_quarterly_settings(
                 enabled=form.cleaned_data['enabled'],
+                days_after_quarter=form.cleaned_data['days_after_quarter'],
                 statuses=statuses,
                 investor_letter_enabled=form.cleaned_data['investor_letter_enabled']
             )

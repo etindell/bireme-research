@@ -21,6 +21,17 @@ class QuarterlySettingsForm(forms.Form):
         })
     )
 
+    days_after_quarter = forms.IntegerField(
+        required=True,
+        label='Days after quarter end',
+        help_text='Number of days after quarter ends before generating todos',
+        min_value=0,
+        max_value=90,
+        widget=forms.NumberInput(attrs={
+            'class': 'block w-20 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+        })
+    )
+
     portfolio_enabled = forms.BooleanField(
         required=False,
         label='Portfolio companies',
@@ -54,6 +65,7 @@ class QuarterlySettingsForm(forms.Form):
             settings = organization.get_quarterly_settings()
             statuses = settings.get('statuses', ['portfolio', 'on_deck'])
             self.initial['enabled'] = settings.get('enabled', True)
+            self.initial['days_after_quarter'] = settings.get('days_after_quarter', 21)
             self.initial['portfolio_enabled'] = 'portfolio' in statuses
             self.initial['on_deck_enabled'] = 'on_deck' in statuses
             self.initial['investor_letter_enabled'] = settings.get('investor_letter_enabled', True)

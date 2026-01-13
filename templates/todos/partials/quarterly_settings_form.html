@@ -17,6 +17,18 @@
             </div>
         </div>
 
+        <!-- Days after quarter -->
+        <div class="flex items-center gap-x-3">
+            <label for="id_days_after_quarter" class="text-sm font-medium text-gray-900">
+                Generate todos
+            </label>
+            {{ form.days_after_quarter }}
+            <span class="text-sm text-gray-500">days after quarter ends</span>
+        </div>
+        {% if form.days_after_quarter.errors %}
+        <p class="text-sm text-red-600">{{ form.days_after_quarter.errors.0 }}</p>
+        {% endif %}
+
         <hr class="border-gray-200">
 
         <p class="text-sm font-medium text-gray-700">Generate todos for:</p>
@@ -64,7 +76,7 @@
     <div class="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
         <p class="font-medium text-gray-700 mb-1">How it works:</p>
         <ul class="list-disc list-inside space-y-1">
-            <li>Todos are generated ~3 weeks after each quarter ends</li>
+            <li>Todos are generated after the configured number of days following each quarter end</li>
             <li>One todo per company to review their quarterly update</li>
             <li>Investor letter review is one todo per quarter</li>
         </ul>
