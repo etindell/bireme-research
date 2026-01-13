@@ -3,14 +3,27 @@
 <div class="note-card border-l-4 bg-white"
      style="border-color: {{ note.note_type.color|default:'#9CA3AF' }}"
      x-data="{ expanded: {% if not note.is_collapsed %}true{% else %}false{% endif %} }"
+     :class="{ 'ring-2 ring-primary-500 bg-primary-50': {% if selectable %}selectMode && isSelected({{ note.pk }}){% else %}false{% endif %} }"
      id="note-{{ note.pk }}">
 
     <!-- Collapsed view (always visible) -->
     <div class="px-4 py-3 flex items-start gap-3 cursor-pointer hover:bg-gray-50"
-         @click="expanded = !expanded">
+         @click="{% if selectable %}selectMode ? toggleNote({{ note.pk }}) : {% endif %}expanded = !expanded">
+
+        {% if selectable %}
+        <!-- Checkbox (shown in select mode) -->
+        <div x-show="selectMode" x-cloak class="flex-shrink-0 mt-0.5" @click.stop="toggleNote({{ note.pk }})">
+            <div class="h-5 w-5 rounded border-2 flex items-center justify-center transition-colors"
+                 :class="isSelected({{ note.pk }}) ? 'bg-primary-600 border-primary-600' : 'border-gray-300 bg-white'">
+                <svg x-show="isSelected({{ note.pk }})" class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Expand icon -->
-        <span class="text-gray-400 mt-0.5 flex-shrink-0">
+        <span class="text-gray-400 mt-0.5 flex-shrink-0" {% if selectable %}x-show="!selectMode"{% endif %}>
             <svg x-show="!expanded" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/>
             </svg>

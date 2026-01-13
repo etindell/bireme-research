@@ -12,6 +12,7 @@ urlpatterns = [
     path('create/', views.NoteCreateView.as_view(), name='create'),
     path('import/', views.NoteImportView.as_view(), name='import'),
     path('upload-image/', views.NoteImageUploadView.as_view(), name='upload_image'),
+    path('bulk-delete/', views.NoteBulkDeleteView.as_view(), name='bulk_delete'),
     path('<int:pk>/', views.NoteDetailView.as_view(), name='detail'),
     path('<int:pk>/edit/', views.NoteUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.NoteDeleteView.as_view(), name='delete'),

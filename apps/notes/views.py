@@ -631,3 +631,33 @@ class NoteImportView(OrganizationViewMixin, View):
 
 # Need to import render for the import view
 from django.shortcuts import render, redirect
+
+
+class NoteBulkDeleteView(OrganizationViewMixin, View):
+    """Handle bulk deletion of notes."""
+
+    def post(self, request):
+        note_ids = request.POST.getlist('note_ids')
+
+        if not note_ids:
+            messages.warning(request, 'No notes selected.')
+            return redirect('notes:list')
+
+        # Filter to only notes in the user's organization
+        notes = Note.objects.filter(
+            organization=request.organization,
+            pk__in=note_ids
+        )
+
+        count = notes.count()
+
+        # Soft delete each note
+        for note in notes:
+            note.delete(user=request.user)
+
+        messages.success(request, f'Deleted {count} note{"s" if count != 1 else ""}.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+
+        return redirect('notes:list')
