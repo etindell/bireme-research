@@ -175,6 +175,9 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
             cash_flow.calculated_irr = cash_flow.calculate_irr()
             cash_flow.save()
 
+            # Also update or create the company's active valuation
+            self._update_company_valuation(cash_flow_form.cleaned_data)
+
         # Handle todo completion
         complete_todo = form.cleaned_data.get('complete_todo')
         if complete_todo:
@@ -184,6 +187,46 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
             messages.success(self.request, 'Note created.')
 
         return response
+
+    def _update_company_valuation(self, cleaned_data):
+        """Update or create the company's active valuation with the cash flow data."""
+        from apps.companies.models import CompanyValuation
+        from django.utils import timezone
+
+        company = self.object.company
+        today = timezone.now().date()
+
+        # Get existing active valuation or create new one
+        valuation = company.get_active_valuation()
+
+        if valuation:
+            # Update existing valuation
+            valuation.fcf_year_1 = cleaned_data['fcf_year_1']
+            valuation.fcf_year_2 = cleaned_data['fcf_year_2']
+            valuation.fcf_year_3 = cleaned_data['fcf_year_3']
+            valuation.fcf_year_4 = cleaned_data['fcf_year_4']
+            valuation.fcf_year_5 = cleaned_data['fcf_year_5']
+            valuation.terminal_value = cleaned_data['terminal_value']
+            valuation.price_override = cleaned_data['current_price']
+            valuation.as_of_date = today
+            valuation.calculate_irr()
+            valuation.save(user=self.request.user)
+        else:
+            # Create new valuation
+            valuation = CompanyValuation.objects.create(
+                company=company,
+                fcf_year_1=cleaned_data['fcf_year_1'],
+                fcf_year_2=cleaned_data['fcf_year_2'],
+                fcf_year_3=cleaned_data['fcf_year_3'],
+                fcf_year_4=cleaned_data['fcf_year_4'],
+                fcf_year_5=cleaned_data['fcf_year_5'],
+                terminal_value=cleaned_data['terminal_value'],
+                price_override=cleaned_data['current_price'],
+                as_of_date=today,
+                is_active=True,
+            )
+            valuation.calculate_irr()
+            valuation.save(user=self.request.user)
 
     def get_success_url(self):
         # Return to company page if we came from there
@@ -270,6 +313,8 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     existing_cash_flow.ebit_ebitda_year_5 = cash_flow_form.cleaned_data.get('ebit_ebitda_year_5')
                     existing_cash_flow.calculated_irr = existing_cash_flow.calculate_irr()
                     existing_cash_flow.save()
+                    # Also update company valuation
+                    self._update_company_valuation(cash_flow_form.cleaned_data)
                 else:
                     # Remove cash flows if unchecked
                     existing_cash_flow.delete()
@@ -300,9 +345,51 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     )
                     cash_flow.calculated_irr = cash_flow.calculate_irr()
                     cash_flow.save()
+                    # Also update company valuation
+                    self._update_company_valuation(cash_flow_form.cleaned_data)
 
         messages.success(self.request, 'Note updated.')
         return response
+
+    def _update_company_valuation(self, cleaned_data):
+        """Update or create the company's active valuation with the cash flow data."""
+        from apps.companies.models import CompanyValuation
+        from django.utils import timezone
+
+        company = self.object.company
+        today = timezone.now().date()
+
+        # Get existing active valuation or create new one
+        valuation = company.get_active_valuation()
+
+        if valuation:
+            # Update existing valuation
+            valuation.fcf_year_1 = cleaned_data['fcf_year_1']
+            valuation.fcf_year_2 = cleaned_data['fcf_year_2']
+            valuation.fcf_year_3 = cleaned_data['fcf_year_3']
+            valuation.fcf_year_4 = cleaned_data['fcf_year_4']
+            valuation.fcf_year_5 = cleaned_data['fcf_year_5']
+            valuation.terminal_value = cleaned_data['terminal_value']
+            valuation.price_override = cleaned_data['current_price']
+            valuation.as_of_date = today
+            valuation.calculate_irr()
+            valuation.save(user=self.request.user)
+        else:
+            # Create new valuation
+            valuation = CompanyValuation.objects.create(
+                company=company,
+                fcf_year_1=cleaned_data['fcf_year_1'],
+                fcf_year_2=cleaned_data['fcf_year_2'],
+                fcf_year_3=cleaned_data['fcf_year_3'],
+                fcf_year_4=cleaned_data['fcf_year_4'],
+                fcf_year_5=cleaned_data['fcf_year_5'],
+                terminal_value=cleaned_data['terminal_value'],
+                price_override=cleaned_data['current_price'],
+                as_of_date=today,
+                is_active=True,
+            )
+            valuation.calculate_irr()
+            valuation.save(user=self.request.user)
 
 
 class NoteDeleteView(OrganizationViewMixin, DeleteView):

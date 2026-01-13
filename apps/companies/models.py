@@ -287,7 +287,7 @@ class ValuationHistory(models.Model):
     fcf_year_4 = models.DecimalField(max_digits=12, decimal_places=2)
     fcf_year_5 = models.DecimalField(max_digits=12, decimal_places=2)
     terminal_value = models.DecimalField(max_digits=12, decimal_places=2)
-    shares_outstanding = models.DecimalField(max_digits=20, decimal_places=2)
+    shares_outstanding = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
 
     # Price and IRR at time of snapshot
     current_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -326,6 +326,8 @@ class CompanyValuation(SoftDeleteModel):
     shares_outstanding = models.DecimalField(
         max_digits=20,
         decimal_places=2,
+        null=True,
+        blank=True,
         help_text='Shares outstanding (in millions)'
     )
 
