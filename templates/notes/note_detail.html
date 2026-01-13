@@ -110,6 +110,64 @@
                             {% endif %}
                         </div>
                     </div>
+
+                    <!-- Revenue Projections -->
+                    {% if cash_flow.revenue_year_1 or cash_flow.revenue_year_2 or cash_flow.revenue_year_3 or cash_flow.revenue_year_4 or cash_flow.revenue_year_5 %}
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Revenue Per Share</span>
+                        <div class="mt-2 grid grid-cols-5 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Y1</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.revenue_year_1 %}${{ cash_flow.revenue_year_1 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y2</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.revenue_year_2 %}${{ cash_flow.revenue_year_2 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y3</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.revenue_year_3 %}${{ cash_flow.revenue_year_3 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y4</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.revenue_year_4 %}${{ cash_flow.revenue_year_4 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y5</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.revenue_year_5 %}${{ cash_flow.revenue_year_5 }}{% else %}-{% endif %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- EBIT/EBITDA Projections -->
+                    {% if cash_flow.ebit_ebitda_year_1 or cash_flow.ebit_ebitda_year_2 or cash_flow.ebit_ebitda_year_3 or cash_flow.ebit_ebitda_year_4 or cash_flow.ebit_ebitda_year_5 %}
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ note.company.get_ebit_metric_display|default:'EBITDA' }} Per Share</span>
+                        <div class="mt-2 grid grid-cols-5 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Y1</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.ebit_ebitda_year_1 %}${{ cash_flow.ebit_ebitda_year_1 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y2</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.ebit_ebitda_year_2 %}${{ cash_flow.ebit_ebitda_year_2 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y3</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.ebit_ebitda_year_3 %}${{ cash_flow.ebit_ebitda_year_3 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y4</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.ebit_ebitda_year_4 %}${{ cash_flow.ebit_ebitda_year_4 }}{% else %}-{% endif %}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Y5</span>
+                                <p class="font-medium text-gray-900">{% if cash_flow.ebit_ebitda_year_5 %}${{ cash_flow.ebit_ebitda_year_5 }}{% else %}-{% endif %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}

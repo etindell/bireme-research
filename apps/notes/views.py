@@ -139,6 +139,18 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 fcf_year_4=cash_flow_form.cleaned_data['fcf_year_4'],
                 fcf_year_5=cash_flow_form.cleaned_data['fcf_year_5'],
                 terminal_value=cash_flow_form.cleaned_data['terminal_value'],
+                # Revenue projections (optional)
+                revenue_year_1=cash_flow_form.cleaned_data.get('revenue_year_1'),
+                revenue_year_2=cash_flow_form.cleaned_data.get('revenue_year_2'),
+                revenue_year_3=cash_flow_form.cleaned_data.get('revenue_year_3'),
+                revenue_year_4=cash_flow_form.cleaned_data.get('revenue_year_4'),
+                revenue_year_5=cash_flow_form.cleaned_data.get('revenue_year_5'),
+                # EBIT/EBITDA projections (optional)
+                ebit_ebitda_year_1=cash_flow_form.cleaned_data.get('ebit_ebitda_year_1'),
+                ebit_ebitda_year_2=cash_flow_form.cleaned_data.get('ebit_ebitda_year_2'),
+                ebit_ebitda_year_3=cash_flow_form.cleaned_data.get('ebit_ebitda_year_3'),
+                ebit_ebitda_year_4=cash_flow_form.cleaned_data.get('ebit_ebitda_year_4'),
+                ebit_ebitda_year_5=cash_flow_form.cleaned_data.get('ebit_ebitda_year_5'),
             )
             cash_flow.calculated_irr = cash_flow.calculate_irr()
             cash_flow.save()
@@ -180,6 +192,18 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     'fcf_year_4': cash_flow.fcf_year_4,
                     'fcf_year_5': cash_flow.fcf_year_5,
                     'terminal_value': cash_flow.terminal_value,
+                    # Revenue projections
+                    'revenue_year_1': cash_flow.revenue_year_1,
+                    'revenue_year_2': cash_flow.revenue_year_2,
+                    'revenue_year_3': cash_flow.revenue_year_3,
+                    'revenue_year_4': cash_flow.revenue_year_4,
+                    'revenue_year_5': cash_flow.revenue_year_5,
+                    # EBIT/EBITDA projections
+                    'ebit_ebitda_year_1': cash_flow.ebit_ebitda_year_1,
+                    'ebit_ebitda_year_2': cash_flow.ebit_ebitda_year_2,
+                    'ebit_ebitda_year_3': cash_flow.ebit_ebitda_year_3,
+                    'ebit_ebitda_year_4': cash_flow.ebit_ebitda_year_4,
+                    'ebit_ebitda_year_5': cash_flow.ebit_ebitda_year_5,
                 }
             except NoteCashFlow.DoesNotExist:
                 pass
@@ -205,6 +229,18 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     existing_cash_flow.fcf_year_4 = cash_flow_form.cleaned_data['fcf_year_4']
                     existing_cash_flow.fcf_year_5 = cash_flow_form.cleaned_data['fcf_year_5']
                     existing_cash_flow.terminal_value = cash_flow_form.cleaned_data['terminal_value']
+                    # Revenue projections (optional)
+                    existing_cash_flow.revenue_year_1 = cash_flow_form.cleaned_data.get('revenue_year_1')
+                    existing_cash_flow.revenue_year_2 = cash_flow_form.cleaned_data.get('revenue_year_2')
+                    existing_cash_flow.revenue_year_3 = cash_flow_form.cleaned_data.get('revenue_year_3')
+                    existing_cash_flow.revenue_year_4 = cash_flow_form.cleaned_data.get('revenue_year_4')
+                    existing_cash_flow.revenue_year_5 = cash_flow_form.cleaned_data.get('revenue_year_5')
+                    # EBIT/EBITDA projections (optional)
+                    existing_cash_flow.ebit_ebitda_year_1 = cash_flow_form.cleaned_data.get('ebit_ebitda_year_1')
+                    existing_cash_flow.ebit_ebitda_year_2 = cash_flow_form.cleaned_data.get('ebit_ebitda_year_2')
+                    existing_cash_flow.ebit_ebitda_year_3 = cash_flow_form.cleaned_data.get('ebit_ebitda_year_3')
+                    existing_cash_flow.ebit_ebitda_year_4 = cash_flow_form.cleaned_data.get('ebit_ebitda_year_4')
+                    existing_cash_flow.ebit_ebitda_year_5 = cash_flow_form.cleaned_data.get('ebit_ebitda_year_5')
                     existing_cash_flow.calculated_irr = existing_cash_flow.calculate_irr()
                     existing_cash_flow.save()
                 else:
@@ -222,6 +258,18 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                         fcf_year_4=cash_flow_form.cleaned_data['fcf_year_4'],
                         fcf_year_5=cash_flow_form.cleaned_data['fcf_year_5'],
                         terminal_value=cash_flow_form.cleaned_data['terminal_value'],
+                        # Revenue projections (optional)
+                        revenue_year_1=cash_flow_form.cleaned_data.get('revenue_year_1'),
+                        revenue_year_2=cash_flow_form.cleaned_data.get('revenue_year_2'),
+                        revenue_year_3=cash_flow_form.cleaned_data.get('revenue_year_3'),
+                        revenue_year_4=cash_flow_form.cleaned_data.get('revenue_year_4'),
+                        revenue_year_5=cash_flow_form.cleaned_data.get('revenue_year_5'),
+                        # EBIT/EBITDA projections (optional)
+                        ebit_ebitda_year_1=cash_flow_form.cleaned_data.get('ebit_ebitda_year_1'),
+                        ebit_ebitda_year_2=cash_flow_form.cleaned_data.get('ebit_ebitda_year_2'),
+                        ebit_ebitda_year_3=cash_flow_form.cleaned_data.get('ebit_ebitda_year_3'),
+                        ebit_ebitda_year_4=cash_flow_form.cleaned_data.get('ebit_ebitda_year_4'),
+                        ebit_ebitda_year_5=cash_flow_form.cleaned_data.get('ebit_ebitda_year_5'),
                     )
                     cash_flow.calculated_irr = cash_flow.calculate_irr()
                     cash_flow.save()

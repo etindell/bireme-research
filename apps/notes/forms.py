@@ -233,6 +233,128 @@ class NoteCashFlowForm(forms.Form):
         })
     )
 
+    # Revenue forecasts (optional)
+    revenue_year_1 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y1 Revenue',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    revenue_year_2 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y2 Revenue',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    revenue_year_3 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y3 Revenue',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    revenue_year_4 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y4 Revenue',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    revenue_year_5 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y5 Revenue',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    # EBIT/EBITDA forecasts (optional)
+    ebit_ebitda_year_1 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y1',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    ebit_ebitda_year_2 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y2',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    ebit_ebitda_year_3 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y3',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    ebit_ebitda_year_4 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y4',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    ebit_ebitda_year_5 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Y5',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
     def clean(self):
         cleaned_data = super().clean()
         include = cleaned_data.get('include_cash_flows')

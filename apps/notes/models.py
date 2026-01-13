@@ -315,6 +315,80 @@ class NoteCashFlow(models.Model):
         help_text='Terminal value per share at end of Year 5'
     )
 
+    # Revenue forecasts (per share) - optional
+    revenue_year_1 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue per share forecast - Year 1'
+    )
+    revenue_year_2 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue per share forecast - Year 2'
+    )
+    revenue_year_3 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue per share forecast - Year 3'
+    )
+    revenue_year_4 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue per share forecast - Year 4'
+    )
+    revenue_year_5 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue per share forecast - Year 5'
+    )
+
+    # EBIT/EBITDA forecasts (per share) - which metric depends on company preference
+    ebit_ebitda_year_1 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='EBIT or EBITDA per share forecast - Year 1'
+    )
+    ebit_ebitda_year_2 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='EBIT or EBITDA per share forecast - Year 2'
+    )
+    ebit_ebitda_year_3 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='EBIT or EBITDA per share forecast - Year 3'
+    )
+    ebit_ebitda_year_4 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='EBIT or EBITDA per share forecast - Year 4'
+    )
+    ebit_ebitda_year_5 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='EBIT or EBITDA per share forecast - Year 5'
+    )
+
     # Calculated IRR at time of creation
     calculated_irr = models.DecimalField(
         max_digits=8,

@@ -222,6 +222,67 @@
                             <div class="mt-1">{{ cash_flow_form.terminal_value }}</div>
                         </div>
                     </div>
+
+                    <!-- Revenue Projections (optional) -->
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <p class="text-sm font-medium text-gray-700 mb-3">Revenue Per Share (Optional)</p>
+                        <div class="grid grid-cols-5 gap-3">
+                            <div>
+                                <label for="id_revenue_year_1" class="block text-xs font-medium text-gray-500">Y1</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_1 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_2" class="block text-xs font-medium text-gray-500">Y2</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_2 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_3" class="block text-xs font-medium text-gray-500">Y3</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_3 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_4" class="block text-xs font-medium text-gray-500">Y4</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_4 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_5" class="block text-xs font-medium text-gray-500">Y5</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_5 }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EBIT/EBITDA Projections (optional) -->
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <p class="text-sm font-medium text-gray-700 mb-3">
+                            {% if form.company.value %}
+                                {{ form.company.value.get_ebit_metric_display|default:'EBITDA' }}
+                            {% else %}
+                                EBIT/EBITDA
+                            {% endif %}
+                            Per Share (Optional)
+                        </p>
+                        <div class="grid grid-cols-5 gap-3">
+                            <div>
+                                <label for="id_ebit_ebitda_year_1" class="block text-xs font-medium text-gray-500">Y1</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_1 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_2" class="block text-xs font-medium text-gray-500">Y2</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_2 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_3" class="block text-xs font-medium text-gray-500">Y3</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_3 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_4" class="block text-xs font-medium text-gray-500">Y4</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_4 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_5" class="block text-xs font-medium text-gray-500">Y5</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_5 }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endif %}

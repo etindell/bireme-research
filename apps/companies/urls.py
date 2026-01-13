@@ -29,6 +29,7 @@ urlpatterns = [
     path('<slug:slug>/delete/', views.CompanyDeleteView.as_view(), name='delete'),
     path('<slug:slug>/status/', views.CompanyStatusUpdateView.as_view(), name='status_update'),
     path('<slug:slug>/generate-summary/', views.GenerateSummaryView.as_view(), name='generate_summary'),
+    path('<slug:slug>/forecast-history/', views.ForecastHistoryAPIView.as_view(), name='forecast_history'),
 
     # Valuation routes
     path('<slug:slug>/valuation/', views.CompanyValuationCreateView.as_view(), name='valuation_create'),

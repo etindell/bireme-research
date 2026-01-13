@@ -255,6 +255,100 @@
         </div>
         {% endif %}
 
+        <!-- Forecast History Section -->
+        <div x-data="forecastHistory('{{ company.slug }}', '{{ company.get_ebit_metric_display|default:'EBITDA' }}')" class="mt-6 pt-6 border-t border-gray-200">
+            <div class="flex items-center justify-between mb-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wide">Forecast History</p>
+                <button @click="expanded = !expanded; if(expanded && snapshots.length === 0) loadData()"
+                        type="button"
+                        class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                    <span x-text="expanded ? 'Collapse' : 'Expand'"></span>
+                </button>
+            </div>
+
+            <div x-show="expanded" x-cloak>
+                <!-- Loading -->
+                <div x-show="loading" class="text-center py-8">
+                    <svg class="animate-spin h-6 w-6 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+
+                <!-- No data message -->
+                <div x-show="!loading && snapshots.length === 0" class="text-center py-6 text-gray-500 text-sm">
+                    No forecast snapshots yet. Add notes with IRR Cash Flow Assumptions to build history.
+                </div>
+
+                <!-- Chart and table -->
+                <div x-show="!loading && snapshots.length > 0">
+                    <!-- Chart tabs -->
+                    <div class="flex gap-2 mb-4 border-b border-gray-200">
+                        <button @click="activeChart = 'fcf'; updateChart()"
+                                :class="activeChart === 'fcf' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                class="px-3 py-2 text-sm font-medium border-b-2 -mb-px">
+                            FCF
+                        </button>
+                        <button @click="activeChart = 'revenue'; updateChart()"
+                                :class="activeChart === 'revenue' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                class="px-3 py-2 text-sm font-medium border-b-2 -mb-px">
+                            Revenue
+                        </button>
+                        <button @click="activeChart = 'ebit'; updateChart()"
+                                :class="activeChart === 'ebit' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                class="px-3 py-2 text-sm font-medium border-b-2 -mb-px"
+                                x-text="ebitMetric">
+                        </button>
+                    </div>
+
+                    <!-- Chart canvas -->
+                    <div class="h-64 mb-6">
+                        <canvas x-ref="forecastChart"></canvas>
+                    </div>
+
+                    <!-- Historical data table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">IRR</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y1</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y2</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y3</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y4</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Y5</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                <template x-for="snapshot in snapshots" :key="snapshot.note_id">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-2 text-gray-500 whitespace-nowrap" x-text="formatDate(snapshot.date)"></td>
+                                        <td class="px-3 py-2 text-gray-900 max-w-[150px] truncate">
+                                            <a :href="'/notes/' + snapshot.note_id + '/'"
+                                               class="text-primary-600 hover:text-primary-500"
+                                               x-text="snapshot.note_title"></a>
+                                        </td>
+                                        <td class="px-3 py-2 text-right text-gray-900 whitespace-nowrap" x-text="'$' + (snapshot.price ? snapshot.price.toFixed(2) : '-')"></td>
+                                        <td class="px-3 py-2 text-right whitespace-nowrap"
+                                            :class="snapshot.irr >= 0.15 ? 'text-green-600 font-medium' : (snapshot.irr >= 0.10 ? 'text-yellow-600' : 'text-red-600')"
+                                            x-text="snapshot.irr ? (snapshot.irr * 100).toFixed(1) + '%' : '-'"></td>
+                                        <td class="px-3 py-2 text-right text-gray-700 whitespace-nowrap" x-text="getActiveValue(snapshot, 0)"></td>
+                                        <td class="px-3 py-2 text-right text-gray-700 whitespace-nowrap" x-text="getActiveValue(snapshot, 1)"></td>
+                                        <td class="px-3 py-2 text-right text-gray-700 whitespace-nowrap" x-text="getActiveValue(snapshot, 2)"></td>
+                                        <td class="px-3 py-2 text-right text-gray-700 whitespace-nowrap" x-text="getActiveValue(snapshot, 3)"></td>
+                                        <td class="px-3 py-2 text-right text-gray-700 whitespace-nowrap" x-text="getActiveValue(snapshot, 4)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {% else %}
         <div class="text-center py-6">
             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -330,4 +424,142 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function forecastHistory(companySlug, ebitMetric) {
+    return {
+        expanded: false,
+        activeChart: 'fcf',
+        snapshots: [],
+        chart: null,
+        loading: false,
+        ebitMetric: ebitMetric || 'EBITDA',
+
+        async loadData() {
+            this.loading = true;
+            try {
+                const response = await fetch(`/companies/${companySlug}/forecast-history/`);
+                const data = await response.json();
+                this.snapshots = data.snapshots;
+                this.ebitMetric = data.ebit_metric === 'ebit' ? 'EBIT' : 'EBITDA';
+                this.$nextTick(() => this.updateChart());
+            } catch (error) {
+                console.error('Failed to load forecast history:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        updateChart() {
+            if (!this.snapshots.length) return;
+
+            const ctx = this.$refs.forecastChart;
+            if (!ctx) return;
+
+            const labels = this.snapshots.map(s => this.formatDate(s.date));
+
+            // Get data based on active chart type
+            let datasets = [];
+            const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+            let dataKey;
+            if (this.activeChart === 'fcf') {
+                dataKey = 'fcf';
+            } else if (this.activeChart === 'revenue') {
+                dataKey = 'revenue';
+            } else {
+                dataKey = 'ebit_ebitda';
+            }
+
+            // Check if any snapshots have data for this metric
+            const hasData = this.snapshots.some(s => s[dataKey] && s[dataKey].some(v => v !== null));
+
+            if (hasData) {
+                for (let year = 0; year < 5; year++) {
+                    datasets.push({
+                        label: `Year ${year + 1}`,
+                        data: this.snapshots.map(s => {
+                            if (s[dataKey] && s[dataKey][year] !== null) {
+                                return s[dataKey][year];
+                            }
+                            return null;
+                        }),
+                        borderColor: colors[year],
+                        backgroundColor: colors[year] + '20',
+                        fill: false,
+                        tension: 0.1,
+                        spanGaps: true
+                    });
+                }
+            }
+
+            if (this.chart) {
+                this.chart.destroy();
+            }
+
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': $' + (context.raw ? context.raw.toFixed(2) : '-');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        formatDate(isoDate) {
+            return new Date(isoDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: '2-digit'
+            });
+        },
+
+        getActiveValue(snapshot, index) {
+            let data;
+            if (this.activeChart === 'fcf') {
+                data = snapshot.fcf;
+            } else if (this.activeChart === 'revenue') {
+                data = snapshot.revenue;
+            } else {
+                data = snapshot.ebit_ebitda;
+            }
+
+            if (data && data[index] !== null && data[index] !== undefined) {
+                return '$' + data[index].toFixed(2);
+            }
+            return '-';
+        }
+    }
+}
+</script>
 {% endblock %}

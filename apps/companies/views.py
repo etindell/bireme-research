@@ -2,7 +2,7 @@
 Views for Company management.
 """
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
@@ -767,3 +767,74 @@ class GenerateSummaryView(OrganizationViewMixin, View):
                 {'company': company}
             )
         return redirect('companies:detail', slug=slug)
+
+
+class ForecastHistoryAPIView(OrganizationViewMixin, View):
+    """API endpoint returning historical forecast data for charting."""
+
+    def get(self, request, slug):
+        from apps.notes.models import NoteCashFlow
+
+        company = get_object_or_404(
+            Company.objects.filter(organization=request.organization),
+            slug=slug
+        )
+
+        # Get all NoteCashFlow records for this company's notes, ordered by date
+        cash_flows = NoteCashFlow.objects.filter(
+            note__company=company,
+            note__is_deleted=False
+        ).select_related('note').order_by('note__created_at')
+
+        data = {
+            'company': company.name,
+            'ebit_metric': company.ebit_metric,
+            'snapshots': []
+        }
+
+        for cf in cash_flows:
+            snapshot = {
+                'date': cf.note.created_at.isoformat(),
+                'note_id': cf.note.pk,
+                'note_title': cf.note.title[:50],
+                'fcf': [
+                    float(cf.fcf_year_1) if cf.fcf_year_1 else None,
+                    float(cf.fcf_year_2) if cf.fcf_year_2 else None,
+                    float(cf.fcf_year_3) if cf.fcf_year_3 else None,
+                    float(cf.fcf_year_4) if cf.fcf_year_4 else None,
+                    float(cf.fcf_year_5) if cf.fcf_year_5 else None,
+                ],
+                'terminal_value': float(cf.terminal_value) if cf.terminal_value else None,
+                'irr': float(cf.calculated_irr) if cf.calculated_irr else None,
+                'price': float(cf.current_price) if cf.current_price else None,
+            }
+
+            # Add revenue if any values exist
+            if any([cf.revenue_year_1, cf.revenue_year_2, cf.revenue_year_3,
+                    cf.revenue_year_4, cf.revenue_year_5]):
+                snapshot['revenue'] = [
+                    float(cf.revenue_year_1) if cf.revenue_year_1 else None,
+                    float(cf.revenue_year_2) if cf.revenue_year_2 else None,
+                    float(cf.revenue_year_3) if cf.revenue_year_3 else None,
+                    float(cf.revenue_year_4) if cf.revenue_year_4 else None,
+                    float(cf.revenue_year_5) if cf.revenue_year_5 else None,
+                ]
+            else:
+                snapshot['revenue'] = None
+
+            # Add EBIT/EBITDA if any values exist
+            if any([cf.ebit_ebitda_year_1, cf.ebit_ebitda_year_2, cf.ebit_ebitda_year_3,
+                    cf.ebit_ebitda_year_4, cf.ebit_ebitda_year_5]):
+                snapshot['ebit_ebitda'] = [
+                    float(cf.ebit_ebitda_year_1) if cf.ebit_ebitda_year_1 else None,
+                    float(cf.ebit_ebitda_year_2) if cf.ebit_ebitda_year_2 else None,
+                    float(cf.ebit_ebitda_year_3) if cf.ebit_ebitda_year_3 else None,
+                    float(cf.ebit_ebitda_year_4) if cf.ebit_ebitda_year_4 else None,
+                    float(cf.ebit_ebitda_year_5) if cf.ebit_ebitda_year_5 else None,
+                ]
+            else:
+                snapshot['ebit_ebitda'] = None
+
+            data['snapshots'].append(snapshot)
+
+        return JsonResponse(data)
