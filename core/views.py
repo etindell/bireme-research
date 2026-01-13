@@ -65,6 +65,44 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
+class FixImportedNotesView(LoginRequiredMixin, View):
+    """Admin endpoint to check and fix imported notes flags."""
+
+    def get(self, request):
+        if not request.user.is_staff:
+            return JsonResponse({'error': 'Admin only'}, status=403)
+
+        # Get stats
+        total = Note.objects.count()
+        imported_true = Note.objects.filter(is_imported=True).count()
+        imported_false = Note.objects.filter(is_imported=False).count()
+        with_written_at = Note.objects.filter(written_at__isnull=False).count()
+
+        # Find notes that should be marked as imported (have written_at but is_imported=False)
+        missed = Note.objects.filter(written_at__isnull=False, is_imported=False).count()
+
+        # Check if fix parameter is present
+        if request.GET.get('fix') == 'true':
+            updated = Note.objects.filter(
+                written_at__isnull=False,
+                is_imported=False
+            ).update(is_imported=True)
+            return JsonResponse({
+                'status': 'fixed',
+                'updated': updated,
+                'message': f'Marked {updated} notes as imported'
+            })
+
+        return JsonResponse({
+            'total_notes': total,
+            'is_imported_true': imported_true,
+            'is_imported_false': imported_false,
+            'has_written_at': with_written_at,
+            'needs_fix': missed,
+            'message': f'{missed} notes have written_at but is_imported=False. Add ?fix=true to fix.'
+        })
+
+
 class ActivityDataView(LoginRequiredMixin, View):
     """API endpoint for activity chart data."""
 
