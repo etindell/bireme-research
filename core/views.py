@@ -38,16 +38,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['watchlist_count'] = Company.objects.filter(
                 organization=org, status=Company.Status.WATCHLIST
             ).count()
-            # Exclude imported notes (written_at is set for imported notes)
+            # Exclude imported notes from stats
             context['notes_count'] = Note.objects.filter(
                 organization=org,
-                written_at__isnull=True
+                is_imported=False
             ).count()
 
             # Recent activity (exclude imported notes)
             context['recent_notes'] = Note.objects.filter(
                 organization=org,
-                written_at__isnull=True
+                is_imported=False
             ).select_related(
                 'company', 'note_type'
             ).order_by('-created_at')[:5]
@@ -94,7 +94,7 @@ class ActivityDataView(LoginRequiredMixin, View):
         notes_data = Note.objects.filter(
             organization=org,
             created_at__gte=start_date,
-            written_at__isnull=True  # Exclude imported notes
+            is_imported=False
         ).annotate(
             period=trunc_func('created_at')
         ).values('period').annotate(
@@ -105,7 +105,7 @@ class ActivityDataView(LoginRequiredMixin, View):
         notes_with_words = Note.objects.filter(
             organization=org,
             created_at__gte=start_date,
-            written_at__isnull=True  # Exclude imported notes
+            is_imported=False
         ).annotate(
             period=trunc_func('created_at')
         ).values('period', 'title', 'content')

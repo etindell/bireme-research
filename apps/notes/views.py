@@ -319,6 +319,7 @@ class NoteImportView(OrganizationViewMixin, View):
                     content=note_data['content'],
                     note_type=note_type,
                     written_at=note_data['written_at'],
+                    is_imported=True,
                     created_by=request.user,
                 )
                 created_count += 1

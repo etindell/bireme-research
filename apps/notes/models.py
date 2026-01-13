@@ -127,6 +127,10 @@ class Note(SoftDeleteModel, OrganizationMixin):
     # State
     is_collapsed = models.BooleanField(default=True)
     is_pinned = models.BooleanField(default=False)
+    is_imported = models.BooleanField(
+        default=False,
+        help_text='Whether this note was imported from external source'
+    )
 
     # Date of the event being documented
     note_date = models.DateField(

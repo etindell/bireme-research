@@ -303,6 +303,7 @@ class Command(BaseCommand):
                     content=note_data['content'],
                     note_type=note_type,
                     written_at=note_data['written_at'],
+                    is_imported=True,
                     created_by=None,  # Could pass a user if needed
                 )
                 self.stdout.write(f"  Created: {title}")

@@ -201,6 +201,7 @@ class CompanyCreateView(OrganizationViewMixin, CreateView):
                         title=title,
                         content=note_data['content'],
                         written_at=note_data['written_at'],
+                        is_imported=True,
                         created_by=self.request.user,
                     )
                     created_count += 1
