@@ -210,7 +210,7 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
             valuation.price_override = cleaned_data['current_price']
             valuation.as_of_date = today
             valuation.calculate_irr()
-            valuation.save(user=self.request.user)
+            valuation.save(history_user=self.request.user)
         else:
             # Create new valuation
             valuation = CompanyValuation.objects.create(
@@ -226,7 +226,7 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 is_active=True,
             )
             valuation.calculate_irr()
-            valuation.save(user=self.request.user)
+            valuation.save(history_user=self.request.user)
 
     def get_success_url(self):
         # Return to company page if we came from there
@@ -373,7 +373,7 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
             valuation.price_override = cleaned_data['current_price']
             valuation.as_of_date = today
             valuation.calculate_irr()
-            valuation.save(user=self.request.user)
+            valuation.save(history_user=self.request.user)
         else:
             # Create new valuation
             valuation = CompanyValuation.objects.create(
@@ -389,7 +389,7 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                 is_active=True,
             )
             valuation.calculate_irr()
-            valuation.save(user=self.request.user)
+            valuation.save(history_user=self.request.user)
 
 
 class NoteDeleteView(OrganizationViewMixin, DeleteView):
