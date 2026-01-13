@@ -788,7 +788,7 @@ class ForecastHistoryAPIView(OrganizationViewMixin, View):
 
         data = {
             'company': company.name,
-            'ebit_metric': company.ebit_metric,
+            'profitability_metric': company.profitability_metric or 'EBITDA',
             'snapshots': []
         }
 

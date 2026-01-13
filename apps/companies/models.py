@@ -68,10 +68,6 @@ class Company(SoftDeleteModel, OrganizationMixin):
         COMMUNICATIONS = 'communications', 'Communications'
         OTHER = 'other', 'Other'
 
-    class EbitMetric(models.TextChoices):
-        EBIT = 'ebit', 'EBIT'
-        EBITDA = 'ebitda', 'EBITDA'
-
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255)
     description = models.TextField(blank=True)
@@ -137,11 +133,11 @@ class Company(SoftDeleteModel, OrganizationMixin):
         blank=True,
         help_text='Enterprise Value / EBITDA ratio'
     )
-    ebit_metric = models.CharField(
-        max_length=10,
-        choices=EbitMetric.choices,
-        default=EbitMetric.EBITDA,
-        help_text='Whether to track EBIT or EBITDA for this company'
+    profitability_metric = models.CharField(
+        max_length=50,
+        default='EBITDA',
+        blank=True,
+        help_text='Name of the profitability metric to track (e.g., EBITDA, EBIT, Operating Income)'
     )
     price_last_updated = models.DateTimeField(
         null=True,

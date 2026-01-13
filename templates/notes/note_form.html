@@ -250,13 +250,13 @@
                         </div>
                     </div>
 
-                    <!-- EBIT/EBITDA Projections (optional) -->
+                    <!-- Profitability Metric Projections (optional) -->
                     <div class="mt-4 pt-4 border-t border-gray-100">
                         <p class="text-sm font-medium text-gray-700 mb-3">
                             {% if form.company.value %}
-                                {{ form.company.value.get_ebit_metric_display|default:'EBITDA' }}
+                                {{ form.company.value.profitability_metric|default:'EBITDA' }}
                             {% else %}
-                                EBIT/EBITDA
+                                Profitability Metric
                             {% endif %}
                             Per Share (Optional)
                         </p>

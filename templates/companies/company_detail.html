@@ -256,7 +256,7 @@
         {% endif %}
 
         <!-- Forecast History Section -->
-        <div x-data="forecastHistory('{{ company.slug }}', '{{ company.get_ebit_metric_display|default:'EBITDA' }}')" class="mt-6 pt-6 border-t border-gray-200">
+        <div x-data="forecastHistory('{{ company.slug }}', '{{ company.profitability_metric|default:'EBITDA' }}')" class="mt-6 pt-6 border-t border-gray-200">
             <div class="flex items-center justify-between mb-4">
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Forecast History</p>
                 <button @click="expanded = !expanded; if(expanded && snapshots.length === 0) loadData()"
@@ -444,7 +444,7 @@ function forecastHistory(companySlug, ebitMetric) {
                 const response = await fetch(`/companies/${companySlug}/forecast-history/`);
                 const data = await response.json();
                 this.snapshots = data.snapshots;
-                this.ebitMetric = data.ebit_metric === 'ebit' ? 'EBIT' : 'EBITDA';
+                this.ebitMetric = data.profitability_metric || 'EBITDA';
                 this.$nextTick(() => this.updateChart());
             } catch (error) {
                 console.error('Failed to load forecast history:', error);
