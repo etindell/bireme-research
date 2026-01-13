@@ -140,6 +140,18 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         context = super().get_context_data(**kwargs)
         if 'cash_flow_form' not in context:
             context['cash_flow_form'] = NoteCashFlowForm()
+
+        # Pass company to context for profitability_metric label
+        company_slug = self.request.GET.get('company')
+        if company_slug:
+            try:
+                context['company'] = Company.objects.get(
+                    organization=self.request.organization,
+                    slug=company_slug
+                )
+            except Company.DoesNotExist:
+                pass
+
         return context
 
     def form_valid(self, form):

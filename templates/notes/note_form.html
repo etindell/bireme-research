@@ -279,8 +279,10 @@
                     <!-- Profitability Metric Projections (optional) -->
                     <div class="mt-4 pt-4 border-t border-gray-100">
                         <p class="text-sm font-medium text-gray-700 mb-3">
-                            {% if form.company.value %}
-                                {{ form.company.value.profitability_metric|default:'EBITDA' }}
+                            {% if company.profitability_metric %}
+                                {{ company.profitability_metric }}
+                            {% elif object.company.profitability_metric %}
+                                {{ object.company.profitability_metric }}
                             {% else %}
                                 Profitability Metric
                             {% endif %}
