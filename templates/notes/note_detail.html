@@ -64,6 +64,57 @@
             </div>
             {% endif %}
 
+            <!-- Cash Flow Assumptions -->
+            {% with note.cash_flow as cash_flow %}
+            {% if cash_flow %}
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <h3 class="text-sm font-medium text-gray-500 mb-3">IRR Cash Flow Assumptions</h3>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="grid grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">Price</span>
+                            <p class="font-medium text-gray-900">${{ cash_flow.current_price }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Y1 FCF</span>
+                            <p class="font-medium text-gray-900">${{ cash_flow.fcf_year_1 }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Y2 FCF</span>
+                            <p class="font-medium text-gray-900">${{ cash_flow.fcf_year_2 }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Y3 FCF</span>
+                            <p class="font-medium text-gray-900">${{ cash_flow.fcf_year_3 }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Y4 FCF</span>
+                            <p class="font-medium text-gray-900">${{ cash_flow.fcf_year_4 }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Y5 FCF</span>
+                            <p class="font-medium text-gray-900">${{ cash_flow.fcf_year_5 }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Terminal Value</span>
+                            <p class="font-medium text-gray-900">${{ cash_flow.terminal_value }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Calculated IRR</span>
+                            {% if cash_flow.calculated_irr %}
+                            <p class="font-semibold {% if cash_flow.calculated_irr >= 0.15 %}text-green-600{% elif cash_flow.calculated_irr >= 0.10 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                {{ cash_flow.calculated_irr|floatformat:1 }}%
+                            </p>
+                            {% else %}
+                            <p class="text-gray-500">N/A</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+
             <!-- Referenced companies -->
             {% if note.referenced_companies.exists %}
             <div class="mt-6 pt-6 border-t border-gray-200">

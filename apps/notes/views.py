@@ -14,8 +14,8 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 
 from core.mixins import OrganizationViewMixin
 from apps.companies.models import Company
-from .models import Note, NoteType, NoteImage
-from .forms import NoteForm, QuickNoteForm, ImportNotesForm
+from .models import Note, NoteType, NoteImage, NoteCashFlow
+from .forms import NoteForm, QuickNoteForm, ImportNotesForm, NoteCashFlowForm
 
 
 class NoteListView(OrganizationViewMixin, ListView):
@@ -116,10 +116,33 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 pass
         return initial
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'cash_flow_form' not in context:
+            context['cash_flow_form'] = NoteCashFlowForm()
+        return context
+
     def form_valid(self, form):
         form.instance.organization = self.request.organization
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
+
+        # Handle cash flow form
+        cash_flow_form = NoteCashFlowForm(self.request.POST)
+        if cash_flow_form.is_valid() and cash_flow_form.cleaned_data.get('include_cash_flows'):
+            cash_flow = NoteCashFlow(
+                note=self.object,
+                current_price=cash_flow_form.cleaned_data['current_price'],
+                fcf_year_1=cash_flow_form.cleaned_data['fcf_year_1'],
+                fcf_year_2=cash_flow_form.cleaned_data['fcf_year_2'],
+                fcf_year_3=cash_flow_form.cleaned_data['fcf_year_3'],
+                fcf_year_4=cash_flow_form.cleaned_data['fcf_year_4'],
+                fcf_year_5=cash_flow_form.cleaned_data['fcf_year_5'],
+                terminal_value=cash_flow_form.cleaned_data['terminal_value'],
+            )
+            cash_flow.calculated_irr = cash_flow.calculate_irr()
+            cash_flow.save()
+
         messages.success(self.request, 'Note created.')
         return response
 
@@ -141,9 +164,68 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
         kwargs['organization'] = self.request.organization
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'cash_flow_form' not in context:
+            # Pre-populate form if note has existing cash flows
+            initial = {}
+            try:
+                cash_flow = self.object.cash_flow
+                initial = {
+                    'include_cash_flows': True,
+                    'current_price': cash_flow.current_price,
+                    'fcf_year_1': cash_flow.fcf_year_1,
+                    'fcf_year_2': cash_flow.fcf_year_2,
+                    'fcf_year_3': cash_flow.fcf_year_3,
+                    'fcf_year_4': cash_flow.fcf_year_4,
+                    'fcf_year_5': cash_flow.fcf_year_5,
+                    'terminal_value': cash_flow.terminal_value,
+                }
+            except NoteCashFlow.DoesNotExist:
+                pass
+            context['cash_flow_form'] = NoteCashFlowForm(initial=initial)
+        return context
+
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
         response = super().form_valid(form)
+
+        # Handle cash flow form
+        cash_flow_form = NoteCashFlowForm(self.request.POST)
+        if cash_flow_form.is_valid():
+            include = cash_flow_form.cleaned_data.get('include_cash_flows')
+            try:
+                existing_cash_flow = self.object.cash_flow
+                if include:
+                    # Update existing
+                    existing_cash_flow.current_price = cash_flow_form.cleaned_data['current_price']
+                    existing_cash_flow.fcf_year_1 = cash_flow_form.cleaned_data['fcf_year_1']
+                    existing_cash_flow.fcf_year_2 = cash_flow_form.cleaned_data['fcf_year_2']
+                    existing_cash_flow.fcf_year_3 = cash_flow_form.cleaned_data['fcf_year_3']
+                    existing_cash_flow.fcf_year_4 = cash_flow_form.cleaned_data['fcf_year_4']
+                    existing_cash_flow.fcf_year_5 = cash_flow_form.cleaned_data['fcf_year_5']
+                    existing_cash_flow.terminal_value = cash_flow_form.cleaned_data['terminal_value']
+                    existing_cash_flow.calculated_irr = existing_cash_flow.calculate_irr()
+                    existing_cash_flow.save()
+                else:
+                    # Remove cash flows if unchecked
+                    existing_cash_flow.delete()
+            except NoteCashFlow.DoesNotExist:
+                if include:
+                    # Create new
+                    cash_flow = NoteCashFlow(
+                        note=self.object,
+                        current_price=cash_flow_form.cleaned_data['current_price'],
+                        fcf_year_1=cash_flow_form.cleaned_data['fcf_year_1'],
+                        fcf_year_2=cash_flow_form.cleaned_data['fcf_year_2'],
+                        fcf_year_3=cash_flow_form.cleaned_data['fcf_year_3'],
+                        fcf_year_4=cash_flow_form.cleaned_data['fcf_year_4'],
+                        fcf_year_5=cash_flow_form.cleaned_data['fcf_year_5'],
+                        terminal_value=cash_flow_form.cleaned_data['terminal_value'],
+                    )
+                    cash_flow.calculated_irr = cash_flow.calculate_irr()
+                    cash_flow.save()
+
         messages.success(self.request, 'Note updated.')
         return response
 

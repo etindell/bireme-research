@@ -173,6 +173,58 @@
                 </div>
                 <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple.</p>
             </div>
+
+            <!-- Cash Flow Assumptions (optional) -->
+            {% if cash_flow_form %}
+            <div class="border-t border-gray-200 pt-6" x-data="{ includeCashFlows: {% if cash_flow_form.include_cash_flows.value %}true{% else %}false{% endif %} }">
+                <div class="flex items-center gap-3 mb-4">
+                    <input type="checkbox" name="include_cash_flows" id="id_include_cash_flows"
+                           x-model="includeCashFlows"
+                           {% if cash_flow_form.include_cash_flows.value %}checked{% endif %}
+                           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                    <label for="id_include_cash_flows" class="text-sm font-medium text-gray-900">
+                        Include IRR Cash Flow Assumptions
+                    </label>
+                </div>
+
+                <div x-show="includeCashFlows" x-cloak class="space-y-4">
+                    <p class="text-sm text-gray-500">
+                        Attach cash flow assumptions as a permanent snapshot with this note.
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div>
+                            <label for="id_current_price" class="block text-sm font-medium text-gray-700">Price</label>
+                            <div class="mt-1">{{ cash_flow_form.current_price }}</div>
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_1" class="block text-sm font-medium text-gray-700">Y1 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_1 }}</div>
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_2" class="block text-sm font-medium text-gray-700">Y2 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_2 }}</div>
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_3" class="block text-sm font-medium text-gray-700">Y3 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_3 }}</div>
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_4" class="block text-sm font-medium text-gray-700">Y4 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_4 }}</div>
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_5" class="block text-sm font-medium text-gray-700">Y5 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_5 }}</div>
+                        </div>
+                        <div>
+                            <label for="id_terminal_value" class="block text-sm font-medium text-gray-700">Terminal Value</label>
+                            <div class="mt-1">{{ cash_flow_form.terminal_value }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Actions -->

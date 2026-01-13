@@ -134,3 +134,114 @@ class ImportNotesForm(forms.Form):
             self.fields['note_type'].queryset = NoteType.objects.filter(
                 organization=organization
             )
+
+
+class NoteCashFlowForm(forms.Form):
+    """Form for cash flow assumptions attached to a note."""
+
+    INPUT_CLASS = 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6'
+
+    include_cash_flows = forms.BooleanField(
+        required=False,
+        label='Include IRR Cash Flows',
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600',
+        })
+    )
+
+    current_price = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Current Price',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    fcf_year_1 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Year 1 FCF',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    fcf_year_2 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Year 2 FCF',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    fcf_year_3 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Year 3 FCF',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    fcf_year_4 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Year 4 FCF',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    fcf_year_5 = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Year 5 FCF',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    terminal_value = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        label='Terminal Value',
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS,
+            'step': '0.01',
+            'placeholder': '0.00',
+        })
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        include = cleaned_data.get('include_cash_flows')
+
+        if include:
+            required_fields = ['current_price', 'fcf_year_1', 'fcf_year_2',
+                             'fcf_year_3', 'fcf_year_4', 'fcf_year_5', 'terminal_value']
+            for field in required_fields:
+                if not cleaned_data.get(field):
+                    self.add_error(field, 'Required when including cash flows.')
+
+        return cleaned_data

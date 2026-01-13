@@ -51,6 +51,14 @@
                 </span>
                 {% endif %}
 
+                {% with note.cash_flow as cash_flow %}
+                {% if cash_flow %}
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700" title="Has IRR cash flow assumptions">
+                    IRR: {{ cash_flow.calculated_irr|floatformat:1 }}%
+                </span>
+                {% endif %}
+                {% endwith %}
+
                 {% if show_company and note.company %}
                 <a href="{{ note.company.get_absolute_url }}"
                    class="text-primary-600 hover:underline"

@@ -265,3 +265,86 @@ class NoteImage(models.Model):
     def markdown(self):
         """Return markdown syntax for embedding this image."""
         return f"![{self.original_filename or 'image'}]({self.url})"
+
+
+class NoteCashFlow(models.Model):
+    """
+    Cash flow assumptions attached to a note.
+    Stores a snapshot of IRR calculation data at the time of note creation.
+    """
+    note = models.OneToOneField(
+        Note,
+        on_delete=models.CASCADE,
+        related_name='cash_flow'
+    )
+
+    # Cash flow assumptions (snapshot at time of note)
+    current_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Stock price used for calculation'
+    )
+    fcf_year_1 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 1'
+    )
+    fcf_year_2 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 2'
+    )
+    fcf_year_3 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 3'
+    )
+    fcf_year_4 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 4'
+    )
+    fcf_year_5 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='FCF per share forecast - Year 5'
+    )
+    terminal_value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Terminal value per share at end of Year 5'
+    )
+
+    # Calculated IRR at time of creation
+    calculated_irr = models.DecimalField(
+        max_digits=8,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text='Calculated IRR as decimal (e.g., 0.15 = 15%)'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'note_cash_flows'
+
+    def __str__(self):
+        return f'Cash flows for note {self.note_id}'
+
+    def get_cash_flows(self):
+        """Return list of cash flows for IRR calculation."""
+        return [
+            -float(self.current_price),
+            float(self.fcf_year_1),
+            float(self.fcf_year_2),
+            float(self.fcf_year_3),
+            float(self.fcf_year_4),
+            float(self.fcf_year_5) + float(self.terminal_value),
+        ]
+
+    def calculate_irr(self):
+        """Calculate IRR from cash flows."""
+        from apps.companies.services import calculate_irr
+        cash_flows = self.get_cash_flows()
+        return calculate_irr(cash_flows)
