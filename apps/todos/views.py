@@ -12,7 +12,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from core.mixins import OrganizationViewMixin
 from apps.companies.models import Company
 from .models import Todo, TodoCategory, WatchlistQuickAdd
-from .forms import TodoForm, QuickTodoForm, InvestorLetterTodoForm, WatchlistQuickAddFormSet, CompleteWithNoteForm
+from .forms import TodoForm, QuickTodoForm, InvestorLetterTodoForm, WatchlistQuickAddFormSet, CompleteWithNoteForm, QuarterlySettingsForm
 from apps.notes.models import Note
 
 
@@ -451,3 +451,54 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
     def get_success_url(self):
         # Go to the todo detail to see the completion note
         return reverse('todos:detail', kwargs={'pk': self.todo.pk})
+
+
+class QuarterlySettingsView(OrganizationViewMixin, View):
+    """View for managing quarterly todo generation settings."""
+
+    def get(self, request):
+        """Return the settings form as HTML partial."""
+        form = QuarterlySettingsForm(organization=request.organization)
+        html = render_to_string(
+            'todos/partials/quarterly_settings_form.html',
+            {'form': form},
+            request=request
+        )
+        return HttpResponse(html)
+
+    def post(self, request):
+        """Save quarterly settings."""
+        form = QuarterlySettingsForm(request.POST, organization=request.organization)
+
+        if form.is_valid():
+            # Build the statuses list
+            statuses = []
+            if form.cleaned_data['portfolio_enabled']:
+                statuses.append('portfolio')
+            if form.cleaned_data['on_deck_enabled']:
+                statuses.append('on_deck')
+
+            # Update organization settings
+            request.organization.set_quarterly_settings(
+                enabled=form.cleaned_data['enabled'],
+                statuses=statuses,
+                investor_letter_enabled=form.cleaned_data['investor_letter_enabled']
+            )
+
+            messages.success(request, 'Todo generation settings saved.')
+
+            if request.htmx:
+                return HttpResponse(
+                    status=204,
+                    headers={'HX-Trigger': 'settingsSaved'}
+                )
+
+            return redirect('todos:list')
+
+        # Form invalid - return form with errors
+        html = render_to_string(
+            'todos/partials/quarterly_settings_form.html',
+            {'form': form},
+            request=request
+        )
+        return HttpResponse(html)

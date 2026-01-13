@@ -1,0 +1,84 @@
+<form hx-post="{% url 'todos:settings' %}"
+      hx-swap="outerHTML"
+      class="space-y-6">
+    {% csrf_token %}
+
+    <div class="space-y-4">
+        <!-- Master toggle -->
+        <div class="flex items-start">
+            <div class="flex h-6 items-center">
+                {{ form.enabled }}
+            </div>
+            <div class="ml-3">
+                <label for="id_enabled" class="text-sm font-medium text-gray-900">
+                    {{ form.enabled.label }}
+                </label>
+                <p class="text-sm text-gray-500">{{ form.enabled.help_text }}</p>
+            </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <p class="text-sm font-medium text-gray-700">Generate todos for:</p>
+
+        <!-- Portfolio toggle -->
+        <div class="flex items-start ml-4">
+            <div class="flex h-6 items-center">
+                {{ form.portfolio_enabled }}
+            </div>
+            <div class="ml-3">
+                <label for="id_portfolio_enabled" class="text-sm font-medium text-gray-900">
+                    {{ form.portfolio_enabled.label }}
+                </label>
+                <p class="text-sm text-gray-500">{{ form.portfolio_enabled.help_text }}</p>
+            </div>
+        </div>
+
+        <!-- On Deck toggle -->
+        <div class="flex items-start ml-4">
+            <div class="flex h-6 items-center">
+                {{ form.on_deck_enabled }}
+            </div>
+            <div class="ml-3">
+                <label for="id_on_deck_enabled" class="text-sm font-medium text-gray-900">
+                    {{ form.on_deck_enabled.label }}
+                </label>
+                <p class="text-sm text-gray-500">{{ form.on_deck_enabled.help_text }}</p>
+            </div>
+        </div>
+
+        <!-- Investor Letter toggle -->
+        <div class="flex items-start ml-4">
+            <div class="flex h-6 items-center">
+                {{ form.investor_letter_enabled }}
+            </div>
+            <div class="ml-3">
+                <label for="id_investor_letter_enabled" class="text-sm font-medium text-gray-900">
+                    {{ form.investor_letter_enabled.label }}
+                </label>
+                <p class="text-sm text-gray-500">{{ form.investor_letter_enabled.help_text }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
+        <p class="font-medium text-gray-700 mb-1">How it works:</p>
+        <ul class="list-disc list-inside space-y-1">
+            <li>Todos are generated ~3 weeks after each quarter ends</li>
+            <li>One todo per company to review their quarterly update</li>
+            <li>Investor letter review is one todo per quarter</li>
+        </ul>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button type="button"
+                @click="showSettings = false"
+                class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+            Cancel
+        </button>
+        <button type="submit"
+                class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+            Save Settings
+        </button>
+    </div>
+</form>

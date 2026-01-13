@@ -9,6 +9,56 @@ from apps.companies.models import Company
 from apps.notes.models import Note, NoteType
 
 
+class QuarterlySettingsForm(forms.Form):
+    """Form for managing automated quarterly todo generation settings."""
+
+    enabled = forms.BooleanField(
+        required=False,
+        label='Enable quarterly todos',
+        help_text='Automatically generate todos for company updates each quarter',
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600',
+        })
+    )
+
+    portfolio_enabled = forms.BooleanField(
+        required=False,
+        label='Portfolio companies',
+        help_text='Generate quarterly update todos for Portfolio companies',
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600',
+        })
+    )
+
+    on_deck_enabled = forms.BooleanField(
+        required=False,
+        label='On Deck companies',
+        help_text='Generate quarterly update todos for On Deck companies',
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600',
+        })
+    )
+
+    investor_letter_enabled = forms.BooleanField(
+        required=False,
+        label='Investor letter review',
+        help_text='Generate a quarterly investor letter review todo',
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600',
+        })
+    )
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organization:
+            settings = organization.get_quarterly_settings()
+            statuses = settings.get('statuses', ['portfolio', 'on_deck'])
+            self.initial['enabled'] = settings.get('enabled', True)
+            self.initial['portfolio_enabled'] = 'portfolio' in statuses
+            self.initial['on_deck_enabled'] = 'on_deck' in statuses
+            self.initial['investor_letter_enabled'] = settings.get('investor_letter_enabled', True)
+
+
 class TodoForm(forms.ModelForm):
     """Full form for creating and editing todos."""
 
