@@ -453,6 +453,36 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
         return reverse('todos:detail', kwargs={'pk': self.todo.pk})
 
 
+class TodoBulkDeleteView(OrganizationViewMixin, View):
+    """Handle bulk deletion of todos."""
+
+    def post(self, request):
+        todo_ids = request.POST.getlist('todo_ids')
+
+        if not todo_ids:
+            messages.warning(request, 'No todos selected.')
+            return redirect('todos:list')
+
+        # Filter to only todos in the user's organization
+        todos = Todo.objects.filter(
+            organization=request.organization,
+            pk__in=todo_ids
+        )
+
+        count = todos.count()
+
+        # Soft delete each todo
+        for todo in todos:
+            todo.delete(user=request.user)
+
+        messages.success(request, f'Deleted {count} todo{"s" if count != 1 else ""}.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+
+        return redirect('todos:list')
+
+
 class QuarterlySettingsView(OrganizationViewMixin, View):
     """View for managing quarterly todo generation settings."""
 

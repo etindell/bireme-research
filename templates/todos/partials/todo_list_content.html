@@ -1,5 +1,7 @@
 {% if show_sections %}
 <!-- Three-section view (default pending view) -->
+<!-- Initialize todo IDs for bulk selection -->
+<div x-init="initTodoIds([{% for todo in maintenance_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if maintenance_todos and idea_generation_todos %}, {% endif %}{% for todo in idea_generation_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if idea_generation_todos and marketing_todos %}, {% endif %}{% for todo in marketing_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}])"></div>
 <div class="space-y-6">
     <!-- Maintenance Section -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -21,7 +23,7 @@
         </div>
         <div class="divide-y divide-gray-200">
             {% for todo in maintenance_todos %}
-            {% include "todos/partials/todo_card.html" %}
+            {% include "todos/partials/todo_card.html" with selectable=True %}
             {% empty %}
             <div class="px-4 py-8 text-center text-gray-500">
                 <p class="text-sm">No maintenance tasks pending</p>
@@ -50,7 +52,7 @@
         </div>
         <div class="divide-y divide-gray-200">
             {% for todo in idea_generation_todos %}
-            {% include "todos/partials/todo_card.html" %}
+            {% include "todos/partials/todo_card.html" with selectable=True %}
             {% empty %}
             <div class="px-4 py-8 text-center text-gray-500">
                 <p class="text-sm">No research tasks pending</p>
@@ -79,7 +81,7 @@
         </div>
         <div class="divide-y divide-gray-200">
             {% for todo in marketing_todos %}
-            {% include "todos/partials/todo_card.html" %}
+            {% include "todos/partials/todo_card.html" with selectable=True %}
             {% empty %}
             <div class="px-4 py-8 text-center text-gray-500">
                 <p class="text-sm">No marketing tasks pending</p>
@@ -91,9 +93,11 @@
 
 {% else %}
 <!-- Filtered list view -->
+<!-- Initialize todo IDs for bulk selection -->
+<div x-init="initTodoIds([{% for todo in todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}])"></div>
 <div class="bg-white shadow rounded-lg divide-y divide-gray-200">
     {% for todo in todos %}
-    {% include "todos/partials/todo_card.html" %}
+    {% include "todos/partials/todo_card.html" with selectable=True %}
     {% empty %}
     <div class="px-4 py-12 text-center">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

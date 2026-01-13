@@ -1,10 +1,25 @@
-<div id="todo-{{ todo.pk }}" class="px-4 py-4 sm:px-6 {% if todo.is_completed %}bg-gray-50{% endif %}">
+<div id="todo-{{ todo.pk }}"
+     class="px-4 py-4 sm:px-6 {% if todo.is_completed %}bg-gray-50{% endif %}"
+     :class="{ 'ring-2 ring-inset ring-primary-500 bg-primary-50': {% if selectable %}selectMode && isSelected({{ todo.pk }}){% else %}false{% endif %} }">
     <div class="flex items-start gap-x-4">
-        <!-- Checkbox -->
+        {% if selectable %}
+        <!-- Bulk select checkbox (shown in select mode) -->
+        <div x-show="selectMode" x-cloak class="flex-shrink-0 mt-0.5" @click.stop="toggleTodo({{ todo.pk }})">
+            <div class="h-6 w-6 rounded border-2 flex items-center justify-center transition-colors cursor-pointer"
+                 :class="isSelected({{ todo.pk }}) ? 'bg-primary-600 border-primary-600' : 'border-gray-300 bg-white hover:border-gray-400'">
+                <svg x-show="isSelected({{ todo.pk }})" class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Complete checkbox -->
         <button hx-post="{% url 'todos:toggle_complete' todo.pk %}"
                 hx-target="#todo-{{ todo.pk }}"
                 hx-swap="outerHTML"
-                class="mt-0.5 flex-shrink-0">
+                class="mt-0.5 flex-shrink-0"
+                {% if selectable %}x-show="!selectMode"{% endif %}>
             {% if todo.is_completed %}
             <svg class="h-6 w-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />

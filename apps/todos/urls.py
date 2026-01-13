@@ -35,6 +35,9 @@ urlpatterns = [
     # Process watchlist quick-add
     path('quick-add/<int:pk>/process/', views.ProcessWatchlistQuickAddView.as_view(), name='process_quick_add'),
 
+    # Bulk operations
+    path('bulk-delete/', views.TodoBulkDeleteView.as_view(), name='bulk_delete'),
+
     # Quarterly settings
     path('settings/', views.QuarterlySettingsView.as_view(), name='settings'),
 ]
