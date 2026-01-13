@@ -63,8 +63,8 @@
                 {% endif %}
             </div>
 
-            <!-- Company and Category -->
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <!-- Company, Category, and Priority -->
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
                 <div>
                     <label for="id_company" class="block text-sm font-medium leading-6 text-gray-900">
                         Company
@@ -87,6 +87,18 @@
                     </div>
                     {% if form.category.errors %}
                     <p class="mt-1 text-sm text-red-600">{{ form.category.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_priority" class="block text-sm font-medium leading-6 text-gray-900">
+                        Priority
+                    </label>
+                    <div class="mt-2">
+                        {{ form.priority }}
+                    </div>
+                    {% if form.priority.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
                     {% endif %}
                 </div>
             </div>

@@ -40,6 +40,30 @@ class Organization(SoftDeleteModel):
                 counter += 1
         super().save(*args, **kwargs)
 
+    # Quarterly todo settings defaults
+    DEFAULT_QUARTERLY_SETTINGS = {
+        'enabled': True,
+        'statuses': ['portfolio', 'on_deck'],  # Which company statuses to create todos for
+        'investor_letter_enabled': True,
+        'days_after_quarter': 21,  # Days after quarter end to generate
+    }
+
+    def get_quarterly_settings(self):
+        """Get quarterly todo generation settings with defaults."""
+        defaults = self.DEFAULT_QUARTERLY_SETTINGS.copy()
+        saved = self.settings.get('quarterly_todos', {})
+        defaults.update(saved)
+        return defaults
+
+    def set_quarterly_settings(self, **kwargs):
+        """Update quarterly todo settings."""
+        current = self.get_quarterly_settings()
+        current.update(kwargs)
+        if 'quarterly_todos' not in self.settings:
+            self.settings['quarterly_todos'] = {}
+        self.settings['quarterly_todos'] = current
+        self.save(update_fields=['settings', 'updated_at'])
+
     def get_members(self):
         """Return all active members of this organization."""
         return self.memberships.filter(is_deleted=False).select_related('user')

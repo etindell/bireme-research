@@ -16,9 +16,9 @@ DEFAULT_CATEGORIES = [
         'order': 1
     },
     {
-        'name': 'Deep Dives',
-        'slug': 'deep-dives',
-        'category_type': 'deep_dives',
+        'name': 'Idea Generation',
+        'slug': 'idea-generation',
+        'category_type': 'idea_generation',
         'color': '#3B82F6',  # Blue
         'order': 2
     },

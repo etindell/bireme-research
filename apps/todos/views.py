@@ -55,6 +55,31 @@ class TodoListView(OrganizationViewMixin, ListView):
         if quarter:
             qs = qs.filter(quarter=quarter)
 
+        # Filter by priority
+        priority = self.request.GET.get('priority')
+        if priority:
+            qs = qs.filter(priority=priority)
+
+        # Filter by age
+        age = self.request.GET.get('age')
+        if age:
+            from datetime import timedelta
+            from django.utils import timezone
+            now = timezone.now()
+
+            if age == 'today':
+                start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                qs = qs.filter(created_at__gte=start)
+            elif age == 'week':
+                start = now - timedelta(days=7)
+                qs = qs.filter(created_at__gte=start)
+            elif age == 'month':
+                start = now - timedelta(days=30)
+                qs = qs.filter(created_at__gte=start)
+            elif age == 'older':
+                start = now - timedelta(days=30)
+                qs = qs.filter(created_at__lt=start)
+
         return qs.order_by('is_completed', '-created_at')
 
     def get_context_data(self, **kwargs):
@@ -67,21 +92,30 @@ class TodoListView(OrganizationViewMixin, ListView):
         context['current_status'] = self.request.GET.get('status', 'pending')
         context['current_type'] = self.request.GET.get('type', '')
         context['current_company'] = self.request.GET.get('company', '')
+        context['current_priority'] = self.request.GET.get('priority', '')
+        context['current_age'] = self.request.GET.get('age', '')
+        context['priorities'] = Todo.Priority.choices
 
         # Stats for summary
         org_todos = Todo.objects.filter(organization=self.request.organization)
         context['pending_count'] = org_todos.pending().count()
         context['completed_count'] = org_todos.completed().count()
         context['maintenance_pending'] = org_todos.pending().maintenance().count()
-        context['deep_dives_pending'] = org_todos.pending().deep_dives().count()
+        context['idea_generation_pending'] = org_todos.pending().idea_generation().count()
         context['marketing_pending'] = org_todos.pending().marketing().count()
 
         # Section-based todos for the default view (pending only, grouped by category)
-        show_sections = not self.request.GET.get('category') and self.request.GET.get('status', 'pending') == 'pending'
+        # Only show sections when no filters are applied (except default pending status)
+        show_sections = (
+            not self.request.GET.get('category') and
+            self.request.GET.get('status', 'pending') == 'pending' and
+            not self.request.GET.get('priority') and
+            not self.request.GET.get('age')
+        )
         if show_sections:
             base_qs = org_todos.pending().select_related('company', 'category', 'created_by')
             context['maintenance_todos'] = base_qs.maintenance().order_by('-created_at')[:20]
-            context['deep_dives_todos'] = base_qs.deep_dives().order_by('-created_at')[:20]
+            context['idea_generation_todos'] = base_qs.idea_generation().order_by('-created_at')[:20]
             context['marketing_todos'] = base_qs.marketing().order_by('-created_at')[:20]
         context['show_sections'] = show_sections
 
@@ -138,7 +172,7 @@ class TodoCreateView(OrganizationViewMixin, CreateView):
                 else:
                     cat = TodoCategory.objects.filter(
                         organization=self.request.organization,
-                        category_type=TodoCategory.CategoryType.DEEP_DIVES
+                        category_type=TodoCategory.CategoryType.IDEA_GENERATION
                     ).first()
                 if cat:
                     initial['category'] = cat
@@ -237,7 +271,7 @@ class QuickTodoCreateView(OrganizationViewMixin, View):
             else:
                 todo.category = TodoCategory.objects.filter(
                     organization=request.organization,
-                    category_type=TodoCategory.CategoryType.DEEP_DIVES
+                    category_type=TodoCategory.CategoryType.IDEA_GENERATION
                 ).first()
 
             todo.save()

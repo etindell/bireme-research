@@ -20,13 +20,13 @@ class TodoCategory(models.Model):
     """
     Categories for todos.
     - Maintenance: Auto-generated quarterly updates for portfolio companies
-    - Deep Dives: One-off research tasks
+    - Idea Generation: Research and new idea exploration
     - Marketing: Marketing and client-related tasks
     Seeded per organization.
     """
     class CategoryType(models.TextChoices):
         MAINTENANCE = 'maintenance', 'Maintenance'
-        DEEP_DIVES = 'deep_dives', 'Deep Dives'
+        IDEA_GENERATION = 'idea_generation', 'Idea Generation'
         MARKETING = 'marketing', 'Marketing'
 
     organization = models.ForeignKey(
@@ -39,7 +39,7 @@ class TodoCategory(models.Model):
     category_type = models.CharField(
         max_length=20,
         choices=CategoryType.choices,
-        default=CategoryType.DEEP_DIVES
+        default=CategoryType.IDEA_GENERATION
     )
     color = models.CharField(max_length=7, default='#6B7280')
     icon = models.CharField(max_length=50, blank=True)
@@ -77,8 +77,8 @@ class TodoQuerySet(models.QuerySet):
     def maintenance(self):
         return self.filter(category__category_type=TodoCategory.CategoryType.MAINTENANCE)
 
-    def deep_dives(self):
-        return self.filter(category__category_type=TodoCategory.CategoryType.DEEP_DIVES)
+    def idea_generation(self):
+        return self.filter(category__category_type=TodoCategory.CategoryType.IDEA_GENERATION)
 
     def marketing(self):
         return self.filter(category__category_type=TodoCategory.CategoryType.MARKETING)
@@ -114,6 +114,12 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         INVESTOR_LETTER = 'investor_letter', 'Investor Letter Review'
         CUSTOM = 'custom', 'Custom'
 
+    class Priority(models.TextChoices):
+        HIGH = 'high', 'High'
+        MEDIUM = 'medium', 'Medium'
+        LOW = 'low', 'Low'
+        NONE = 'none', 'None'
+
     # Core fields
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
@@ -139,6 +145,12 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         max_length=30,
         choices=TodoType.choices,
         default=TodoType.CUSTOM,
+        db_index=True
+    )
+    priority = models.CharField(
+        max_length=10,
+        choices=Priority.choices,
+        default=Priority.NONE,
         db_index=True
     )
 
@@ -187,6 +199,7 @@ class Todo(SoftDeleteModel, OrganizationMixin):
             models.Index(fields=['organization', 'company']),
             models.Index(fields=['organization', 'todo_type']),
             models.Index(fields=['organization', 'quarter']),
+            models.Index(fields=['organization', 'priority']),
             models.Index(fields=['company', 'is_completed']),
         ]
 

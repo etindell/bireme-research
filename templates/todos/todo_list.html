@@ -3,7 +3,7 @@
 {% block title %}Todos - Bireme Research{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
     <div class="md:flex md:items-center md:justify-between">
         <div class="min-w-0 flex-1">
@@ -40,7 +40,7 @@
                 </div>
             </div>
         </a>
-        <a href="?category=deep_dives&status=pending" class="rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow {% if current_category == 'deep_dives' %}ring-2 ring-blue-500{% endif %}">
+        <a href="?category=idea_generation&status=pending" class="rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow {% if current_category == 'idea_generation' %}ring-2 ring-blue-500{% endif %}">
             <div class="flex items-center">
                 <div class="flex-shrink-0 rounded-md bg-blue-100 p-3">
                     <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -49,7 +49,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Deep Dives</p>
-                    <p class="mt-1 text-2xl font-semibold text-blue-600">{{ deep_dives_pending }}</p>
+                    <p class="mt-1 text-2xl font-semibold text-blue-600">{{ idea_generation_pending }}</p>
                 </div>
             </div>
         </a>
@@ -80,11 +80,11 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='status'], [name='type'], [name='company']"
+                        hx-include="[name='status'], [name='type'], [name='company'], [name='priority'], [name='age']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Categories</option>
                     <option value="maintenance" {% if current_category == 'maintenance' %}selected{% endif %}>Maintenance</option>
-                    <option value="deep_dives" {% if current_category == 'deep_dives' %}selected{% endif %}>Deep Dives</option>
+                    <option value="idea_generation" {% if current_category == 'idea_generation' %}selected{% endif %}>Deep Dives</option>
                     <option value="marketing" {% if current_category == 'marketing' %}selected{% endif %}>Marketing</option>
                 </select>
             </div>
@@ -97,7 +97,7 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='category'], [name='type'], [name='company']"
+                        hx-include="[name='category'], [name='type'], [name='company'], [name='priority'], [name='age']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
                     <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
@@ -113,11 +113,46 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='category'], [name='status'], [name='company']"
+                        hx-include="[name='category'], [name='status'], [name='company'], [name='priority'], [name='age']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Types</option>
                     {% for value, label in todo_types %}
                     <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Age filter -->
+            <div>
+                <label for="age-filter" class="sr-only">Age</label>
+                <select id="age-filter"
+                        name="age"
+                        hx-get="{% url 'todos:list' %}"
+                        hx-target="#todo-list"
+                        hx-push-url="true"
+                        hx-include="[name='category'], [name='status'], [name='type'], [name='company'], [name='priority']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Time</option>
+                    <option value="today" {% if current_age == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if current_age == 'week' %}selected{% endif %}>This Week</option>
+                    <option value="month" {% if current_age == 'month' %}selected{% endif %}>This Month</option>
+                    <option value="older" {% if current_age == 'older' %}selected{% endif %}>Older</option>
+                </select>
+            </div>
+
+            <!-- Priority filter -->
+            <div>
+                <label for="priority-filter" class="sr-only">Priority</label>
+                <select id="priority-filter"
+                        name="priority"
+                        hx-get="{% url 'todos:list' %}"
+                        hx-target="#todo-list"
+                        hx-push-url="true"
+                        hx-include="[name='category'], [name='status'], [name='type'], [name='company'], [name='age']"
+                        class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                    <option value="">All Priorities</option>
+                    {% for value, label in priorities %}
+                    <option value="{{ value }}" {% if current_priority == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>

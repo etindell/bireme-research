@@ -40,8 +40,8 @@
                     </svg>
                     Deep Dives
                 </h2>
-                {% if deep_dives_todos.count > 0 %}
-                <a href="?category=deep_dives&status=pending" class="text-sm text-blue-700 hover:text-blue-900">
+                {% if idea_generation_todos.count > 0 %}
+                <a href="?category=idea_generation&status=pending" class="text-sm text-blue-700 hover:text-blue-900">
                     View all &rarr;
                 </a>
                 {% endif %}
@@ -49,7 +49,7 @@
             <p class="text-sm text-blue-700 mt-1">One-off research tasks and investigations</p>
         </div>
         <div class="divide-y divide-gray-200">
-            {% for todo in deep_dives_todos %}
+            {% for todo in idea_generation_todos %}
             {% include "todos/partials/todo_card.html" %}
             {% empty %}
             <div class="px-4 py-8 text-center text-gray-500">
@@ -124,13 +124,13 @@
         </div>
         <div class="flex flex-1 justify-between sm:justify-end gap-2">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}&category={{ current_category }}&status={{ current_status }}&type={{ current_type }}"
+            <a href="?page={{ page_obj.previous_page_number }}&category={{ current_category }}&status={{ current_status }}&type={{ current_type }}&priority={{ current_priority }}&age={{ current_age }}"
                class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                 Previous
             </a>
             {% endif %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}&category={{ current_category }}&status={{ current_status }}&type={{ current_type }}"
+            <a href="?page={{ page_obj.next_page_number }}&category={{ current_category }}&status={{ current_status }}&type={{ current_type }}&priority={{ current_priority }}&age={{ current_age }}"
                class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                 Next
             </a>
