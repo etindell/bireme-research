@@ -16,8 +16,8 @@ DEFAULT_CATEGORIES = [
         'order': 1
     },
     {
-        'name': 'Idea Generation',
-        'slug': 'idea-generation',
+        'name': 'General Research',
+        'slug': 'general-research',
         'category_type': 'idea_generation',
         'color': '#3B82F6',  # Blue
         'order': 2
