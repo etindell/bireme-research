@@ -199,8 +199,11 @@ class Company(SoftDeleteModel, OrganizationMixin):
         return self.tickers.filter(is_primary=True).first() or self.tickers.first()
 
     def get_active_valuation(self):
-        """Return the active valuation for this company."""
-        return self.valuations.filter(is_active=True, is_deleted=False).first()
+        """Return the active valuation for this company (most recent by date)."""
+        return self.valuations.filter(
+            is_active=True,
+            is_deleted=False
+        ).order_by('-as_of_date', '-created_at').first()
 
     @property
     def irr(self):

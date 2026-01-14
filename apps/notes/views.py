@@ -156,11 +156,20 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        # Pre-validate cash flow form BEFORE saving the note
+        # This ensures users see validation errors instead of silent failure
+        if self.request.POST.get('include_cash_flows'):
+            cash_flow_form = NoteCashFlowForm(self.request.POST)
+            if not cash_flow_form.is_valid():
+                # Re-render form with cash flow errors - don't save the note
+                context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
+                return self.render_to_response(context)
+
         form.instance.organization = self.request.organization
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
 
-        # Handle cash flow form
+        # Handle cash flow form (already validated above if checkbox was checked)
         cash_flow_form = NoteCashFlowForm(self.request.POST)
         if cash_flow_form.is_valid() and cash_flow_form.cleaned_data.get('include_cash_flows'):
             cash_flow = NoteCashFlow(
@@ -291,13 +300,26 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
             except NoteCashFlow.DoesNotExist:
                 pass
             context['cash_flow_form'] = NoteCashFlowForm(initial=initial)
+
+        # Pass company to context for profitability_metric label in template
+        context['company'] = self.object.company
+
         return context
 
     def form_valid(self, form):
+        # Pre-validate cash flow form BEFORE saving the note
+        # This ensures users see validation errors instead of silent failure
+        if self.request.POST.get('include_cash_flows'):
+            cash_flow_form = NoteCashFlowForm(self.request.POST)
+            if not cash_flow_form.is_valid():
+                # Re-render form with cash flow errors - don't save the note
+                context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
+                return self.render_to_response(context)
+
         form.instance.updated_by = self.request.user
         response = super().form_valid(form)
 
-        # Handle cash flow form
+        # Handle cash flow form (already validated above if checkbox was checked)
         cash_flow_form = NoteCashFlowForm(self.request.POST)
         if cash_flow_form.is_valid():
             include = cash_flow_form.cleaned_data.get('include_cash_flows')

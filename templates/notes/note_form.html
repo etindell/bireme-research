@@ -214,6 +214,22 @@
                 </div>
 
                 <div x-show="includeCashFlows" x-cloak class="space-y-4">
+                    <!-- Cash flow form error banner -->
+                    {% if cash_flow_form.errors %}
+                    <div class="rounded-md bg-red-50 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-red-800">Please fill in all required cash flow fields.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <p class="text-sm text-gray-500">
                         Attach cash flow assumptions as a permanent snapshot with this note.
                     </p>
@@ -222,30 +238,51 @@
                         <div>
                             <label for="id_current_price" class="block text-sm font-medium text-gray-700">Price</label>
                             <div class="mt-1">{{ cash_flow_form.current_price }}</div>
+                            {% if cash_flow_form.current_price.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.current_price.errors.0 }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label for="id_fcf_year_1" class="block text-sm font-medium text-gray-700">Y1 FCF</label>
                             <div class="mt-1">{{ cash_flow_form.fcf_year_1 }}</div>
+                            {% if cash_flow_form.fcf_year_1.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_1.errors.0 }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label for="id_fcf_year_2" class="block text-sm font-medium text-gray-700">Y2 FCF</label>
                             <div class="mt-1">{{ cash_flow_form.fcf_year_2 }}</div>
+                            {% if cash_flow_form.fcf_year_2.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_2.errors.0 }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label for="id_fcf_year_3" class="block text-sm font-medium text-gray-700">Y3 FCF</label>
                             <div class="mt-1">{{ cash_flow_form.fcf_year_3 }}</div>
+                            {% if cash_flow_form.fcf_year_3.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_3.errors.0 }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label for="id_fcf_year_4" class="block text-sm font-medium text-gray-700">Y4 FCF</label>
                             <div class="mt-1">{{ cash_flow_form.fcf_year_4 }}</div>
+                            {% if cash_flow_form.fcf_year_4.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_4.errors.0 }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label for="id_fcf_year_5" class="block text-sm font-medium text-gray-700">Y5 FCF</label>
                             <div class="mt-1">{{ cash_flow_form.fcf_year_5 }}</div>
+                            {% if cash_flow_form.fcf_year_5.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_5.errors.0 }}</p>
+                            {% endif %}
                         </div>
                         <div>
                             <label for="id_terminal_value" class="block text-sm font-medium text-gray-700">Terminal Value</label>
                             <div class="mt-1">{{ cash_flow_form.terminal_value }}</div>
+                            {% if cash_flow_form.terminal_value.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.terminal_value.errors.0 }}</p>
+                            {% endif %}
                         </div>
                     </div>
 
