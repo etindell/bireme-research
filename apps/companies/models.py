@@ -431,6 +431,80 @@ class CompanyValuation(SoftDeleteModel):
         help_text='Terminal value per share at end of Year 5'
     )
 
+    # Revenue Forecasts (Optional)
+    revenue_year_1 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue forecast - Year 1'
+    )
+    revenue_year_2 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue forecast - Year 2'
+    )
+    revenue_year_3 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue forecast - Year 3'
+    )
+    revenue_year_4 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue forecast - Year 4'
+    )
+    revenue_year_5 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Revenue forecast - Year 5'
+    )
+
+    # Profitability Metric Forecasts (Optional - EBIT, EBITDA, etc.)
+    ebit_ebitda_year_1 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Profitability metric forecast - Year 1'
+    )
+    ebit_ebitda_year_2 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Profitability metric forecast - Year 2'
+    )
+    ebit_ebitda_year_3 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Profitability metric forecast - Year 3'
+    )
+    ebit_ebitda_year_4 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Profitability metric forecast - Year 4'
+    )
+    ebit_ebitda_year_5 = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Profitability metric forecast - Year 5'
+    )
+
     # Stock Price - can be auto-fetched or manually overridden
     current_price = models.DecimalField(
         max_digits=12,

@@ -167,6 +167,8 @@ class CompanyValuationForm(forms.ModelForm):
             'shares_outstanding',
             'fcf_year_1', 'fcf_year_2', 'fcf_year_3', 'fcf_year_4', 'fcf_year_5',
             'terminal_value',
+            'revenue_year_1', 'revenue_year_2', 'revenue_year_3', 'revenue_year_4', 'revenue_year_5',
+            'ebit_ebitda_year_1', 'ebit_ebitda_year_2', 'ebit_ebitda_year_3', 'ebit_ebitda_year_4', 'ebit_ebitda_year_5',
             'price_override',
             'as_of_date',
             'notes',
@@ -199,6 +201,46 @@ class CompanyValuationForm(forms.ModelForm):
                 'step': '0.01',
             }),
             'terminal_value': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'revenue_year_1': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'revenue_year_2': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'revenue_year_3': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'revenue_year_4': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'revenue_year_5': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'ebit_ebitda_year_1': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'ebit_ebitda_year_2': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'ebit_ebitda_year_3': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'ebit_ebitda_year_4': forms.NumberInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'step': '0.01',
+            }),
+            'ebit_ebitda_year_5': forms.NumberInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
                 'step': '0.01',
             }),

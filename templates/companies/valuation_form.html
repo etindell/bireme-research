@@ -146,6 +146,84 @@
             </div>
         </div>
 
+        <!-- Revenue Projections (Optional) -->
+        <div class="bg-white shadow rounded-lg p-6" x-data="{ showRevenue: {% if form.revenue_year_1.value or form.revenue_year_2.value or form.revenue_year_3.value or form.revenue_year_4.value or form.revenue_year_5.value %}true{% else %}false{% endif %} }">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">Revenue Projections</h2>
+                    <p class="text-sm text-gray-500">Optional forecasts for tracking</p>
+                </div>
+                <button type="button" @click="showRevenue = !showRevenue"
+                        class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                    <span x-text="showRevenue ? 'Hide' : 'Show'"></span>
+                </button>
+            </div>
+            <div x-show="showRevenue" x-cloak>
+                <div class="grid grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 1</label>
+                        <div class="mt-2">{{ form.revenue_year_1 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 2</label>
+                        <div class="mt-2">{{ form.revenue_year_2 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 3</label>
+                        <div class="mt-2">{{ form.revenue_year_3 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 4</label>
+                        <div class="mt-2">{{ form.revenue_year_4 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 5</label>
+                        <div class="mt-2">{{ form.revenue_year_5 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profitability Metric Projections (Optional) -->
+        <div class="bg-white shadow rounded-lg p-6" x-data="{ showProfitability: {% if form.ebit_ebitda_year_1.value or form.ebit_ebitda_year_2.value or form.ebit_ebitda_year_3.value or form.ebit_ebitda_year_4.value or form.ebit_ebitda_year_5.value %}true{% else %}false{% endif %} }">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">
+                        {% if company.profitability_metric %}{{ company.profitability_metric }}{% else %}Profitability Metric{% endif %} Projections
+                    </h2>
+                    <p class="text-sm text-gray-500">Optional forecasts for tracking</p>
+                </div>
+                <button type="button" @click="showProfitability = !showProfitability"
+                        class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                    <span x-text="showProfitability ? 'Hide' : 'Show'"></span>
+                </button>
+            </div>
+            <div x-show="showProfitability" x-cloak>
+                <div class="grid grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 1</label>
+                        <div class="mt-2">{{ form.ebit_ebitda_year_1 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 2</label>
+                        <div class="mt-2">{{ form.ebit_ebitda_year_2 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 3</label>
+                        <div class="mt-2">{{ form.ebit_ebitda_year_3 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 4</label>
+                        <div class="mt-2">{{ form.ebit_ebitda_year_4 }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium leading-6 text-gray-900">Year 5</label>
+                        <div class="mt-2">{{ form.ebit_ebitda_year_5 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notes & Status -->
         <div class="bg-white shadow rounded-lg p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">Notes & Status</h2>
