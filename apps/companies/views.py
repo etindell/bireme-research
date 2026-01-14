@@ -71,11 +71,20 @@ class CompanyListView(OrganizationViewMixin, ListView):
             qs = qs.order_by('name')
 
         # Annotate with has_irr to identify companies that need IRR input
-        has_irr_subquery = NoteCashFlow.objects.filter(
+        # Check for IRR via notes (NoteCashFlow)
+        has_note_irr = NoteCashFlow.objects.filter(
             note__company=OuterRef('pk'),
             note__is_deleted=False
         )
-        qs = qs.annotate(has_irr=Exists(has_irr_subquery))
+        # Check for IRR via company valuation (CompanyValuation with FCF data)
+        has_valuation_irr = CompanyValuation.objects.filter(
+            company=OuterRef('pk'),
+            is_deleted=False,
+            is_active=True
+        )
+        qs = qs.annotate(
+            has_irr=Exists(has_note_irr) | Exists(has_valuation_irr)
+        )
 
         return qs
 
