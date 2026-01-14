@@ -420,8 +420,8 @@ class CompanyValuation(SoftDeleteModel):
 
     @property
     def effective_price(self):
-        """Return the price to use for calculations (override or fetched)."""
-        return self.price_override or self.current_price
+        """Return the price to use for calculations (override, snapshot, or live from company)."""
+        return self.price_override or self.current_price or self.company.current_price
 
     def get_cash_flows(self):
         """Return list of cash flows for IRR calculation."""
