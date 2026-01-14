@@ -45,13 +45,21 @@ NOTES (most recent first):
 {notes_content}
 """
 
+FOCUS_TOPIC_ADDITION = """
 
-def generate_company_summary(company) -> Optional[str]:
+ADDITIONAL FOCUS AREA: {focus_topic}
+In addition to the standard sections above, please include a dedicated section:
+- **{focus_topic}**: Search through all notes for any information related to this topic. Include relevant details, quotes, dates, and context. If no information is found, state "No specific information found in notes regarding this topic."
+"""
+
+
+def generate_company_summary(company, focus_topic: Optional[str] = None) -> Optional[str]:
     """
     Generate an AI summary of research notes for a company using Claude 3 Haiku.
 
     Args:
         company: Company model instance
+        focus_topic: Optional topic to focus on in the summary (e.g., "capital allocation and dividends")
 
     Returns:
         Generated summary string or None if generation fails.
@@ -101,6 +109,10 @@ def generate_company_summary(company) -> Optional[str]:
         today_date=today_date,
         notes_content="\n".join(notes_content)
     )
+
+    # Append focus topic section if provided
+    if focus_topic:
+        prompt += FOCUS_TOPIC_ADDITION.format(focus_topic=focus_topic)
 
     # Call Claude 3 Haiku
     try:

@@ -12,8 +12,13 @@
             <form hx-post="{% url 'companies:generate_summary' company.slug %}"
                   hx-target="#summary-section"
                   hx-swap="outerHTML"
-                  hx-indicator="#summary-loading">
+                  hx-indicator="#summary-loading"
+                  class="flex items-center gap-x-3">
                 {% csrf_token %}
+                <input type="text"
+                       name="focus_topic"
+                       placeholder="Focus topic (optional)"
+                       class="block w-48 rounded-md border-0 py-1 px-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600">
                 <button type="submit"
                         class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500">
                     <svg id="summary-loading" class="htmx-indicator animate-spin -ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -41,8 +46,13 @@
             <form hx-post="{% url 'companies:generate_summary' company.slug %}"
                   hx-target="#summary-section"
                   hx-swap="outerHTML"
-                  hx-indicator="#summary-loading-btn">
+                  hx-indicator="#summary-loading-btn"
+                  class="flex flex-col items-center gap-y-3">
                 {% csrf_token %}
+                <input type="text"
+                       name="focus_topic"
+                       placeholder="Focus topic (optional)"
+                       class="block w-64 rounded-md border-0 py-1.5 px-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600">
                 <button type="submit"
                         class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
                     <svg id="summary-loading-btn" class="htmx-indicator animate-spin -ml-0.5 mr-1.5 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

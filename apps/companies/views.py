@@ -782,7 +782,8 @@ class GenerateSummaryView(OrganizationViewMixin, View):
             slug=slug
         )
 
-        summary = generate_company_summary(company)
+        focus_topic = request.POST.get('focus_topic', '').strip() or None
+        summary = generate_company_summary(company, focus_topic=focus_topic)
 
         if summary:
             messages.success(request, 'Summary generated successfully.')
