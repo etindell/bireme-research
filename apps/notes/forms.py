@@ -376,7 +376,8 @@ class NoteCashFlowForm(forms.Form):
         include = cleaned_data.get('include_cash_flows')
 
         if include:
-            required_fields = ['current_price', 'fcf_year_1', 'fcf_year_2',
+            # Note: current_price is NOT required - it will use Yahoo Finance price
+            required_fields = ['fcf_year_1', 'fcf_year_2',
                              'fcf_year_3', 'fcf_year_4', 'fcf_year_5', 'terminal_value']
             for field in required_fields:
                 if not cleaned_data.get(field):

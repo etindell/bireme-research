@@ -236,7 +236,8 @@
 
                     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                         <div>
-                            <label for="id_current_price" class="block text-sm font-medium text-gray-700">Price</label>
+                            <label for="id_current_price" class="block text-sm font-medium text-gray-700">Price Override</label>
+                            <p class="text-xs text-gray-400">Uses market price if blank</p>
                             <div class="mt-1">{{ cash_flow_form.current_price }}</div>
                             {% if cash_flow_form.current_price.errors %}
                             <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.current_price.errors.0 }}</p>

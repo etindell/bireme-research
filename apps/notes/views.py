@@ -172,9 +172,11 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         # Handle cash flow form (already validated above if checkbox was checked)
         cash_flow_form = NoteCashFlowForm(self.request.POST)
         if cash_flow_form.is_valid() and cash_flow_form.cleaned_data.get('include_cash_flows'):
+            # Use form price if provided, otherwise use company's Yahoo Finance price
+            price = cash_flow_form.cleaned_data.get('current_price') or self.object.company.current_price
             cash_flow = NoteCashFlow(
                 note=self.object,
-                current_price=cash_flow_form.cleaned_data['current_price'],
+                current_price=price,
                 fcf_year_1=cash_flow_form.cleaned_data['fcf_year_1'],
                 fcf_year_2=cash_flow_form.cleaned_data['fcf_year_2'],
                 fcf_year_3=cash_flow_form.cleaned_data['fcf_year_3'],
@@ -218,6 +220,9 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         company = self.object.company
         today = timezone.now().date()
 
+        # Only set price_override if explicitly provided, otherwise let valuation use Yahoo Finance price
+        price_override = cleaned_data.get('current_price') or None
+
         # Get existing active valuation or create new one
         valuation = company.get_active_valuation()
 
@@ -229,7 +234,7 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
             valuation.fcf_year_4 = cleaned_data['fcf_year_4']
             valuation.fcf_year_5 = cleaned_data['fcf_year_5']
             valuation.terminal_value = cleaned_data['terminal_value']
-            valuation.price_override = cleaned_data['current_price']
+            valuation.price_override = price_override
             valuation.as_of_date = today
             valuation.calculate_irr()
             valuation.save(history_user=self.request.user)
@@ -243,7 +248,7 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 fcf_year_4=cleaned_data['fcf_year_4'],
                 fcf_year_5=cleaned_data['fcf_year_5'],
                 terminal_value=cleaned_data['terminal_value'],
-                price_override=cleaned_data['current_price'],
+                price_override=price_override,
                 as_of_date=today,
                 is_active=True,
             )
@@ -326,8 +331,9 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
             try:
                 existing_cash_flow = self.object.cash_flow
                 if include:
-                    # Update existing
-                    existing_cash_flow.current_price = cash_flow_form.cleaned_data['current_price']
+                    # Update existing - use form price if provided, otherwise use company's Yahoo Finance price
+                    price = cash_flow_form.cleaned_data.get('current_price') or self.object.company.current_price
+                    existing_cash_flow.current_price = price
                     existing_cash_flow.fcf_year_1 = cash_flow_form.cleaned_data['fcf_year_1']
                     existing_cash_flow.fcf_year_2 = cash_flow_form.cleaned_data['fcf_year_2']
                     existing_cash_flow.fcf_year_3 = cash_flow_form.cleaned_data['fcf_year_3']
@@ -355,10 +361,11 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     existing_cash_flow.delete()
             except NoteCashFlow.DoesNotExist:
                 if include:
-                    # Create new
+                    # Create new - use form price if provided, otherwise use company's Yahoo Finance price
+                    price = cash_flow_form.cleaned_data.get('current_price') or self.object.company.current_price
                     cash_flow = NoteCashFlow(
                         note=self.object,
-                        current_price=cash_flow_form.cleaned_data['current_price'],
+                        current_price=price,
                         fcf_year_1=cash_flow_form.cleaned_data['fcf_year_1'],
                         fcf_year_2=cash_flow_form.cleaned_data['fcf_year_2'],
                         fcf_year_3=cash_flow_form.cleaned_data['fcf_year_3'],
@@ -394,6 +401,9 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
         company = self.object.company
         today = timezone.now().date()
 
+        # Only set price_override if explicitly provided, otherwise let valuation use Yahoo Finance price
+        price_override = cleaned_data.get('current_price') or None
+
         # Get existing active valuation or create new one
         valuation = company.get_active_valuation()
 
@@ -405,7 +415,7 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
             valuation.fcf_year_4 = cleaned_data['fcf_year_4']
             valuation.fcf_year_5 = cleaned_data['fcf_year_5']
             valuation.terminal_value = cleaned_data['terminal_value']
-            valuation.price_override = cleaned_data['current_price']
+            valuation.price_override = price_override
             valuation.as_of_date = today
             valuation.calculate_irr()
             valuation.save(history_user=self.request.user)
@@ -419,7 +429,7 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                 fcf_year_4=cleaned_data['fcf_year_4'],
                 fcf_year_5=cleaned_data['fcf_year_5'],
                 terminal_value=cleaned_data['terminal_value'],
-                price_override=cleaned_data['current_price'],
+                price_override=price_override,
                 as_of_date=today,
                 is_active=True,
             )
