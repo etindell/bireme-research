@@ -165,6 +165,14 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
                 return self.render_to_response(context)
 
+            # Check that we have a price (either from form or from company)
+            company = form.cleaned_data.get('company')
+            form_price = cash_flow_form.cleaned_data.get('current_price')
+            if not form_price and (not company or not company.current_price):
+                cash_flow_form.add_error('current_price', 'Price is required (company has no market price available)')
+                context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
+                return self.render_to_response(context)
+
         form.instance.organization = self.request.organization
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
@@ -318,6 +326,14 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
             cash_flow_form = NoteCashFlowForm(self.request.POST)
             if not cash_flow_form.is_valid():
                 # Re-render form with cash flow errors - don't save the note
+                context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
+                return self.render_to_response(context)
+
+            # Check that we have a price (either from form or from company)
+            company = self.object.company
+            form_price = cash_flow_form.cleaned_data.get('current_price')
+            if not form_price and (not company or not company.current_price):
+                cash_flow_form.add_error('current_price', 'Price is required (company has no market price available)')
                 context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
                 return self.render_to_response(context)
 
