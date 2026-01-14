@@ -27,6 +27,8 @@ class CompanyListView(OrganizationViewMixin, ListView):
     def get_queryset(self):
         from datetime import timedelta
         from django.utils import timezone
+        from django.db.models import Exists, OuterRef
+        from apps.notes.models import NoteCashFlow
 
         status = self.request.GET.get('status')
 
@@ -67,6 +69,13 @@ class CompanyListView(OrganizationViewMixin, ListView):
             qs = qs.order_by('-updated_at')
         else:
             qs = qs.order_by('name')
+
+        # Annotate with has_irr to identify companies that need IRR input
+        has_irr_subquery = NoteCashFlow.objects.filter(
+            note__company=OuterRef('pk'),
+            note__is_deleted=False
+        )
+        qs = qs.annotate(has_irr=Exists(has_irr_subquery))
 
         return qs
 
