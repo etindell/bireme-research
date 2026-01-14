@@ -15,13 +15,33 @@
                         hx-get="{% url 'companies:list' %}"
                         hx-target="#company-content"
                         hx-push-url="true"
-                        hx-include="[name='sector'], [name='q'], [name='order']"
+                        hx-include="[name='sector'], [name='q'], [name='order'], [name='direction']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Statuses</option>
                     {% for value, label in statuses %}
                     <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <!-- Direction filter (only for On Deck) -->
+            <div x-data="{ showDirection: '{{ current_status }}' === 'on_deck' }"
+                 x-init="document.getElementById('status-filter')?.addEventListener('change', e => showDirection = e.target.value === 'on_deck')">
+                <div x-show="showDirection" x-cloak>
+                    <label for="direction-filter" class="sr-only">Direction</label>
+                    <select id="direction-filter"
+                            name="direction"
+                            hx-get="{% url 'companies:list' %}"
+                            hx-target="#company-content"
+                            hx-push-url="true"
+                            hx-include="[name='status'], [name='sector'], [name='q'], [name='order']"
+                            class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
+                        <option value="">All Directions</option>
+                        {% for value, label in directions %}
+                        <option value="{{ value }}" {% if current_direction == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             <!-- Sector filter -->

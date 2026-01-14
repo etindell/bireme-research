@@ -50,6 +50,11 @@ class CompanyListView(OrganizationViewMixin, ListView):
         if sector:
             qs = qs.filter(sector=sector)
 
+        # Filter by direction (for On Deck view)
+        direction = self.request.GET.get('direction')
+        if direction:
+            qs = qs.filter(direction=direction)
+
         # Search
         q = self.request.GET.get('q')
         if q:
@@ -69,36 +74,47 @@ class CompanyListView(OrganizationViewMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['statuses'] = Company.Status.choices
         context['sectors'] = Company.Sector.choices
+        context['directions'] = Company.Direction.choices
         context['current_status'] = self.request.GET.get('status', '')
         context['current_sector'] = self.request.GET.get('sector', '')
+        context['current_direction'] = self.request.GET.get('direction', '')
         context['current_order'] = self.request.GET.get('order', 'name')
         context['search_query'] = self.request.GET.get('q', '')
 
-        # For watchlist view, separate triggered alerts
+        # For watchlist view, separate triggered alerts by type
         current_status = self.request.GET.get('status')
         if current_status == 'watchlist':
             context['is_watchlist_view'] = True
-            # Get companies below alert price (triggered alerts)
+            # Get all watchlist companies with prices
             all_watchlist = Company.objects.filter(
                 organization=self.request.organization,
                 status=Company.Status.WATCHLIST,
                 is_deleted=False,
-                alert_price__isnull=False,
                 current_price__isnull=False
             ).prefetch_related('tickers')
 
+            # Separate low and high alerts
+            context['triggered_low_alerts'] = [
+                c for c in all_watchlist if c.is_low_alert_triggered
+            ]
+            context['triggered_high_alerts'] = [
+                c for c in all_watchlist if c.is_high_alert_triggered
+            ]
+            # Combined for backward compatibility
             context['triggered_alerts'] = [
                 c for c in all_watchlist if c.is_alert_triggered
             ]
 
-        # For portfolio and on_deck views, show expanded data
-        if current_status in ['portfolio', 'on_deck']:
+        # For long_book, short_book and on_deck views, show expanded data
+        if current_status in ['long_book', 'short_book', 'on_deck']:
             context['is_expanded_view'] = True
 
         return context
 
     def get_template_names(self):
-        if self.request.htmx:
+        # Only return partial for targeted HTMX requests (like filter changes)
+        # Boosted requests (sidebar link clicks) should get the full template
+        if self.request.htmx and not self.request.htmx.boosted:
             return ['companies/partials/company_list_content.html']
         return [self.template_name]
 
@@ -515,7 +531,8 @@ class IRRLeaderboardView(OrganizationViewMixin, ListView):
         return context
 
     def get_template_names(self):
-        if self.request.htmx:
+        # Only return partial for targeted HTMX requests (not boosted navigation)
+        if self.request.htmx and not self.request.htmx.boosted:
             return ['companies/partials/irr_leaderboard_items.html']
         return [self.template_name]
 
@@ -692,7 +709,7 @@ class RefreshCompanyPricesView(OrganizationViewMixin, View):
         else:
             companies = Company.objects.filter(
                 organization=request.organization,
-                status__in=[Company.Status.PORTFOLIO, Company.Status.ON_DECK],
+                status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK, Company.Status.ON_DECK],
                 is_deleted=False
             ).prefetch_related('tickers')
 
@@ -730,11 +747,24 @@ class UpgradeToOnDeckView(OrganizationViewMixin, View):
             slug=slug
         )
 
-        company.status = Company.Status.ON_DECK
-        company.updated_by = request.user
-        company.save(update_fields=['status', 'updated_by', 'updated_at'])
+        # Get direction from POST data or infer from alert type
+        direction = request.POST.get('direction')
+        if not direction:
+            # Infer from which alert triggered
+            if company.is_low_alert_triggered:
+                direction = Company.Direction.LONG
+            elif company.is_high_alert_triggered:
+                direction = Company.Direction.SHORT
+            else:
+                direction = Company.Direction.LONG  # Default to long
 
-        messages.success(request, f'{company.name} moved to On Deck.')
+        company.status = Company.Status.ON_DECK
+        company.direction = direction
+        company.updated_by = request.user
+        company.save(update_fields=['status', 'direction', 'updated_by', 'updated_at'])
+
+        direction_display = 'Long' if direction == Company.Direction.LONG else 'Short'
+        messages.success(request, f'{company.name} moved to On Deck ({direction_display}).')
 
         if request.htmx:
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})

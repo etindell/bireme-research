@@ -55,6 +55,7 @@ class GlobalSearchView(LoginRequiredMixin, TemplateView):
         return context
 
     def get_template_names(self):
-        if self.request.htmx:
+        # Only return partial for targeted HTMX requests (not boosted navigation)
+        if self.request.htmx and not self.request.htmx.boosted:
             return ['search/partials/search_results.html']
         return [self.template_name]

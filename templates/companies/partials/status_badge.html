@@ -1,15 +1,19 @@
 <!-- Status badge -->
-{% if status == 'portfolio' %}
+{% if status == 'long_book' %}
 <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-    Portfolio
+    Long Book
+</span>
+{% elif status == 'short_book' %}
+<span class="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
+    Short Book
 </span>
 {% elif status == 'on_deck' %}
 <span class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
-    On Deck
+    On Deck{% if direction %} ({{ direction|title }}){% endif %}
 </span>
 {% elif status == 'watchlist' %}
 <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-    Watchlist
+    Watch List
 </span>
 {% elif status == 'passed' %}
 <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
@@ -18,5 +22,10 @@
 {% elif status == 'archived' %}
 <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
     Archived
+</span>
+{% elif status == 'portfolio' %}
+<!-- Legacy support for portfolio status during migration -->
+<span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+    Long Book
 </span>
 {% endif %}

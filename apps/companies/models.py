@@ -17,11 +17,24 @@ class CompanyQuerySet(models.QuerySet):
     def for_organization(self, organization):
         return self.filter(organization=organization)
 
-    def portfolio(self):
-        return self.filter(status=Company.Status.PORTFOLIO)
+    def long_book(self):
+        """Companies in the Long Book."""
+        return self.filter(status=Company.Status.LONG_BOOK)
+
+    def short_book(self):
+        """Companies in the Short Book."""
+        return self.filter(status=Company.Status.SHORT_BOOK)
 
     def on_deck(self):
         return self.filter(status=Company.Status.ON_DECK)
+
+    def on_deck_long(self):
+        """On Deck companies being considered for long positions."""
+        return self.filter(status=Company.Status.ON_DECK, direction=Company.Direction.LONG)
+
+    def on_deck_short(self):
+        """On Deck companies being considered for short positions."""
+        return self.filter(status=Company.Status.ON_DECK, direction=Company.Direction.SHORT)
 
     def watchlist(self):
         return self.filter(status=Company.Status.WATCHLIST)
@@ -48,11 +61,16 @@ class Company(SoftDeleteModel, OrganizationMixin):
     A company being researched for potential investment.
     """
     class Status(models.TextChoices):
-        PORTFOLIO = 'portfolio', 'Portfolio'
+        LONG_BOOK = 'long_book', 'Long Book'
+        SHORT_BOOK = 'short_book', 'Short Book'
         ON_DECK = 'on_deck', 'On Deck'
-        WATCHLIST = 'watchlist', 'Watchlist'
+        WATCHLIST = 'watchlist', 'Watch List'
         PASSED = 'passed', 'Passed'
         ARCHIVED = 'archived', 'Archived'
+
+    class Direction(models.TextChoices):
+        LONG = 'long', 'Long'
+        SHORT = 'short', 'Short'
 
     class Sector(models.TextChoices):
         TECHNOLOGY = 'technology', 'Technology'
@@ -78,6 +96,14 @@ class Company(SoftDeleteModel, OrganizationMixin):
         choices=Status.choices,
         default=Status.WATCHLIST,
         db_index=True
+    )
+    direction = models.CharField(
+        max_length=10,
+        choices=Direction.choices,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text='Direction for On Deck companies (Long or Short)'
     )
     sector = models.CharField(
         max_length=30,
@@ -106,18 +132,25 @@ class Company(SoftDeleteModel, OrganizationMixin):
         help_text='Business description from Yahoo Finance'
     )
 
-    # Watchlist alert price
-    alert_price = models.DecimalField(
+    # Watchlist price band alerts
+    alert_price_low = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text='Price at which to consider deeper research'
+        help_text='Low price alert - triggers when price drops to this level (long opportunity)'
     )
-    alert_price_reason = models.CharField(
+    alert_price_high = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='High price alert - triggers when price rises to this level (short opportunity)'
+    )
+    alert_reason = models.CharField(
         max_length=500,
         blank=True,
-        help_text='Brief explanation of why this alert price was chosen'
+        help_text='Brief explanation of why these alert prices were chosen'
     )
     current_price = models.DecimalField(
         max_digits=12,
@@ -171,6 +204,7 @@ class Company(SoftDeleteModel, OrganizationMixin):
             GinIndex(fields=['search_vector']),
             models.Index(fields=['organization', 'status']),
             models.Index(fields=['organization', 'sector']),
+            models.Index(fields=['organization', 'direction']),
             models.Index(fields=['organization', '-updated_at']),
         ]
 
@@ -215,7 +249,8 @@ class Company(SoftDeleteModel, OrganizationMixin):
     def status_color(self):
         """Return CSS color class for status."""
         colors = {
-            self.Status.PORTFOLIO: 'green',
+            self.Status.LONG_BOOK: 'green',
+            self.Status.SHORT_BOOK: 'red',
             self.Status.ON_DECK: 'yellow',
             self.Status.WATCHLIST: 'blue',
             self.Status.PASSED: 'gray',
@@ -225,16 +260,44 @@ class Company(SoftDeleteModel, OrganizationMixin):
 
     @property
     def is_alert_triggered(self):
-        """Check if current price is at or below alert price."""
-        if self.alert_price and self.current_price:
-            return self.current_price <= self.alert_price
+        """Check if any price alert is triggered."""
+        return self.is_low_alert_triggered or self.is_high_alert_triggered
+
+    @property
+    def is_low_alert_triggered(self):
+        """Check if low price alert (long opportunity) is triggered."""
+        if self.alert_price_low and self.current_price:
+            return self.current_price <= self.alert_price_low
         return False
 
     @property
+    def is_high_alert_triggered(self):
+        """Check if high price alert (short opportunity) is triggered."""
+        if self.alert_price_high and self.current_price:
+            return self.current_price >= self.alert_price_high
+        return False
+
+    @property
+    def alert_type(self):
+        """Return which alert type is triggered, if any."""
+        if self.is_low_alert_triggered:
+            return 'low'
+        if self.is_high_alert_triggered:
+            return 'high'
+        return None
+
+    @property
     def alert_discount_percent(self):
-        """Return percentage below alert price (positive = below alert)."""
-        if self.alert_price and self.current_price and self.alert_price > 0:
-            return ((self.alert_price - self.current_price) / self.alert_price) * 100
+        """Return percentage below low alert price (positive = below alert)."""
+        if self.alert_price_low and self.current_price and self.alert_price_low > 0:
+            return ((self.alert_price_low - self.current_price) / self.alert_price_low) * 100
+        return None
+
+    @property
+    def alert_premium_percent(self):
+        """Return percentage above high alert price (positive = above alert)."""
+        if self.alert_price_high and self.current_price and self.alert_price_high > 0:
+            return ((self.current_price - self.alert_price_high) / self.alert_price_high) * 100
         return None
 
 

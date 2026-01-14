@@ -32,27 +32,34 @@ class CompanyForm(forms.ModelForm):
         name = cleaned_data.get('name')
         notes_file = cleaned_data.get('notes_file')
         status = cleaned_data.get('status')
-        alert_price = cleaned_data.get('alert_price')
-        alert_price_reason = cleaned_data.get('alert_price_reason')
+        direction = cleaned_data.get('direction')
+        alert_price_low = cleaned_data.get('alert_price_low')
+        alert_price_high = cleaned_data.get('alert_price_high')
+        alert_reason = cleaned_data.get('alert_reason')
 
         # Require either a name or a notes file (which contains the name)
         if not name and not notes_file:
             self.add_error('name', 'Company name is required (or upload a notes file).')
 
-        # Require alert price and reason for watchlist companies
+        # Require direction for On Deck companies
+        if status == Company.Status.ON_DECK:
+            if not direction:
+                self.add_error('direction', 'Direction (Long or Short) is required for On Deck companies.')
+
+        # Require at least one alert price and reason for watchlist companies
         if status == Company.Status.WATCHLIST:
-            if not alert_price:
-                self.add_error('alert_price', 'Alert price is required for Watchlist companies.')
-            if not alert_price_reason:
-                self.add_error('alert_price_reason', 'Please explain why you chose this alert price.')
+            if not alert_price_low and not alert_price_high:
+                self.add_error('alert_price_low', 'At least one alert price is required for Watch List companies.')
+            if (alert_price_low or alert_price_high) and not alert_reason:
+                self.add_error('alert_reason', 'Please explain why you chose these alert prices.')
 
         return cleaned_data
 
     class Meta:
         model = Company
         fields = [
-            'name', 'description', 'website', 'status', 'sector', 'country', 'thesis',
-            'alert_price', 'alert_price_reason', 'profitability_metric'
+            'name', 'description', 'website', 'status', 'direction', 'sector', 'country', 'thesis',
+            'alert_price_low', 'alert_price_high', 'alert_reason', 'profitability_metric'
         ]
         widgets = {
             'name': forms.TextInput(attrs={
@@ -70,6 +77,10 @@ class CompanyForm(forms.ModelForm):
             }),
             'status': forms.Select(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'id': 'id_status',
+            }),
+            'direction': forms.Select(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
             }),
             'sector': forms.Select(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
@@ -83,14 +94,19 @@ class CompanyForm(forms.ModelForm):
                 'rows': 5,
                 'placeholder': 'Investment thesis...',
             }),
-            'alert_price': forms.NumberInput(attrs={
+            'alert_price_low': forms.NumberInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
-                'placeholder': 'Price to trigger deeper research',
+                'placeholder': 'Low price for long opportunity',
                 'step': '0.01',
             }),
-            'alert_price_reason': forms.TextInput(attrs={
+            'alert_price_high': forms.NumberInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
-                'placeholder': 'e.g., 10x FCF, below book value, etc.',
+                'placeholder': 'High price for short opportunity',
+                'step': '0.01',
+            }),
+            'alert_reason': forms.TextInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'placeholder': 'e.g., 10x FCF, above fair value, etc.',
             }),
             'profitability_metric': forms.TextInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',

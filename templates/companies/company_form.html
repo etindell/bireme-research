@@ -64,6 +64,21 @@
                     </div>
                 </div>
 
+                <div x-data="{ showDirection: document.getElementById('id_status')?.value === 'on_deck' }"
+                     x-init="document.getElementById('id_status')?.addEventListener('change', e => showDirection = e.target.value === 'on_deck')">
+                    <div x-show="showDirection" x-cloak>
+                        <label for="id_direction" class="block text-sm font-medium leading-6 text-gray-900">
+                            Direction <span class="text-red-500">*</span>
+                        </label>
+                        <div class="mt-2">
+                            {{ form.direction }}
+                        </div>
+                        {% if form.direction.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.direction.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
                 <div>
                     <label for="id_sector" class="block text-sm font-medium leading-6 text-gray-900">Sector</label>
                     <div class="mt-2">
@@ -94,39 +109,62 @@
             </div>
         </div>
 
-        <!-- Alert Price (for Watchlist) -->
+        <!-- Alert Price Bands (for Watch List) -->
         <div class="bg-white shadow rounded-lg p-6" x-data="{ showAlert: document.getElementById('id_status')?.value === 'watchlist' }"
              x-init="$watch('showAlert', v => {}); document.getElementById('id_status')?.addEventListener('change', e => showAlert = e.target.value === 'watchlist')">
             <h2 class="text-lg font-medium text-gray-900 mb-4">
-                Alert Price
-                <span class="text-sm font-normal text-gray-500">(required for Watchlist)</span>
+                Alert Price Bands
+                <span class="text-sm font-normal text-gray-500">(required for Watch List)</span>
             </h2>
-            <p class="text-sm text-gray-500 mb-4">Set a target price at which you want to research this stock more deeply.</p>
+            <p class="text-sm text-gray-500 mb-4">Set price triggers to alert you when this stock enters your buy or short range.</p>
 
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                    <label for="id_alert_price" class="block text-sm font-medium leading-6 text-gray-900">
-                        Alert Price
-                        <span x-show="showAlert" class="text-red-500">*</span>
-                    </label>
-                    <div class="mt-2">
-                        {{ form.alert_price }}
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <!-- Low Price (Long Opportunity) -->
+                <div class="relative">
+                    <div class="absolute -top-1 -left-1 w-2 h-full bg-green-500 rounded-l"></div>
+                    <div class="pl-3">
+                        <label for="id_alert_price_low" class="block text-sm font-medium leading-6 text-green-700">
+                            Low Price (Long)
+                        </label>
+                        <p class="text-xs text-gray-500 mb-1">Alert when price drops to this level</p>
+                        <div class="mt-2">
+                            {{ form.alert_price_low }}
+                        </div>
+                        {% if form.alert_price_low.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.alert_price_low.errors.0 }}</p>
+                        {% endif %}
                     </div>
-                    {% if form.alert_price.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.alert_price.errors.0 }}</p>
-                    {% endif %}
                 </div>
 
+                <!-- High Price (Short Opportunity) -->
+                <div class="relative">
+                    <div class="absolute -top-1 -left-1 w-2 h-full bg-red-500 rounded-l"></div>
+                    <div class="pl-3">
+                        <label for="id_alert_price_high" class="block text-sm font-medium leading-6 text-red-700">
+                            High Price (Short)
+                        </label>
+                        <p class="text-xs text-gray-500 mb-1">Alert when price rises to this level</p>
+                        <div class="mt-2">
+                            {{ form.alert_price_high }}
+                        </div>
+                        {% if form.alert_price_high.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.alert_price_high.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Reason -->
                 <div>
-                    <label for="id_alert_price_reason" class="block text-sm font-medium leading-6 text-gray-900">
-                        Why this price?
+                    <label for="id_alert_reason" class="block text-sm font-medium leading-6 text-gray-900">
+                        Why these prices?
                         <span x-show="showAlert" class="text-red-500">*</span>
                     </label>
+                    <p class="text-xs text-gray-500 mb-1">e.g., 10x FCF, above fair value</p>
                     <div class="mt-2">
-                        {{ form.alert_price_reason }}
+                        {{ form.alert_reason }}
                     </div>
-                    {% if form.alert_price_reason.errors %}
-                    <p class="mt-2 text-sm text-red-600">{{ form.alert_price_reason.errors.0 }}</p>
+                    {% if form.alert_reason.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ form.alert_reason.errors.0 }}</p>
                     {% endif %}
                 </div>
             </div>

@@ -13,8 +13,8 @@ class CompanyTickerInline(admin.TabularInline):
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ['name', 'organization', 'status', 'sector', 'updated_at', 'is_deleted']
-    list_filter = ['status', 'sector', 'organization', 'is_deleted']
+    list_display = ['name', 'organization', 'status', 'direction', 'sector', 'updated_at', 'is_deleted']
+    list_filter = ['status', 'direction', 'sector', 'organization', 'is_deleted']
     search_fields = ['name', 'description', 'thesis']
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ['search_vector', 'created_at', 'updated_at', 'created_by', 'deleted_at', 'deleted_by']
@@ -26,10 +26,14 @@ class CompanyAdmin(admin.ModelAdmin):
             'fields': ('organization', 'name', 'slug', 'description', 'website')
         }),
         ('Classification', {
-            'fields': ('status', 'sector', 'country')
+            'fields': ('status', 'direction', 'sector', 'country')
         }),
         ('Investment', {
             'fields': ('thesis', 'market_cap')
+        }),
+        ('Alerts (Watch List)', {
+            'fields': ('alert_price_low', 'alert_price_high', 'alert_reason'),
+            'classes': ('collapse',)
         }),
         ('Search', {
             'fields': ('search_vector',),

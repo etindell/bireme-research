@@ -11,7 +11,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-x-3">
                             <h3 class="text-base font-semibold text-gray-900 truncate">{{ company.name }}</h3>
-                            {% include "companies/partials/status_badge.html" with status=company.status %}
+                            {% include "companies/partials/status_badge.html" with status=company.status direction=company.direction %}
                         </div>
                         <div class="mt-1 flex items-center gap-x-2 text-sm text-gray-500">
                             {% for ticker in company.tickers.all|slice:":2" %}
@@ -81,14 +81,14 @@
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
                 <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Alert</th>
-                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">EV/EBITDA</th>
+                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">Low (Long)</th>
+                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">High (Short)</th>
                 <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
             {% for company in companies %}
-            <tr class="hover:bg-gray-50 {% if company.is_alert_triggered %}bg-green-50{% endif %}">
+            <tr class="hover:bg-gray-50 {% if company.is_low_alert_triggered %}bg-green-50{% elif company.is_high_alert_triggered %}bg-red-50{% endif %}">
                 <td class="px-4 py-4">
                     <a href="{{ company.get_absolute_url }}" class="block">
                         <div class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ company.name }}</div>
@@ -100,23 +100,27 @@
                 <td class="px-4 py-4 text-sm text-gray-500">
                     {{ company.get_sector_display|default:"-" }}
                 </td>
-                <td class="px-4 py-4 text-sm text-right {% if company.is_alert_triggered %}text-green-600 font-semibold{% else %}text-gray-900{% endif %}">
+                <td class="px-4 py-4 text-sm text-right {% if company.is_low_alert_triggered %}text-green-600 font-semibold{% elif company.is_high_alert_triggered %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
                     {% if company.current_price %}${{ company.current_price|floatformat:2 }}{% else %}-{% endif %}
                 </td>
-                <td class="px-4 py-4 text-sm text-right text-gray-500">
-                    {% if company.alert_price %}${{ company.alert_price|floatformat:2 }}{% else %}-{% endif %}
+                <td class="px-4 py-4 text-sm text-right {% if company.is_low_alert_triggered %}text-green-600 font-semibold{% else %}text-gray-500{% endif %}">
+                    {% if company.alert_price_low %}${{ company.alert_price_low|floatformat:2 }}{% else %}-{% endif %}
                 </td>
-                <td class="px-4 py-4 text-sm text-right text-gray-500">
-                    {% if company.ev_ebitda %}{{ company.ev_ebitda|floatformat:1 }}x{% else %}-{% endif %}
+                <td class="px-4 py-4 text-sm text-right {% if company.is_high_alert_triggered %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">
+                    {% if company.alert_price_high %}${{ company.alert_price_high|floatformat:2 }}{% else %}-{% endif %}
                 </td>
                 <td class="px-4 py-4 text-right">
-                    {% if company.is_alert_triggered %}
+                    {% if company.is_low_alert_triggered %}
                     <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Triggered
+                        Long Alert
                     </span>
-                    {% elif company.alert_price and company.current_price %}
+                    {% elif company.is_high_alert_triggered %}
+                    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                        Short Alert
+                    </span>
+                    {% elif company.alert_price_low and company.current_price %}
                     <span class="text-xs text-gray-400">
-                        {{ company.alert_discount_percent|floatformat:0 }}% away
+                        {{ company.alert_discount_percent|floatformat:0 }}% to low
                     </span>
                     {% else %}
                     <span class="text-xs text-gray-400">-</span>
@@ -153,7 +157,7 @@
                                 Deleted
                             </span>
                             {% else %}
-                            {% include "companies/partials/status_badge.html" with status=company.status %}
+                            {% include "companies/partials/status_badge.html" with status=company.status direction=company.direction %}
                             {% endif %}
                         </div>
                         <div class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500">

@@ -30,12 +30,21 @@
                 <div class="text-xs font-semibold leading-6 text-gray-400">Pipeline</div>
                 <ul role="list" class="-mx-2 mt-2 space-y-1">
                     <li>
-                        <a href="{% url 'companies:list' %}?status=portfolio"
+                        <a href="{% url 'companies:list' %}?status=long_book"
                            class="text-gray-400 hover:bg-gray-800 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-green-500/10 text-green-400">
-                                <span class="text-xs font-medium">P</span>
+                                <span class="text-xs font-medium">L</span>
                             </span>
-                            Portfolio
+                            Long Book
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'companies:list' %}?status=short_book"
+                           class="text-gray-400 hover:bg-gray-800 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-red-500/10 text-red-400">
+                                <span class="text-xs font-medium">S</span>
+                            </span>
+                            Short Book
                         </a>
                     </li>
                     <li>
@@ -53,7 +62,7 @@
                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-blue-500/10 text-blue-400">
                                 <span class="text-xs font-medium">W</span>
                             </span>
-                            Watchlist
+                            Watch List
                         </a>
                     </li>
                     <li>

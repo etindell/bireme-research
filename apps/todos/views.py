@@ -122,7 +122,8 @@ class TodoListView(OrganizationViewMixin, ListView):
         return context
 
     def get_template_names(self):
-        if self.request.htmx:
+        # Only return partial for targeted HTMX requests (not boosted navigation)
+        if self.request.htmx and not self.request.htmx.boosted:
             return ['todos/partials/todo_list_content.html']
         return [self.template_name]
 
