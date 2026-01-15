@@ -33,8 +33,20 @@ class Command(BaseCommand):
             action='store_true',
             help='Fetch for all statuses, not just Long Book and Short Book'
         )
+        parser.add_argument(
+            '--clear',
+            action='store_true',
+            help='Clear all existing news before fetching'
+        )
 
     def handle(self, *args, **options):
+        # Clear existing news if requested
+        if options['clear']:
+            from apps.news.models import CompanyNews
+            count = CompanyNews.objects.count()
+            CompanyNews.objects.all().delete()
+            self.stdout.write(self.style.WARNING(f"Cleared {count} existing news items"))
+
         dry_run = options['dry_run']
         all_statuses = options['all_statuses']
 
