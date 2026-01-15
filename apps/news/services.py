@@ -16,47 +16,50 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-NEWS_PROCESSING_PROMPT = """You are analyzing news for {company_name} (tickers: {tickers}).
+NEWS_PROCESSING_PROMPT = """You are a strict news filter for {company_name} (tickers: {tickers}).
 
-Review these news items and for each one:
-1. Determine if it's relevant to this specific company (not just the industry in general)
-2. If relevant, provide:
-   - A concise 1-2 sentence summary of the key information
-   - Importance rating:
-     * high: Material events (earnings, M&A, major contracts, executive changes, regulatory actions)
-     * medium: Notable but not material (analyst ratings, product updates, partnerships)
-     * low: Minor mentions or tangential references
-   - Event type: earnings, management, M&A, regulatory, product, legal, analyst, filing, or other
+Your job is to identify ONLY the 2-3 MOST IMPORTANT news items that investors absolutely need to know about. Be very selective.
 
-IMPORTANT: Only mark items as relevant if they specifically mention or directly concern this company.
+ONLY include news that meets these criteria:
+- Material events: earnings releases, M&A announcements, major contracts, executive changes, regulatory actions, significant legal developments
+- Must specifically mention this company (not just the industry)
+- Must be actual news articles (not stock price pages, company profiles, or generic financial data)
+{blacklist_instruction}
+REJECT everything else including:
+- Stock quote/price pages
+- Company profile pages
+- Minor analyst mentions
+- Industry news that doesn't specifically impact this company
+- Routine press releases with no material information
 
-Return a JSON array with your analysis:
+Return a JSON array with AT MOST 3 items (fewer is fine, zero if nothing important):
 [
   {{
     "url": "the original URL",
-    "relevant": true or false,
+    "relevant": true,
     "headline": "cleaned up headline",
-    "summary": "1-2 sentence summary",
-    "importance": "high", "medium", or "low",
-    "event_type": "category",
+    "summary": "1-2 sentence summary of why this matters to investors",
+    "importance": "high",
+    "event_type": "earnings|management|M&A|regulatory|product|legal|analyst|filing|other",
     "source_name": "publication name"
   }}
 ]
 
-If no items are relevant, return an empty array: []
+If no items are truly important, return an empty array: []
 
 NEWS ITEMS TO ANALYZE:
 {news_items}
 """
 
 
-def search_tavily(company, days_back: int = 2) -> list[dict]:
+def search_tavily(company, days_back: int = 2, extra_exclude_domains: list = None) -> list[dict]:
     """
     Search Tavily for recent company news.
 
     Args:
         company: Company model instance
         days_back: Number of days to search back
+        extra_exclude_domains: Additional domains to exclude (user blacklist)
 
     Returns:
         List of raw news items from Tavily
@@ -69,9 +72,27 @@ def search_tavily(company, days_back: int = 2) -> list[dict]:
     # Build search query using company name and primary ticker
     primary_ticker = company.get_primary_ticker()
     if primary_ticker:
-        query = f'"{company.name}" OR "{primary_ticker.symbol}" stock news'
+        query = f'"{company.name}" OR "{primary_ticker.symbol}"'
     else:
-        query = f'"{company.name}" company news'
+        query = f'"{company.name}"'
+
+    # Exclude common stock quote/price sites that don't have actual news
+    exclude_domains = [
+        'finance.yahoo.com',
+        'stockanalysis.com',
+        'tradingview.com',
+        'marketwatch.com/investing',
+        'morningstar.com',
+        'seekingalpha.com/symbol',
+        'nasdaq.com/market-activity',
+        'google.com/finance',
+        'zacks.com/stock/quote',
+        'tipranks.com',
+    ]
+
+    # Add user-blacklisted domains
+    if extra_exclude_domains:
+        exclude_domains.extend(extra_exclude_domains)
 
     try:
         response = requests.post(
@@ -79,11 +100,13 @@ def search_tavily(company, days_back: int = 2) -> list[dict]:
             json={
                 'api_key': api_key,
                 'query': query,
+                'topic': 'news',  # Filter for news articles specifically
                 'search_depth': 'basic',
                 'include_answer': False,
                 'include_raw_content': False,
                 'max_results': 10,
                 'days': days_back,
+                'exclude_domains': exclude_domains,
             },
             timeout=30
         )
@@ -192,13 +215,14 @@ def fetch_edgar_filings(company, days_back: int = 7) -> list[dict]:
         return []
 
 
-def process_news_with_ai(company, raw_news: list[dict]) -> list[dict]:
+def process_news_with_ai(company, raw_news: list[dict], blacklisted_domains: list = None) -> list[dict]:
     """
     Use Claude Haiku to filter, summarize, and classify news items.
 
     Args:
         company: Company model instance
         raw_news: List of raw news items from search
+        blacklisted_domains: Domains to deprioritize/exclude
 
     Returns:
         List of processed news items ready for storage
@@ -235,17 +259,23 @@ Published: {item.get('published_date', 'Unknown')}
 ---
 """
 
+    # Build blacklist instruction if there are blacklisted domains
+    blacklist_instruction = ""
+    if blacklisted_domains:
+        blacklist_instruction = f"- EXCLUDE all news from these blacklisted domains: {', '.join(blacklisted_domains)}\n"
+
     prompt = NEWS_PROCESSING_PROMPT.format(
         company_name=company.name,
         tickers=tickers,
-        news_items=news_text
+        news_items=news_text,
+        blacklist_instruction=blacklist_instruction
     )
 
     try:
         client = anthropic.Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-sonnet-4-20250514",
             max_tokens=2048,
             messages=[
                 {"role": "user", "content": prompt}
@@ -300,13 +330,20 @@ def fetch_and_store_news(company) -> int:
     Returns:
         Count of new items stored
     """
-    from .models import CompanyNews
+    from .models import CompanyNews, BlacklistedDomain
+
+    # Get user-blacklisted domains for this organization
+    blacklisted_domains = list(
+        BlacklistedDomain.objects.filter(
+            organization=company.organization
+        ).values_list('domain', flat=True)
+    )
 
     # Gather raw news from all sources
     raw_news = []
 
-    # Tavily web search
-    tavily_results = search_tavily(company)
+    # Tavily web search (pass blacklisted domains)
+    tavily_results = search_tavily(company, extra_exclude_domains=blacklisted_domains)
     raw_news.extend(tavily_results)
 
     # SEC EDGAR filings
@@ -317,8 +354,8 @@ def fetch_and_store_news(company) -> int:
         logger.info(f"No raw news found for {company.name}")
         return 0
 
-    # Process with AI
-    processed = process_news_with_ai(company, raw_news)
+    # Process with AI (pass blacklisted domains for additional filtering)
+    processed = process_news_with_ai(company, raw_news, blacklisted_domains=blacklisted_domains)
 
     if not processed:
         logger.info(f"No relevant news after AI processing for {company.name}")
