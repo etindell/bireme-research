@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+<li>
+    <a href="{% url 'admin:news_fetch' %}" class="button" style="background: #417690;">
+        Fetch Fresh News
+    </a>
+</li>
+{{ block.super }}
+{% endblock %}
