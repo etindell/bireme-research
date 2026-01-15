@@ -21,6 +21,7 @@ def organization(request):
         'current_membership': getattr(request, 'membership', None),
         'user_organizations': [],
         'pending_todo_count': 0,
+        'unread_news_count': 0,
     }
 
     if request.user.is_authenticated:
@@ -36,6 +37,13 @@ def organization(request):
             context['pending_todo_count'] = Todo.objects.filter(
                 organization=request.organization,
                 is_completed=False
+            ).count()
+
+            # Add unread news count for sidebar badge
+            from apps.news.models import CompanyNews
+            context['unread_news_count'] = CompanyNews.objects.filter(
+                organization=request.organization,
+                is_read=False
             ).count()
 
     return context

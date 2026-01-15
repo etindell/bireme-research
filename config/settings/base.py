@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'apps.todos',
     'apps.search',
     'apps.export',
+    'apps.news',
     'core',
 ]
 

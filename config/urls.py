@@ -32,6 +32,9 @@ urlpatterns = [
 
     # Export
     path('export/', include('apps.export.urls', namespace='export')),
+
+    # News
+    path('news/', include('apps.news.urls', namespace='news')),
 ]
 
 # Development URLs
