@@ -11,4 +11,8 @@ urlpatterns = [
     path('<int:pk>/toggle-starred/', views.ToggleNewsStarredView.as_view(), name='toggle_starred'),
     path('refresh/<slug:slug>/', views.RefreshCompanyNewsView.as_view(), name='refresh'),
     path('mark-all-read/', views.MarkAllReadView.as_view(), name='mark_all_read'),
+    path('<int:pk>/blacklist/', views.BlacklistDomainView.as_view(), name='blacklist_domain'),
+    path('blacklist/', views.BlacklistManageView.as_view(), name='manage_blacklist'),
+    path('blacklist/<str:domain>/remove/', views.UnblacklistDomainView.as_view(), name='unblacklist_domain'),
+    path('fetch/', views.FetchAllNewsView.as_view(), name='fetch_all'),
 ]

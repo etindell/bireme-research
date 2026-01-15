@@ -9,7 +9,7 @@ from django.views.generic import ListView
 
 from core.mixins import OrganizationViewMixin
 from apps.companies.models import Company
-from .models import CompanyNews
+from .models import CompanyNews, BlacklistedDomain
 
 
 class NewsDashboardView(OrganizationViewMixin, ListView):
@@ -187,3 +187,91 @@ class MarkAllReadView(OrganizationViewMixin, View):
         if request.htmx:
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
         return HttpResponse(status=204)
+
+
+class BlacklistDomainView(OrganizationViewMixin, View):
+    """Blacklist a domain from future news fetches."""
+
+    def post(self, request, pk):
+        news = get_object_or_404(
+            CompanyNews,
+            pk=pk,
+            organization=request.organization
+        )
+
+        domain = news.source_domain
+        if domain:
+            BlacklistedDomain.objects.get_or_create(
+                organization=request.organization,
+                domain=domain
+            )
+            messages.success(request, f'"{domain}" will be excluded from future news fetches.')
+
+        return render(
+            request,
+            'news/partials/news_item.html',
+            {'item': news}
+        )
+
+
+class UnblacklistDomainView(OrganizationViewMixin, View):
+    """Remove a domain from the blacklist."""
+
+    def post(self, request, domain):
+        BlacklistedDomain.objects.filter(
+            organization=request.organization,
+            domain=domain
+        ).delete()
+
+        messages.success(request, f'"{domain}" has been removed from the blacklist.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        return HttpResponse(status=204)
+
+
+class BlacklistManageView(OrganizationViewMixin, ListView):
+    """Manage blacklisted domains."""
+    model = BlacklistedDomain
+    template_name = 'news/blacklist.html'
+    context_object_name = 'domains'
+
+    def get_queryset(self):
+        return BlacklistedDomain.objects.filter(
+            organization=self.request.organization
+        ).order_by('domain')
+
+
+class FetchAllNewsView(OrganizationViewMixin, View):
+    """Fetch fresh news for all portfolio companies."""
+
+    def post(self, request):
+        from .services import fetch_and_store_news
+
+        companies = Company.objects.filter(
+            organization=request.organization,
+            is_deleted=False,
+            status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]
+        )
+
+        total = 0
+        errors = []
+        for company in companies:
+            try:
+                count = fetch_and_store_news(company)
+                total += count
+            except Exception as e:
+                errors.append(f"{company.name}: {e}")
+
+        if total > 0:
+            messages.success(request, f'Fetched {total} news items for {companies.count()} companies.')
+        else:
+            messages.info(request, 'No new news items found.')
+
+        for error in errors[:3]:  # Show max 3 errors
+            messages.warning(request, error)
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        from django.shortcuts import redirect
+        return redirect('news:dashboard')
