@@ -28,9 +28,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if hasattr(self.request, 'organization') and self.request.organization:
             org = self.request.organization
 
-            # Pipeline counts
+            # Pipeline counts (Long Book + Short Book = Portfolio)
             context['portfolio_count'] = Company.objects.filter(
-                organization=org, status=Company.Status.PORTFOLIO
+                organization=org, status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]
             ).count()
             context['on_deck_count'] = Company.objects.filter(
                 organization=org, status=Company.Status.ON_DECK
