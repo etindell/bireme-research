@@ -18,4 +18,5 @@ urlpatterns = [
     path('<int:pk>/delete/', views.NoteDeleteView.as_view(), name='delete'),
     path('<int:pk>/toggle-collapse/', views.NoteToggleCollapseView.as_view(), name='toggle_collapse'),
     path('<int:pk>/toggle-pin/', views.NoteTogglePinView.as_view(), name='toggle_pin'),
+    path('<int:pk>/create-todo/', views.NoteCreateTodoView.as_view(), name='create_todo'),
 ]

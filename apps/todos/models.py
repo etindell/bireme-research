@@ -112,6 +112,7 @@ class Todo(SoftDeleteModel, OrganizationMixin):
     class TodoType(models.TextChoices):
         QUARTERLY_UPDATE = 'quarterly_update', 'Quarterly Update'
         INVESTOR_LETTER = 'investor_letter', 'Investor Letter Review'
+        NOTE_TODO = 'note_todo', 'Note Todo'
         CUSTOM = 'custom', 'Custom'
 
     class Priority(models.TextChoices):
@@ -171,6 +172,16 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         blank=True,
         related_name='completed_todos',
         help_text='Note created as evidence of completion'
+    )
+
+    # Link to source note (for "finish this note" todos)
+    source_note = models.ForeignKey(
+        'notes.Note',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='todos',
+        help_text='Note this todo was created from (e.g., "finish this note")'
     )
 
     # Auto-generation metadata

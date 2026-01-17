@@ -50,6 +50,26 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <!-- Todo status/create button -->
+                    <div id="note-todo-section">
+                        {% with note.todos.first as existing_todo %}
+                        {% if existing_todo and not existing_todo.is_deleted %}
+                            {% include "notes/partials/note_todo_badge.html" with todo=existing_todo %}
+                        {% else %}
+                            <button hx-post="{% url 'notes:create_todo' note.pk %}"
+                                    hx-target="#note-todo-section"
+                                    hx-swap="outerHTML"
+                                    class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                <span class="flex items-center gap-1">
+                                    <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                    Add Todo
+                                </span>
+                            </button>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
                     <a href="{% url 'notes:update' note.pk %}"
                        class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                         Edit

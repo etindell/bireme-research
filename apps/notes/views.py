@@ -938,6 +938,65 @@ class NoteImportView(OrganizationViewMixin, View):
 from django.shortcuts import render, redirect
 
 
+class NoteCreateTodoView(OrganizationViewMixin, View):
+    """Create a todo linked to a note (e.g., 'finish this note')."""
+
+    def post(self, request, pk):
+        from apps.todos.models import Todo, TodoCategory
+
+        note = get_object_or_404(
+            Note.objects.filter(organization=request.organization),
+            pk=pk
+        )
+
+        # Check if there's already an incomplete todo for this note
+        existing_todo = Todo.objects.filter(
+            source_note=note,
+            is_completed=False,
+            is_deleted=False
+        ).first()
+
+        if existing_todo:
+            messages.info(request, 'A todo already exists for this note.')
+            if request.htmx:
+                return HttpResponse(
+                    status=200,
+                    headers={'HX-Redirect': existing_todo.get_absolute_url()}
+                )
+            return redirect(existing_todo.get_absolute_url())
+
+        # Auto-select category based on company status
+        category = TodoCategory.objects.filter(
+            organization=request.organization,
+            category_type=TodoCategory.CategoryType.IDEA_GENERATION
+        ).first()
+
+        # Create the todo
+        todo = Todo.objects.create(
+            organization=request.organization,
+            title=f'Finish note: {note.title[:80]}',
+            description=f'Complete the research note started on {note.created_at.strftime("%b %d, %Y")}.',
+            company=note.company,
+            category=category,
+            todo_type=Todo.TodoType.NOTE_TODO,
+            source_note=note,
+            created_by=request.user,
+        )
+
+        messages.success(request, 'Todo created for this note.')
+
+        if request.htmx:
+            # Return a partial that shows the new todo link
+            html = render_to_string(
+                'notes/partials/note_todo_badge.html',
+                {'todo': todo, 'note': note},
+                request=request
+            )
+            return HttpResponse(html)
+
+        return redirect(note.get_absolute_url())
+
+
 class NoteBulkDeleteView(OrganizationViewMixin, View):
     """Handle bulk deletion of notes."""
 
