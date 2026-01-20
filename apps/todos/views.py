@@ -600,6 +600,11 @@ class CategoryCreateView(OrganizationViewMixin, CreateView):
     template_name = 'todos/category_form.html'
     fields = ['name', 'color', 'icon', 'order']
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop('organization', None)  # Remove org kwarg - auto-generated form doesn't accept it
+        return kwargs
+
     def form_valid(self, form):
         form.instance.organization = self.request.organization
         form.instance.is_system = False  # User-created categories are not system categories
@@ -627,6 +632,11 @@ class CategoryUpdateView(OrganizationViewMixin, UpdateView):
     model = TodoCategory
     template_name = 'todos/category_form.html'
     fields = ['name', 'color', 'icon', 'order']
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop('organization', None)  # Remove org kwarg - auto-generated form doesn't accept it
+        return kwargs
 
     def get_queryset(self):
         return TodoCategory.objects.filter(organization=self.request.organization)
