@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Blocked Sources{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Blocked News Sources</h1>
+        <p class="mt-1 text-sm text-gray-600">
+            News from these domains will be excluded from future fetches.
+        </p>
+    </div>
+
+    {% if domains %}
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <ul class="divide-y divide-gray-200">
+            {% for domain in domains %}
+            <li class="px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-900">{{ domain.domain }}</span>
+                </div>
+                <form hx-post="{% url 'news:unblacklist_domain' domain.domain %}"
+                      hx-confirm="Unblock {{ domain.domain }}?">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="text-sm text-red-600 hover:text-red-500 font-medium">
+                        Unblock
+                    </button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-white shadow rounded-lg">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No blocked sources</h3>
+        <p class="mt-1 text-sm text-gray-500">
+            You haven't blocked any news sources yet.
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="mt-6">
+        <a href="{% url 'news:dashboard' %}"
+           class="text-sm font-medium text-primary-600 hover:text-primary-500">
+            &larr; Back to News
+        </a>
+    </div>
+</div>
+{% endblock %}

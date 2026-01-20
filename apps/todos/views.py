@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
+from django.utils.text import slugify
 from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
@@ -602,6 +603,17 @@ class CategoryCreateView(OrganizationViewMixin, CreateView):
     def form_valid(self, form):
         form.instance.organization = self.request.organization
         form.instance.is_system = False  # User-created categories are not system categories
+        # Auto-generate slug from name
+        base_slug = slugify(form.instance.name)
+        slug = base_slug
+        counter = 1
+        while TodoCategory.objects.filter(
+            organization=self.request.organization,
+            slug=slug
+        ).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+        form.instance.slug = slug
         response = super().form_valid(form)
         messages.success(self.request, f'Category "{form.instance.name}" created.')
         return response
@@ -620,6 +632,19 @@ class CategoryUpdateView(OrganizationViewMixin, UpdateView):
         return TodoCategory.objects.filter(organization=self.request.organization)
 
     def form_valid(self, form):
+        # Update slug if name changed
+        new_slug = slugify(form.instance.name)
+        if new_slug != self.object.slug:
+            base_slug = new_slug
+            slug = base_slug
+            counter = 1
+            while TodoCategory.objects.filter(
+                organization=self.request.organization,
+                slug=slug
+            ).exclude(pk=self.object.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            form.instance.slug = slug
         response = super().form_valid(form)
         messages.success(self.request, f'Category "{form.instance.name}" updated.')
         return response

@@ -93,3 +93,39 @@ class CompanyNews(models.Model):
             self.Importance.LOW: 'gray',
         }
         return colors.get(self.importance, 'gray')
+
+    @property
+    def source_domain(self):
+        """Extract domain from source URL for blacklist feature."""
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(self.source_url)
+            return parsed.netloc.lower().replace('www.', '')
+        except Exception:
+            return ''
+
+
+class BlacklistedDomain(models.Model):
+    """
+    Domains that the user wants to deprioritize in news fetching.
+    These domains will be excluded from Tavily search and flagged to the AI filter.
+    """
+    organization = models.ForeignKey(
+        'organizations.Organization',
+        on_delete=models.CASCADE,
+        related_name='blacklisted_domains'
+    )
+    domain = models.CharField(
+        max_length=255,
+        help_text='Domain to block (e.g., msn.com)'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['organization', 'domain']
+        ordering = ['domain']
+        verbose_name = 'Blacklisted Domain'
+        verbose_name_plural = 'Blacklisted Domains'
+
+    def __str__(self):
+        return self.domain

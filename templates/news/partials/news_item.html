@@ -107,6 +107,21 @@
                     {% endif %}
                 </button>
             </form>
+
+            <!-- Block source button -->
+            <form hx-post="{% url 'news:blacklist_domain' item.pk %}"
+                  hx-target="#news-item-{{ item.pk }}"
+                  hx-swap="outerHTML"
+                  hx-confirm="Block all news from {{ item.source_domain }}? This will exclude this source from future news fetches.">
+                {% csrf_token %}
+                <button type="submit"
+                        class="p-1.5 rounded-md text-gray-400 hover:text-red-500"
+                        title="Block news from {{ item.source_domain }}">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </button>
+            </form>
         </div>
     </div>
 </div>
