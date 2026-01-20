@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Todo Categories - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li>
+                <a href="{% url 'todos:list' %}" class="text-sm font-medium text-gray-500 hover:text-gray-700">
+                    Todos
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500">Categories</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold leading-7 text-gray-900">Todo Categories</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Manage categories for organizing your todos. Create custom categories like Marketing, Compliance, Operations, etc.
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0">
+            <a href="{% url 'todos:category_create' %}"
+               class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                New Category
+            </a>
+        </div>
+    </div>
+
+    <!-- Categories List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        {% if categories %}
+        <ul role="list" class="divide-y divide-gray-200">
+            {% for category in categories %}
+            <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
+                             style="background-color: {{ category.color }}20;">
+                            <div class="h-4 w-4 rounded-full" style="background-color: {{ category.color }};"></div>
+                        </div>
+                        <div class="ml-4 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ category.name }}</p>
+                                {% if category.is_system %}
+                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                                    System
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-gray-500">
+                                {{ category.todo_count }} todo{{ category.todo_count|pluralize }}
+                                {% if category.category_type %}
+                                &middot; {{ category.get_category_type_display }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'todos:category_edit' category.pk %}"
+                           class="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            Edit
+                        </a>
+                        {% if not category.is_system %}
+                        <a href="{% url 'todos:category_delete' category.pk %}"
+                           class="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-50">
+                            Delete
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">No categories</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating a new category.</p>
+            <div class="mt-6">
+                <a href="{% url 'todos:category_create' %}"
+                   class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                    </svg>
+                    New Category
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

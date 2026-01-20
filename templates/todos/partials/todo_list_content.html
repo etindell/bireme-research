@@ -1,94 +1,66 @@
 {% if show_sections %}
-<!-- Three-section view (default pending view) -->
+<!-- Dynamic category sections view (default pending view) -->
 <!-- Initialize todo IDs for bulk selection -->
-<div x-init="initTodoIds([{% for todo in maintenance_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if maintenance_todos and idea_generation_todos %}, {% endif %}{% for todo in idea_generation_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if idea_generation_todos and marketing_todos %}, {% endif %}{% for todo in marketing_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}])"></div>
+<div x-init="initTodoIds([{% for section in category_sections %}{% for todo in section.todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if uncategorized_todos %}{% if category_sections %}, {% endif %}{% for todo in uncategorized_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}])"></div>
 <div class="space-y-6">
-    <!-- Maintenance Section -->
+    {% for section in category_sections %}
     <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-4 py-3 bg-green-50 border-b border-green-100">
+        <div class="px-4 py-3 border-b" style="background-color: {{ section.category.color }}10; border-color: {{ section.category.color }}30;">
             <div class="flex items-center justify-between">
-                <h2 class="text-lg font-medium text-green-900 flex items-center">
-                    <svg class="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
-                    Maintenance
+                <h2 class="text-lg font-medium flex items-center" style="color: {{ section.category.color }};">
+                    <div class="h-5 w-5 mr-2 rounded-full" style="background-color: {{ section.category.color }};"></div>
+                    {{ section.category.name }}
                 </h2>
-                {% if maintenance_todos.count > 0 %}
-                <a href="?category=maintenance&status=pending" class="text-sm text-green-700 hover:text-green-900">
-                    View all &rarr;
+                {% if section.count > 0 %}
+                <a href="?category={{ section.category.slug }}&status=pending" class="text-sm hover:underline" style="color: {{ section.category.color }};">
+                    View all ({{ section.count }}) &rarr;
                 </a>
                 {% endif %}
             </div>
-            <p class="text-sm text-green-700 mt-1">Quarterly updates and portfolio company tasks</p>
         </div>
         <div class="divide-y divide-gray-200">
-            {% for todo in maintenance_todos %}
+            {% for todo in section.todos %}
             {% include "todos/partials/todo_card.html" with selectable=True %}
             {% empty %}
             <div class="px-4 py-8 text-center text-gray-500">
-                <p class="text-sm">No maintenance tasks pending</p>
+                <p class="text-sm">No {{ section.category.name|lower }} tasks pending</p>
             </div>
             {% endfor %}
         </div>
     </div>
+    {% empty %}
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-4 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">No pending todos</h3>
+            <p class="mt-1 text-sm text-gray-500">You're all caught up!</p>
+        </div>
+    </div>
+    {% endfor %}
 
-    <!-- Research Section -->
+    {% if uncategorized_todos %}
+    <!-- Uncategorized Section -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-4 py-3 bg-blue-50 border-b border-blue-100">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
             <div class="flex items-center justify-between">
-                <h2 class="text-lg font-medium text-blue-900 flex items-center">
-                    <svg class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <h2 class="text-lg font-medium text-gray-900 flex items-center">
+                    <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                     </svg>
-                    General Research
+                    Uncategorized
                 </h2>
-                {% if idea_generation_todos.count > 0 %}
-                <a href="?category=idea_generation&status=pending" class="text-sm text-blue-700 hover:text-blue-900">
-                    View all &rarr;
-                </a>
-                {% endif %}
             </div>
-            <p class="text-sm text-blue-700 mt-1">One-off research tasks and investigations</p>
+            <p class="text-sm text-gray-600 mt-1">Todos without a category assigned</p>
         </div>
         <div class="divide-y divide-gray-200">
-            {% for todo in idea_generation_todos %}
+            {% for todo in uncategorized_todos %}
             {% include "todos/partials/todo_card.html" with selectable=True %}
-            {% empty %}
-            <div class="px-4 py-8 text-center text-gray-500">
-                <p class="text-sm">No research tasks pending</p>
-            </div>
             {% endfor %}
         </div>
     </div>
-
-    <!-- Marketing Section -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-4 py-3 bg-purple-50 border-b border-purple-100">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-medium text-purple-900 flex items-center">
-                    <svg class="h-5 w-5 mr-2 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                    </svg>
-                    Marketing
-                </h2>
-                {% if marketing_todos.count > 0 %}
-                <a href="?category=marketing&status=pending" class="text-sm text-purple-700 hover:text-purple-900">
-                    View all &rarr;
-                </a>
-                {% endif %}
-            </div>
-            <p class="text-sm text-purple-700 mt-1">Marketing and client-related tasks</p>
-        </div>
-        <div class="divide-y divide-gray-200">
-            {% for todo in marketing_todos %}
-            {% include "todos/partials/todo_card.html" with selectable=True %}
-            {% empty %}
-            <div class="px-4 py-8 text-center text-gray-500">
-                <p class="text-sm">No marketing tasks pending</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
+    {% endif %}
 </div>
 
 {% else %}

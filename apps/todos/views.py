@@ -2,6 +2,7 @@
 Views for Todo management.
 """
 from django.contrib import messages
+from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -28,10 +29,23 @@ class TodoListView(OrganizationViewMixin, ListView):
             'company', 'category', 'created_by', 'completed_by'
         )
 
-        # Filter by category type
-        category_type = self.request.GET.get('category')
-        if category_type:
-            qs = qs.filter(category__category_type=category_type)
+        # Filter by category (slug or pk)
+        category_filter = self.request.GET.get('category')
+        if category_filter:
+            # Try to filter by slug first, then by category_type for backward compatibility
+            if category_filter.isdigit():
+                qs = qs.filter(category_id=category_filter)
+            else:
+                # Check if it's a category slug or a legacy category_type
+                category = TodoCategory.objects.filter(
+                    organization=self.request.organization,
+                    slug=category_filter
+                ).first()
+                if category:
+                    qs = qs.filter(category=category)
+                else:
+                    # Fallback to category_type for backward compatibility
+                    qs = qs.filter(category__category_type=category_filter)
 
         # Filter by completion
         status = self.request.GET.get('status')
@@ -84,9 +98,18 @@ class TodoListView(OrganizationViewMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories'] = TodoCategory.objects.filter(
+
+        # Get all categories with pending counts
+        categories = TodoCategory.objects.filter(
             organization=self.request.organization
-        )
+        ).annotate(
+            pending_count=models.Count(
+                'todos',
+                filter=models.Q(todos__is_deleted=False, todos__is_completed=False)
+            )
+        ).order_by('order', 'name')
+        context['categories'] = categories
+
         context['todo_types'] = Todo.TodoType.choices
         context['current_category'] = self.request.GET.get('category', '')
         context['current_status'] = self.request.GET.get('status', 'pending')
@@ -100,6 +123,8 @@ class TodoListView(OrganizationViewMixin, ListView):
         org_todos = Todo.objects.filter(organization=self.request.organization)
         context['pending_count'] = org_todos.pending().count()
         context['completed_count'] = org_todos.completed().count()
+
+        # Legacy stats for backward compatibility (can be removed later)
         context['maintenance_pending'] = org_todos.pending().maintenance().count()
         context['idea_generation_pending'] = org_todos.pending().idea_generation().count()
         context['marketing_pending'] = org_todos.pending().marketing().count()
@@ -114,9 +139,23 @@ class TodoListView(OrganizationViewMixin, ListView):
         )
         if show_sections:
             base_qs = org_todos.pending().select_related('company', 'category', 'created_by')
-            context['maintenance_todos'] = base_qs.maintenance().order_by('-created_at')[:20]
-            context['idea_generation_todos'] = base_qs.idea_generation().order_by('-created_at')[:20]
-            context['marketing_todos'] = base_qs.marketing().order_by('-created_at')[:20]
+            # Build category sections dynamically
+            category_sections = []
+            for category in categories:
+                todos = base_qs.filter(category=category).order_by('-created_at')[:20]
+                if todos.exists() or category.pending_count > 0:
+                    category_sections.append({
+                        'category': category,
+                        'todos': todos,
+                        'count': category.pending_count,
+                    })
+            context['category_sections'] = category_sections
+
+            # Also include uncategorized todos
+            uncategorized_todos = base_qs.filter(category__isnull=True).order_by('-created_at')[:20]
+            if uncategorized_todos.exists():
+                context['uncategorized_todos'] = uncategorized_todos
+
         context['show_sections'] = show_sections
 
         return context
@@ -534,3 +573,99 @@ class QuarterlySettingsView(OrganizationViewMixin, View):
             request=request
         )
         return HttpResponse(html)
+
+
+# ============================================
+# Category Management Views
+# ============================================
+
+class CategoryListView(OrganizationViewMixin, ListView):
+    """List all todo categories for the organization."""
+    model = TodoCategory
+    template_name = 'todos/category_list.html'
+    context_object_name = 'categories'
+
+    def get_queryset(self):
+        return TodoCategory.objects.filter(
+            organization=self.request.organization
+        ).annotate(
+            todo_count=models.Count('todos', filter=models.Q(todos__is_deleted=False))
+        ).order_by('order', 'name')
+
+
+class CategoryCreateView(OrganizationViewMixin, CreateView):
+    """Create a new todo category."""
+    model = TodoCategory
+    template_name = 'todos/category_form.html'
+    fields = ['name', 'color', 'icon', 'order']
+
+    def form_valid(self, form):
+        form.instance.organization = self.request.organization
+        form.instance.is_system = False  # User-created categories are not system categories
+        response = super().form_valid(form)
+        messages.success(self.request, f'Category "{form.instance.name}" created.')
+        return response
+
+    def get_success_url(self):
+        return reverse('todos:category_list')
+
+
+class CategoryUpdateView(OrganizationViewMixin, UpdateView):
+    """Update an existing todo category."""
+    model = TodoCategory
+    template_name = 'todos/category_form.html'
+    fields = ['name', 'color', 'icon', 'order']
+
+    def get_queryset(self):
+        return TodoCategory.objects.filter(organization=self.request.organization)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Category "{form.instance.name}" updated.')
+        return response
+
+    def get_success_url(self):
+        return reverse('todos:category_list')
+
+
+class CategoryDeleteView(OrganizationViewMixin, DeleteView):
+    """Delete a todo category."""
+    model = TodoCategory
+    template_name = 'todos/category_confirm_delete.html'
+
+    def get_queryset(self):
+        return TodoCategory.objects.filter(organization=self.request.organization)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['todo_count'] = Todo.objects.filter(
+            category=self.object,
+            is_deleted=False
+        ).count()
+        return context
+
+    def form_valid(self, form):
+        category = self.object
+
+        # Prevent deletion of system categories
+        if category.is_system:
+            messages.error(self.request, 'System categories cannot be deleted.')
+            return redirect('todos:category_list')
+
+        # Check if category has todos
+        todo_count = Todo.objects.filter(category=category, is_deleted=False).count()
+        if todo_count > 0:
+            messages.error(
+                self.request,
+                f'Cannot delete category "{category.name}" - it has {todo_count} todo(s). '
+                'Please reassign or delete the todos first.'
+            )
+            return redirect('todos:category_list')
+
+        name = category.name
+        response = super().form_valid(form)
+        messages.success(self.request, f'Category "{name}" deleted.')
+        return response
+
+    def get_success_url(self):
+        return reverse('todos:category_list')

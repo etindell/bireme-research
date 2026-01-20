@@ -13,21 +13,24 @@ DEFAULT_CATEGORIES = [
         'slug': 'maintenance',
         'category_type': 'maintenance',
         'color': '#10B981',  # Green
-        'order': 1
+        'order': 1,
+        'is_system': True,
     },
     {
         'name': 'General Research',
         'slug': 'general-research',
         'category_type': 'idea_generation',
         'color': '#3B82F6',  # Blue
-        'order': 2
+        'order': 2,
+        'is_system': True,
     },
     {
         'name': 'Marketing',
         'slug': 'marketing',
         'category_type': 'marketing',
         'color': '#8B5CF6',  # Purple
-        'order': 3
+        'order': 3,
+        'is_system': True,
     },
 ]
 
@@ -65,7 +68,7 @@ class Command(BaseCommand):
             created_count = 0
 
             for cat_data in DEFAULT_CATEGORIES:
-                _, created = TodoCategory.objects.get_or_create(
+                category, created = TodoCategory.objects.get_or_create(
                     organization=org,
                     slug=cat_data['slug'],
                     defaults={
@@ -73,8 +76,13 @@ class Command(BaseCommand):
                         'category_type': cat_data['category_type'],
                         'color': cat_data['color'],
                         'order': cat_data['order'],
+                        'is_system': cat_data.get('is_system', False),
                     }
                 )
+                # Update existing categories to be system categories
+                if not created and not category.is_system:
+                    category.is_system = True
+                    category.save(update_fields=['is_system'])
                 if created:
                     created_count += 1
 

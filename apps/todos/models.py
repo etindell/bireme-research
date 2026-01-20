@@ -19,14 +19,15 @@ from core.mixins import OrganizationMixin
 class TodoCategory(models.Model):
     """
     Categories for todos.
-    - Maintenance: Auto-generated quarterly updates for portfolio companies
-    - Idea Generation: Research and new idea exploration
-    - Marketing: Marketing and client-related tasks
-    Seeded per organization.
+
+    Users can create custom categories (e.g., Marketing, Compliance, Operations).
+    System categories have a category_type for backward compatibility with
+    auto-generated todos (maintenance, idea_generation).
     """
     class CategoryType(models.TextChoices):
         MAINTENANCE = 'maintenance', 'Maintenance'
         IDEA_GENERATION = 'idea_generation', 'Idea Generation'
+        # Legacy types kept for backward compatibility
         MARKETING = 'marketing', 'Marketing'
 
     organization = models.ForeignKey(
@@ -39,11 +40,17 @@ class TodoCategory(models.Model):
     category_type = models.CharField(
         max_length=20,
         choices=CategoryType.choices,
-        default=CategoryType.IDEA_GENERATION
+        null=True,
+        blank=True,
+        help_text='System category type (optional). Leave blank for custom categories.'
     )
     color = models.CharField(max_length=7, default='#6B7280')
     icon = models.CharField(max_length=50, blank=True)
     order = models.PositiveIntegerField(default=0)
+    is_system = models.BooleanField(
+        default=False,
+        help_text='System categories cannot be deleted'
+    )
 
     class Meta:
         db_table = 'todo_categories'
@@ -58,6 +65,9 @@ class TodoCategory(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return reverse('todos:category_edit', kwargs={'pk': self.pk})
+
 
 class TodoQuerySet(models.QuerySet):
     """Custom queryset for Todo model."""
@@ -68,6 +78,15 @@ class TodoQuerySet(models.QuerySet):
     def for_company(self, company):
         return self.filter(company=company)
 
+    def for_category(self, category):
+        """Filter by category (can be category instance, pk, or slug)."""
+        if isinstance(category, TodoCategory):
+            return self.filter(category=category)
+        elif isinstance(category, int):
+            return self.filter(category_id=category)
+        else:
+            return self.filter(category__slug=category)
+
     def pending(self):
         return self.filter(is_completed=False)
 
@@ -75,12 +94,15 @@ class TodoQuerySet(models.QuerySet):
         return self.filter(is_completed=True)
 
     def maintenance(self):
+        """Filter by maintenance system category (for backward compatibility)."""
         return self.filter(category__category_type=TodoCategory.CategoryType.MAINTENANCE)
 
     def idea_generation(self):
+        """Filter by idea generation system category (for backward compatibility)."""
         return self.filter(category__category_type=TodoCategory.CategoryType.IDEA_GENERATION)
 
     def marketing(self):
+        """Filter by marketing system category (for backward compatibility)."""
         return self.filter(category__category_type=TodoCategory.CategoryType.MARKETING)
 
     def auto_generated(self):
