@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'apps.search',
     'apps.export',
     'apps.news',
+    'apps.share',
     'core',
 ]
 

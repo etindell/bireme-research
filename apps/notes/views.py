@@ -1025,3 +1025,124 @@ class NoteBulkDeleteView(OrganizationViewMixin, View):
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
 
         return redirect('notes:list')
+
+
+class NoteSharePanelView(OrganizationViewMixin, View):
+    """Return the share panel partial for HTMX."""
+
+    def get(self, request, pk):
+        note = get_object_or_404(
+            Note.objects.filter(organization=request.organization),
+            pk=pk
+        )
+
+        share_links = note.share_links.all()
+
+        html = render_to_string(
+            'notes/partials/share_link_panel.html',
+            {'note': note, 'share_links': share_links},
+            request=request
+        )
+        return HttpResponse(html)
+
+
+class NoteShareCreateView(OrganizationViewMixin, View):
+    """Create a new share link for a note."""
+
+    def post(self, request, pk):
+        from .models import NoteShareLink
+
+        note = get_object_or_404(
+            Note.objects.filter(organization=request.organization),
+            pk=pk
+        )
+
+        # Check if there's already an active share link
+        existing = note.share_links.filter(is_active=True).first()
+        if existing:
+            messages.info(request, 'A share link already exists for this note.')
+        else:
+            # Create new share link
+            share_link = NoteShareLink.objects.create(
+                note=note,
+                token=NoteShareLink.generate_token(),
+                created_by=request.user,
+                allow_comments=request.POST.get('allow_comments') == 'on',
+            )
+            messages.success(request, 'Share link created.')
+
+        if request.htmx:
+            share_links = note.share_links.all()
+            html = render_to_string(
+                'notes/partials/share_link_panel.html',
+                {'note': note, 'share_links': share_links},
+                request=request
+            )
+            return HttpResponse(html)
+
+        return redirect(note.get_absolute_url())
+
+
+class NoteShareToggleView(OrganizationViewMixin, View):
+    """Toggle a share link's active status."""
+
+    def post(self, request, pk, share_pk):
+        from .models import NoteShareLink
+
+        note = get_object_or_404(
+            Note.objects.filter(organization=request.organization),
+            pk=pk
+        )
+
+        share_link = get_object_or_404(
+            NoteShareLink.objects.filter(note=note),
+            pk=share_pk
+        )
+
+        share_link.is_active = not share_link.is_active
+        share_link.save(update_fields=['is_active'])
+
+        status = 'enabled' if share_link.is_active else 'disabled'
+        messages.success(request, f'Share link {status}.')
+
+        if request.htmx:
+            share_links = note.share_links.all()
+            html = render_to_string(
+                'notes/partials/share_link_panel.html',
+                {'note': note, 'share_links': share_links},
+                request=request
+            )
+            return HttpResponse(html)
+
+        return redirect(note.get_absolute_url())
+
+
+class NoteShareDeleteView(OrganizationViewMixin, View):
+    """Delete a share link."""
+
+    def post(self, request, pk, share_pk):
+        from .models import NoteShareLink
+
+        note = get_object_or_404(
+            Note.objects.filter(organization=request.organization),
+            pk=pk
+        )
+
+        share_link = get_object_or_404(
+            NoteShareLink.objects.filter(note=note),
+            pk=share_pk
+        )
+
+        share_link.delete()
+        messages.success(request, 'Share link deleted.')
+
+        if request.htmx:
+            share_links = note.share_links.all()
+            html = render_to_string(
+                'notes/partials/share_link_panel.html',
+                {'note': note, 'share_links': share_links},
+                request=request
+            )
+            return HttpResponse(html)
+
+        return redirect(note.get_absolute_url())

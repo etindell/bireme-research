@@ -29,6 +29,7 @@ class OrganizationMiddleware:
         '/__reload__/',
         '/organizations/create/',
         '/organizations/join/',
+        '/share/',
     ]
 
     def __init__(self, get_response):

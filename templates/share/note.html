@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ note.title|truncatewords:10 }} - Shared Note</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Prose-like styling for markdown content */
+        .note-content p { margin-bottom: 1rem; }
+        .note-content ul, .note-content ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+        .note-content ul { list-style-type: disc; }
+        .note-content ol { list-style-type: decimal; }
+        .note-content li { margin-bottom: 0.25rem; }
+        .note-content h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; }
+        .note-content h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .note-content h3 { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .note-content blockquote { border-left: 4px solid #e5e7eb; padding-left: 1rem; margin: 1rem 0; color: #6b7280; }
+        .note-content code { background-color: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        .note-content pre { background-color: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; }
+        .note-content pre code { background-color: transparent; padding: 0; }
+        .note-content a { color: #2563eb; text-decoration: underline; }
+        .note-content a:hover { color: #1d4ed8; }
+        .note-content img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 1rem 0; }
+        .note-content table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        .note-content th, .note-content td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
+        .note-content th { background-color: #f9fafb; font-weight: 600; }
+        .note-content strong { font-weight: 600; }
+        .note-content em { font-style: italic; }
+        .note-content u { text-decoration: underline; }
+        .note-content s { text-decoration: line-through; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-14 items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-500">Shared Note</span>
+                </div>
+                <span class="text-xs text-gray-400">{{ note.created_at|date:"M j, Y" }}</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+        <article class="bg-white shadow rounded-lg overflow-hidden">
+            <!-- Note type color bar -->
+            <div class="h-1" style="background-color: {{ note.note_type.color|default:'#9CA3AF' }};"></div>
+
+            <div class="p-6 sm:p-8">
+                <!-- Title -->
+                <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ note.title }}</h1>
+
+                <!-- Metadata -->
+                <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-6">
+                    {% if note.note_type %}
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                          style="background-color: {{ note.note_type.color }}20; color: {{ note.note_type.color }};">
+                        {{ note.note_type.name }}
+                    </span>
+                    {% endif %}
+                    {% if note.note_date %}
+                    <span class="flex items-center gap-1">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {{ note.note_date|date:"M j, Y" }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Content -->
+                {% load markdown_extras %}
+                {% if note.content %}
+                <div class="note-content text-gray-700 leading-relaxed">
+                    {{ note.content|markdown }}
+                </div>
+                {% else %}
+                <p class="text-gray-500 italic">No additional content.</p>
+                {% endif %}
+            </div>
+        </article>
+
+        <!-- Comments Section -->
+        {% if share_link.allow_comments %}
+        <section id="comments" class="mt-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Comments</h2>
+
+            <!-- Existing comments -->
+            {% if comments %}
+            <div class="space-y-4 mb-6">
+                {% for comment in comments %}
+                <div class="bg-white shadow rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-gray-900">{{ comment.author_name|default:"Anonymous" }}</span>
+                        <span class="text-xs text-gray-500">{{ comment.created_at|date:"M j, Y g:i A" }}</span>
+                    </div>
+                    <p class="text-gray-700">{{ comment.content }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 mb-6">No comments yet. Be the first to comment!</p>
+            {% endif %}
+
+            <!-- Comment form -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-sm font-medium text-gray-900 mb-4">Leave a comment</h3>
+                <form method="post" action="{% url 'share:comment' share_link.token %}">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="author_name" class="block text-sm font-medium text-gray-700 mb-1">Name (optional)</label>
+                                <input type="text" name="author_name" id="author_name"
+                                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                       placeholder="Your name">
+                            </div>
+                            <div>
+                                <label for="author_email" class="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+                                <input type="email" name="author_email" id="author_email"
+                                       class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                       placeholder="Your email">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Comment <span class="text-red-500">*</span></label>
+                            <textarea name="content" id="content" rows="3" required
+                                      class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                      placeholder="Write your comment..."></textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                                Post Comment
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-6">
+        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-xs text-gray-400">
+                Shared via Bireme Research
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

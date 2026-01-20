@@ -35,6 +35,9 @@ urlpatterns = [
 
     # News
     path('news/', include('apps.news.urls', namespace='news')),
+
+    # Share (public, no auth required)
+    path('share/', include('apps.share.urls', namespace='share')),
 ]
 
 # Development URLs

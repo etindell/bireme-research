@@ -422,3 +422,96 @@ class NoteCashFlow(models.Model):
         from apps.companies.services import calculate_irr
         cash_flows = self.get_cash_flows()
         return calculate_irr(cash_flows)
+
+
+class NoteShareLink(models.Model):
+    """
+    Share link for making a note publicly accessible.
+    Allows sharing individual notes via unique tokens.
+    """
+    note = models.ForeignKey(
+        Note,
+        on_delete=models.CASCADE,
+        related_name='share_links'
+    )
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    is_active = models.BooleanField(default=True)
+    allow_comments = models.BooleanField(default=False)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_share_links'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    view_count = models.PositiveIntegerField(default=0)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'note_share_links'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['note', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"Share link for {self.note.title[:30]}"
+
+    @classmethod
+    def generate_token(cls):
+        """Generate a secure random token."""
+        import secrets
+        return secrets.token_urlsafe(32)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('share:view', kwargs={'token': self.token})
+
+    @property
+    def is_expired(self):
+        """Check if the share link has expired."""
+        from django.utils import timezone
+        if self.expires_at is None:
+            return False
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        """Check if the share link is valid (active and not expired)."""
+        return self.is_active and not self.is_expired
+
+    def record_view(self):
+        """Record a view of this shared note."""
+        from django.utils import timezone
+        self.view_count += 1
+        self.last_viewed_at = timezone.now()
+        self.save(update_fields=['view_count', 'last_viewed_at'])
+
+
+class NoteShareComment(models.Model):
+    """
+    Comment left on a shared note by a visitor.
+    Does not require authentication.
+    """
+    share_link = models.ForeignKey(
+        NoteShareLink,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    author_name = models.CharField(max_length=100, blank=True)
+    author_email = models.EmailField(blank=True)
+    content = models.TextField(max_length=2000)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=True)
+    is_hidden = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'note_share_comments'
+        ordering = ['created_at']
+
+    def __str__(self):
+        name = self.author_name or 'Anonymous'
+        return f"Comment by {name} on {self.share_link}"

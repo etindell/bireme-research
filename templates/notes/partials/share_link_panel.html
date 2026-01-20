@@ -1,0 +1,127 @@
+<div id="share-panel" class="mt-6 pt-6 border-t border-gray-200">
+    <h3 class="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        </svg>
+        Share Note
+    </h3>
+
+    {% if share_links %}
+    <div class="space-y-3">
+        {% for link in share_links %}
+        <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        {% if link.is_active %}
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                            Active
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                            Disabled
+                        </span>
+                        {% endif %}
+                        {% if link.allow_comments %}
+                        <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                            Comments on
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if link.is_active %}
+                    <div class="mt-2 flex items-center gap-2">
+                        <input type="text" readonly
+                               value="{{ request.scheme }}://{{ request.get_host }}{% url 'share:view' link.token %}"
+                               class="flex-1 rounded-md border-gray-300 bg-white text-sm text-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                               id="share-link-{{ link.pk }}">
+                        <button type="button"
+                                onclick="copyShareLink('share-link-{{ link.pk }}')"
+                                class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                    {% endif %}
+                    <div class="mt-2 text-xs text-gray-500">
+                        Created {{ link.created_at|date:"M j, Y" }}
+                        {% if link.view_count > 0 %}
+                        &middot; {{ link.view_count }} view{{ link.view_count|pluralize }}
+                        {% endif %}
+                        {% if link.last_viewed_at %}
+                        &middot; Last viewed {{ link.last_viewed_at|timesince }} ago
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <form hx-post="{% url 'notes:share_toggle' note.pk link.pk %}"
+                          hx-target="#share-panel"
+                          hx-swap="outerHTML">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            {% if link.is_active %}Disable{% else %}Enable{% endif %}
+                        </button>
+                    </form>
+                    <form hx-post="{% url 'notes:share_delete' note.pk link.pk %}"
+                          hx-target="#share-panel"
+                          hx-swap="outerHTML"
+                          hx-confirm="Delete this share link? Anyone with the link will no longer be able to access the note.">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-50">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-500 mb-4">No share links yet. Create one to share this note publicly.</p>
+    {% endif %}
+
+    <!-- Create new share link -->
+    {% if not share_links.exists or not share_links.0.is_active %}
+    <form hx-post="{% url 'notes:share_create' note.pk %}"
+          hx-target="#share-panel"
+          hx-swap="outerHTML"
+          class="mt-4">
+        {% csrf_token %}
+        <div class="flex items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+                <input type="checkbox" name="allow_comments"
+                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                Allow comments
+            </label>
+            <button type="submit"
+                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create Share Link
+            </button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+function copyShareLink(inputId) {
+    const input = document.getElementById(inputId);
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+        // Show brief feedback
+        const btn = input.nextElementSibling;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 1500);
+    });
+}
+</script>

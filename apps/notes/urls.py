@@ -19,4 +19,9 @@ urlpatterns = [
     path('<int:pk>/toggle-collapse/', views.NoteToggleCollapseView.as_view(), name='toggle_collapse'),
     path('<int:pk>/toggle-pin/', views.NoteTogglePinView.as_view(), name='toggle_pin'),
     path('<int:pk>/create-todo/', views.NoteCreateTodoView.as_view(), name='create_todo'),
+    # Share management
+    path('<int:pk>/share/', views.NoteShareCreateView.as_view(), name='share_create'),
+    path('<int:pk>/share/<int:share_pk>/toggle/', views.NoteShareToggleView.as_view(), name='share_toggle'),
+    path('<int:pk>/share/<int:share_pk>/delete/', views.NoteShareDeleteView.as_view(), name='share_delete'),
+    path('<int:pk>/share-panel/', views.NoteSharePanelView.as_view(), name='share_panel'),
 ]
