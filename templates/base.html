@@ -46,6 +46,25 @@
         .htmx-settling {
             transition: opacity 200ms ease-out;
         }
+
+        /* HTMX loading indicators */
+        .htmx-indicator {
+            display: none;
+        }
+        .htmx-request .htmx-indicator {
+            display: inline-flex;
+        }
+        .htmx-request.htmx-indicator {
+            display: inline-flex;
+        }
+
+        /* Inverse indicator: visible by default, hidden during request */
+        .htmx-indicator-inverse {
+            display: inline-flex;
+        }
+        .htmx-request .htmx-indicator-inverse {
+            display: none;
+        }
     </style>
 
     {% block extra_css %}{% endblock %}
