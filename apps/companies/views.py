@@ -818,6 +818,32 @@ class GenerateSummaryView(OrganizationViewMixin, View):
         return redirect('companies:detail', slug=slug)
 
 
+class UpdateKeyQuestionsView(OrganizationViewMixin, View):
+    """HTMX view to update key questions for a company."""
+
+    def post(self, request, slug):
+        company = get_object_or_404(
+            Company.objects.filter(organization=request.organization),
+            slug=slug
+        )
+
+        key_questions = request.POST.get('key_questions', '').strip()
+        company.key_questions = key_questions
+        company.updated_by = request.user
+        company.save(update_fields=['key_questions', 'updated_by', 'updated_at'])
+
+        messages.success(request, 'Key questions updated.')
+
+        if request.htmx:
+            # Return the updated key questions section
+            return render(
+                request,
+                'companies/partials/key_questions_section.html',
+                {'company': company}
+            )
+        return redirect('companies:detail', slug=slug)
+
+
 class ForecastHistoryAPIView(OrganizationViewMixin, View):
     """API endpoint returning historical forecast data for charting."""
 

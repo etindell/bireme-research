@@ -36,13 +36,18 @@ Use markdown with these sections:
 - **Key Events Timeline**: Important developments with dates
 - **Risks**: Main risk factors
 - **Recent Developments**: From most recent 1-2 notes
-
+{key_questions_section}
 Keep the summary concise (400-600 words).
 
 TODAY'S DATE: {today_date}
 
 NOTES (most recent first):
 {notes_content}
+"""
+
+KEY_QUESTIONS_SECTION = """
+- **Key Questions Analysis**: For each of the following key questions, search through ALL notes and provide what is known, what remains uncertain, and any relevant data points with dates:
+{key_questions_formatted}
 """
 
 FOCUS_TOPIC_ADDITION = """
@@ -102,12 +107,23 @@ def generate_company_summary(company, focus_topic: Optional[str] = None) -> Opti
         note_text += "---\n"
         notes_content.append(note_text)
 
+    # Build key questions section if company has key questions
+    key_questions_section = ""
+    if company.key_questions and company.key_questions.strip():
+        questions = [q.strip() for q in company.key_questions.strip().split('\n') if q.strip()]
+        if questions:
+            formatted_questions = "\n".join(f"  {i+1}. {q}" for i, q in enumerate(questions))
+            key_questions_section = KEY_QUESTIONS_SECTION.format(
+                key_questions_formatted=formatted_questions
+            )
+
     # Build prompt
     today_date = timezone.now().strftime('%Y-%m-%d')
     prompt = SUMMARY_PROMPT_TEMPLATE.format(
         company_name=company.name,
         today_date=today_date,
-        notes_content="\n".join(notes_content)
+        notes_content="\n".join(notes_content),
+        key_questions_section=key_questions_section
     )
 
     # Append focus topic section if provided

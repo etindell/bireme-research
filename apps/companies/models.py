@@ -119,6 +119,12 @@ class Company(SoftDeleteModel, OrganizationMixin):
         help_text='Investment thesis summary'
     )
 
+    # Key questions to answer
+    key_questions = models.TextField(
+        blank=True,
+        help_text='Key questions to investigate about this company (one per line)'
+    )
+
     # Market data
     market_cap = models.DecimalField(
         max_digits=20,
