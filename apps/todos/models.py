@@ -87,6 +87,21 @@ class TodoQuerySet(models.QuerySet):
         else:
             return self.filter(category__slug=category)
 
+    def for_user(self, user):
+        """Get todos visible to user: their personal todos OR org todos."""
+        return self.filter(
+            models.Q(scope='personal', assigned_to=user) |
+            models.Q(scope='organization')
+        )
+
+    def personal(self):
+        """Filter to personal scope todos."""
+        return self.filter(scope='personal')
+
+    def organizational(self):
+        """Filter to organization scope todos."""
+        return self.filter(scope='organization')
+
     def pending(self):
         return self.filter(is_completed=False)
 
@@ -130,6 +145,10 @@ class Todo(SoftDeleteModel, OrganizationMixin):
     Categorized as:
     - Maintenance: For existing portfolio companies
     - Research: For new ideas and watchlist companies
+
+    Scoped as:
+    - Personal: Only visible to the assigned user
+    - Organization: Visible to all team members
     """
     class TodoType(models.TextChoices):
         QUARTERLY_UPDATE = 'quarterly_update', 'Quarterly Update'
@@ -142,6 +161,10 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         MEDIUM = 'medium', 'Medium'
         LOW = 'low', 'Low'
         NONE = 'none', 'None'
+
+    class Scope(models.TextChoices):
+        PERSONAL = 'personal', 'Personal'
+        ORGANIZATION = 'organization', 'Team'
 
     # Core fields
     title = models.CharField(max_length=500)
@@ -175,6 +198,23 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         choices=Priority.choices,
         default=Priority.NONE,
         db_index=True
+    )
+
+    # Scope and assignment
+    scope = models.CharField(
+        max_length=20,
+        choices=Scope.choices,
+        default=Scope.PERSONAL,
+        db_index=True,
+        help_text='Personal todos are only visible to the assigned user'
+    )
+    assigned_to = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='assigned_todos',
+        help_text='User this todo is assigned to (for personal todos)'
     )
 
     # Completion tracking
@@ -234,6 +274,8 @@ class Todo(SoftDeleteModel, OrganizationMixin):
             models.Index(fields=['organization', 'quarter']),
             models.Index(fields=['organization', 'priority']),
             models.Index(fields=['company', 'is_completed']),
+            models.Index(fields=['organization', 'scope']),
+            models.Index(fields=['scope', 'assigned_to']),
         ]
 
     def __str__(self):

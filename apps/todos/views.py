@@ -27,8 +27,18 @@ class TodoListView(OrganizationViewMixin, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset().select_related(
-            'company', 'category', 'created_by', 'completed_by'
+            'company', 'category', 'created_by', 'completed_by', 'assigned_to'
         )
+
+        # Filter by scope - default to personal (user's own todos)
+        scope_filter = self.request.GET.get('scope', 'personal')
+        if scope_filter == 'personal':
+            qs = qs.filter(scope='personal', assigned_to=self.request.user)
+        elif scope_filter == 'team':
+            qs = qs.filter(scope='organization')
+        # scope='all' shows both personal (for this user) and team todos
+        elif scope_filter == 'all':
+            qs = qs.for_user(self.request.user)
 
         # Filter by category (slug or pk)
         category_filter = self.request.GET.get('category')
@@ -100,13 +110,42 @@ class TodoListView(OrganizationViewMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Get all categories with pending counts
+        # Current scope filter
+        current_scope = self.request.GET.get('scope', 'personal')
+        context['current_scope'] = current_scope
+
+        # Get base queryset for the current scope
+        org_todos = Todo.objects.filter(organization=self.request.organization)
+        if current_scope == 'personal':
+            scope_todos = org_todos.filter(scope='personal', assigned_to=self.request.user)
+        elif current_scope == 'team':
+            scope_todos = org_todos.filter(scope='organization')
+        else:
+            scope_todos = org_todos.for_user(self.request.user)
+
+        # Get all categories with pending counts for current scope
         categories = TodoCategory.objects.filter(
             organization=self.request.organization
         ).annotate(
             pending_count=models.Count(
                 'todos',
-                filter=models.Q(todos__is_deleted=False, todos__is_completed=False)
+                filter=models.Q(
+                    todos__is_deleted=False,
+                    todos__is_completed=False,
+                    todos__scope='personal' if current_scope == 'personal' else 'organization',
+                ) & (
+                    models.Q(todos__assigned_to=self.request.user) if current_scope == 'personal'
+                    else models.Q()
+                )
+            ) if current_scope != 'all' else models.Count(
+                'todos',
+                filter=models.Q(
+                    todos__is_deleted=False,
+                    todos__is_completed=False
+                ) & (
+                    models.Q(todos__scope='personal', todos__assigned_to=self.request.user) |
+                    models.Q(todos__scope='organization')
+                )
             )
         ).order_by('order', 'name')
         context['categories'] = categories
@@ -120,15 +159,22 @@ class TodoListView(OrganizationViewMixin, ListView):
         context['current_age'] = self.request.GET.get('age', '')
         context['priorities'] = Todo.Priority.choices
 
-        # Stats for summary
-        org_todos = Todo.objects.filter(organization=self.request.organization)
-        context['pending_count'] = org_todos.pending().count()
-        context['completed_count'] = org_todos.completed().count()
+        # Stats for summary - counts for current scope
+        context['pending_count'] = scope_todos.pending().count()
+        context['completed_count'] = scope_todos.completed().count()
+
+        # Counts for scope tabs
+        context['personal_pending_count'] = org_todos.filter(
+            scope='personal', assigned_to=self.request.user, is_completed=False
+        ).count()
+        context['team_pending_count'] = org_todos.filter(
+            scope='organization', is_completed=False
+        ).count()
 
         # Legacy stats for backward compatibility (can be removed later)
-        context['maintenance_pending'] = org_todos.pending().maintenance().count()
-        context['idea_generation_pending'] = org_todos.pending().idea_generation().count()
-        context['marketing_pending'] = org_todos.pending().marketing().count()
+        context['maintenance_pending'] = scope_todos.pending().maintenance().count()
+        context['idea_generation_pending'] = scope_todos.pending().idea_generation().count()
+        context['marketing_pending'] = scope_todos.pending().marketing().count()
 
         # Section-based todos for the default view (pending only, grouped by category)
         # Only show sections when no filters are applied (except default pending status)
@@ -139,7 +185,7 @@ class TodoListView(OrganizationViewMixin, ListView):
             not self.request.GET.get('age')
         )
         if show_sections:
-            base_qs = org_todos.pending().select_related('company', 'category', 'created_by')
+            base_qs = scope_todos.pending().select_related('company', 'category', 'created_by', 'assigned_to')
             # Build category sections dynamically
             category_sections = []
             for category in categories:
@@ -225,6 +271,11 @@ class TodoCreateView(OrganizationViewMixin, CreateView):
         form.instance.organization = self.request.organization
         form.instance.created_by = self.request.user
         form.instance.todo_type = Todo.TodoType.CUSTOM
+        # Set assigned_to for personal todos
+        if form.instance.scope == Todo.Scope.PERSONAL:
+            form.instance.assigned_to = self.request.user
+        else:
+            form.instance.assigned_to = None
         response = super().form_valid(form)
         messages.success(self.request, 'Todo created.')
         return response
@@ -232,7 +283,9 @@ class TodoCreateView(OrganizationViewMixin, CreateView):
     def get_success_url(self):
         if self.request.GET.get('company') and self.object.company:
             return self.object.company.get_absolute_url()
-        return reverse('todos:list')
+        # Preserve scope in redirect
+        scope = 'personal' if self.object.scope == Todo.Scope.PERSONAL else 'team'
+        return reverse('todos:list') + f'?scope={scope}'
 
 
 class TodoUpdateView(OrganizationViewMixin, UpdateView):
@@ -302,6 +355,12 @@ class QuickTodoCreateView(OrganizationViewMixin, View):
             todo.company = company
             todo.created_by = request.user
             todo.todo_type = Todo.TodoType.CUSTOM
+
+            # Set assigned_to for personal todos (default for quick todos)
+            if todo.scope == Todo.Scope.PERSONAL:
+                todo.assigned_to = request.user
+            else:
+                todo.assigned_to = None
 
             # Auto-select category based on company status
             if company.status == Company.Status.PORTFOLIO:

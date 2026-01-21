@@ -63,6 +63,33 @@
                 {% endif %}
             </div>
 
+            <!-- Scope Selection -->
+            <div>
+                <label class="block text-sm font-medium leading-6 text-gray-900">
+                    Visibility
+                </label>
+                <p class="text-sm text-gray-500 mb-3">Choose who can see this todo</p>
+                <div class="flex gap-x-6">
+                    {% for value, label in form.scope.field.choices %}
+                    <label class="flex items-center">
+                        <input type="radio" name="scope" value="{{ value }}"
+                               {% if form.scope.value == value or forloop.first and not form.scope.value %}checked{% endif %}
+                               class="h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-600">
+                        <span class="ml-2 text-sm font-medium text-gray-900">
+                            {% if value == 'personal' %}
+                            Personal <span class="font-normal text-gray-500">(only you)</span>
+                            {% else %}
+                            Team <span class="font-normal text-gray-500">(all members)</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if form.scope.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.scope.errors.0 }}</p>
+                {% endif %}
+            </div>
+
             <!-- Company, Category, and Priority -->
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
                 <div>

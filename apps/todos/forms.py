@@ -76,7 +76,7 @@ class TodoForm(forms.ModelForm):
 
     class Meta:
         model = Todo
-        fields = ['title', 'description', 'company', 'category', 'priority']
+        fields = ['title', 'description', 'company', 'category', 'priority', 'scope']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
@@ -96,6 +96,9 @@ class TodoForm(forms.ModelForm):
             'priority': forms.Select(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
             }),
+            'scope': forms.RadioSelect(attrs={
+                'class': 'h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-600',
+            }),
         }
 
     def __init__(self, *args, organization=None, **kwargs):
@@ -110,6 +113,8 @@ class TodoForm(forms.ModelForm):
                 organization=organization
             )
             self.fields['category'].required = False
+        # Set scope choices with user-friendly labels
+        self.fields['scope'].choices = Todo.Scope.choices
 
 
 class QuickTodoForm(forms.ModelForm):
@@ -117,16 +122,19 @@ class QuickTodoForm(forms.ModelForm):
 
     class Meta:
         model = Todo
-        fields = ['title']
+        fields = ['title', 'scope']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
                 'placeholder': 'Add a todo...',
             }),
+            'scope': forms.HiddenInput(),
         }
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Default to personal scope for quick todos
+        self.fields['scope'].initial = Todo.Scope.PERSONAL
 
 
 class InvestorLetterTodoForm(forms.ModelForm):

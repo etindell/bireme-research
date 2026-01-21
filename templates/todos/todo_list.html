@@ -37,11 +37,35 @@
              this.allTodoIds = ids;
          }
      }">
+    <!-- Scope Tabs -->
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <a href="?scope=personal"
+               class="{% if current_scope == 'personal' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+                My Todos
+                {% if personal_pending_count > 0 %}
+                <span class="{% if current_scope == 'personal' %}bg-primary-100 text-primary-600{% else %}bg-gray-100 text-gray-900{% endif %} ml-2 rounded-full py-0.5 px-2.5 text-xs font-medium">
+                    {{ personal_pending_count }}
+                </span>
+                {% endif %}
+            </a>
+            <a href="?scope=team"
+               class="{% if current_scope == 'team' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+                Team Todos
+                {% if team_pending_count > 0 %}
+                <span class="{% if current_scope == 'team' %}bg-primary-100 text-primary-600{% else %}bg-gray-100 text-gray-900{% endif %} ml-2 rounded-full py-0.5 px-2.5 text-xs font-medium">
+                    {{ team_pending_count }}
+                </span>
+                {% endif %}
+            </a>
+        </nav>
+    </div>
+
     <!-- Header -->
     <div class="md:flex md:items-center md:justify-between">
         <div class="min-w-0 flex-1">
             <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
-                Todos
+                {% if current_scope == 'personal' %}My Todos{% else %}Team Todos{% endif %}
             </h1>
             <p class="mt-1 text-sm text-gray-500">
                 {{ pending_count }} pending &middot; {{ completed_count }} completed
@@ -160,7 +184,7 @@
     <!-- Category stats cards (dynamic) -->
     <div class="flex flex-wrap gap-4">
         {% for category in categories %}
-        <a href="?category={{ category.slug }}&status=pending"
+        <a href="?category={{ category.slug }}&status=pending&scope={{ current_scope }}"
            class="flex-1 min-w-[200px] rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow {% if current_category == category.slug %}ring-2{% endif %}"
            style="{% if current_category == category.slug %}--tw-ring-color: {{ category.color }};{% endif %}">
             <div class="flex items-center">
@@ -193,6 +217,9 @@
     {% if not show_sections %}
     <div class="bg-white shadow rounded-lg p-4">
         <div class="flex flex-wrap gap-4 items-center">
+            <!-- Hidden scope field for HTMX includes -->
+            <input type="hidden" name="scope" value="{{ current_scope }}">
+
             <!-- Category filter -->
             <div>
                 <label for="category-filter" class="sr-only">Category</label>
@@ -201,7 +228,7 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='status'], [name='type'], [name='company'], [name='priority'], [name='age']"
+                        hx-include="[name='status'], [name='type'], [name='company'], [name='priority'], [name='age'], [name='scope']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Categories</option>
                     {% for category in categories %}
@@ -218,7 +245,7 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='category'], [name='type'], [name='company'], [name='priority'], [name='age']"
+                        hx-include="[name='category'], [name='type'], [name='company'], [name='priority'], [name='age'], [name='scope']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
                     <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
@@ -234,7 +261,7 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='category'], [name='status'], [name='company'], [name='priority'], [name='age']"
+                        hx-include="[name='category'], [name='status'], [name='company'], [name='priority'], [name='age'], [name='scope']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Types</option>
                     {% for value, label in todo_types %}
@@ -251,7 +278,7 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='category'], [name='status'], [name='type'], [name='company'], [name='priority']"
+                        hx-include="[name='category'], [name='status'], [name='type'], [name='company'], [name='priority'], [name='scope']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Time</option>
                     <option value="today" {% if current_age == 'today' %}selected{% endif %}>Today</option>
@@ -269,7 +296,7 @@
                         hx-get="{% url 'todos:list' %}"
                         hx-target="#todo-list"
                         hx-push-url="true"
-                        hx-include="[name='category'], [name='status'], [name='type'], [name='company'], [name='age']"
+                        hx-include="[name='category'], [name='status'], [name='type'], [name='company'], [name='age'], [name='scope']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Priorities</option>
                     {% for value, label in priorities %}
@@ -279,7 +306,7 @@
             </div>
 
             <!-- Clear filters -->
-            <a href="{% url 'todos:list' %}" class="text-sm text-gray-500 hover:text-gray-700">
+            <a href="{% url 'todos:list' %}?scope={{ current_scope }}" class="text-sm text-gray-500 hover:text-gray-700">
                 Clear filters
             </a>
         </div>
