@@ -12,32 +12,18 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-SUMMARY_PROMPT_TEMPLATE = """Summarize the following research notes for {company_name}.
+SUMMARY_PROMPT_TEMPLATE_PORTFOLIO = """Summarize the following research notes for {company_name} (a portfolio holding).
 
-IMPORTANT DATE HANDLING INSTRUCTIONS:
-1. For TIME-SENSITIVE metrics (valuation, IRR, price targets, model assumptions, market cap, earnings estimates, sell-side ratings):
-   - ONLY use information from notes dated within the last 60 days
-   - Always state the date when these metrics were recorded (e.g., "As of Oct 2025...")
-   - NEVER use words like "current", "today", or "now" for metrics older than 30 days
+Be succinct and focus on actionable information.
 
-2. For HISTORICAL events (earnings releases, management changes, acquisitions, regulatory decisions):
-   - You may reference older notes but always include the date (e.g., "In Jan 2025, Nigeria approved...")
-   - Frame these as past events, not current state
+IMPORTANT: For time-sensitive metrics (valuation, IRR, price), only use data from the last 60 days and include dates.
 
-3. For TIMELESS information (business model, investment thesis, risk factors, competitive dynamics):
-   - Synthesize across all notes
-   - These don't need date attribution unless the situation has changed
-
-OUTPUT FORMAT:
-Use markdown with these sections:
+OUTPUT FORMAT (use markdown, keep each section brief):
 - **Business Overview**: 2-3 sentences on what the company does
-- **Valuation & Estimates**: Only from recent notes, with dates
-- **Investment Thesis**: Key reasons to own the stock
-- **Key Events Timeline**: Important developments with dates
-- **Risks**: Main risk factors
-- **Recent Developments**: From most recent 1-2 notes
+- **Valuation**: Current valuation metrics and estimates with dates
+- **Investment Thesis**: Key reasons for the position (3-5 bullet points)
 {key_questions_section}
-Keep the summary concise (400-600 words).
+Keep total length under 400 words.
 
 TODAY'S DATE: {today_date}
 
@@ -45,8 +31,25 @@ NOTES (most recent first):
 {notes_content}
 """
 
-KEY_QUESTIONS_SECTION = """
-- **Key Questions Analysis**: For each of the following key questions, search through ALL notes and provide what is known, what remains uncertain, and any relevant data points with dates:
+SUMMARY_PROMPT_TEMPLATE_RESEARCH = """Summarize the following research notes for {company_name} (a research candidate).
+
+Be succinct and focus on key information needed to evaluate the opportunity.
+
+IMPORTANT: For time-sensitive metrics (valuation, IRR, price), only use data from the last 60 days and include dates.
+
+OUTPUT FORMAT (use markdown, keep each section brief):
+- **Business Overview**: 2-3 sentences on what the company does
+- **Valuation**: Current valuation metrics and estimates with dates
+{key_questions_section}
+Keep total length under 300 words.
+
+TODAY'S DATE: {today_date}
+
+NOTES (most recent first):
+{notes_content}
+"""
+
+KEY_QUESTIONS_SECTION = """- **Key Questions**: For each question below, briefly summarize what is known from the notes:
 {key_questions_formatted}
 """
 
@@ -117,9 +120,20 @@ def generate_company_summary(company, focus_topic: Optional[str] = None) -> Opti
                 key_questions_formatted=formatted_questions
             )
 
+    # Select template based on company status
+    # Portfolio companies (long_book, short_book) get investment thesis section
+    # Research candidates (on_deck, watchlist, etc.) get a more concise format
+    from apps.companies.models import Company
+    is_portfolio = company.status in [Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]
+
+    if is_portfolio:
+        template = SUMMARY_PROMPT_TEMPLATE_PORTFOLIO
+    else:
+        template = SUMMARY_PROMPT_TEMPLATE_RESEARCH
+
     # Build prompt
     today_date = timezone.now().strftime('%Y-%m-%d')
-    prompt = SUMMARY_PROMPT_TEMPLATE.format(
+    prompt = template.format(
         company_name=company.name,
         today_date=today_date,
         notes_content="\n".join(notes_content),
