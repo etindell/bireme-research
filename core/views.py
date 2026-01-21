@@ -27,6 +27,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         if hasattr(self.request, 'organization') and self.request.organization:
             org = self.request.organization
+            now = timezone.now()
 
             # Pipeline counts (Long Book + Short Book = Portfolio)
             context['portfolio_count'] = Company.objects.filter(
@@ -42,6 +43,25 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             context['notes_count'] = Note.objects.filter(
                 organization=org,
                 is_imported=False
+            ).count()
+
+            # Todo completion stats
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_start = today_start - timedelta(days=today_start.weekday())
+
+            context['todos_completed_today'] = Todo.objects.filter(
+                organization=org,
+                is_completed=True,
+                completed_at__gte=today_start
+            ).count()
+            context['todos_completed_this_week'] = Todo.objects.filter(
+                organization=org,
+                is_completed=True,
+                completed_at__gte=week_start
+            ).count()
+            context['todos_pending_count'] = Todo.objects.filter(
+                organization=org,
+                is_completed=False
             ).count()
 
             # Recent activity (exclude imported notes)
@@ -166,11 +186,23 @@ class ActivityDataView(LoginRequiredMixin, View):
             count=Count('id')
         ).order_by('period')
 
+        # Get todos completed data
+        todos_data = Todo.objects.filter(
+            organization=org,
+            is_completed=True,
+            completed_at__gte=start_date
+        ).annotate(
+            period=trunc_func('completed_at')
+        ).values('period').annotate(
+            count=Count('id')
+        ).order_by('period')
+
         # Build response data
         labels = []
         notes_counts = []
         words_counts = []
         companies_counts = []
+        todos_counts = []
 
         # Create lookup dictionaries
         notes_lookup = {
@@ -180,6 +212,10 @@ class ActivityDataView(LoginRequiredMixin, View):
         companies_lookup = {
             item['period'].strftime(date_format): item['count']
             for item in companies_data if item['period']
+        }
+        todos_lookup = {
+            item['period'].strftime(date_format): item['count']
+            for item in todos_data if item['period']
         }
 
         # Generate all periods in range
@@ -206,15 +242,18 @@ class ActivityDataView(LoginRequiredMixin, View):
             notes_counts.append(notes_lookup.get(period_key, 0))
             words_counts.append(word_counts.get(period_key, 0))
             companies_counts.append(companies_lookup.get(period_key, 0))
+            todos_counts.append(todos_lookup.get(period_key, 0))
 
         return JsonResponse({
             'labels': labels,
             'notes': notes_counts,
             'words': words_counts,
             'companies': companies_counts,
+            'todos': todos_counts,
             'totals': {
                 'notes': sum(notes_counts),
                 'words': sum(words_counts),
                 'companies': sum(companies_counts),
+                'todos': sum(todos_counts),
             }
         })

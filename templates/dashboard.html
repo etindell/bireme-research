@@ -44,7 +44,7 @@
                 </div>
             </div>
             <!-- Period Totals -->
-            <div class="mt-4 grid grid-cols-3 gap-4">
+            <div class="mt-4 grid grid-cols-4 gap-4">
                 <div class="text-center">
                     <p class="text-2xl font-bold text-primary-600" x-text="totals.notes">-</p>
                     <p class="text-xs text-gray-500">Notes Added</p>
@@ -56,6 +56,10 @@
                 <div class="text-center">
                     <p class="text-2xl font-bold text-blue-600" x-text="totals.companies">-</p>
                     <p class="text-xs text-gray-500">Companies Added</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-amber-600" x-text="totals.todos">-</p>
+                    <p class="text-xs text-gray-500">Todos Completed</p>
                 </div>
             </div>
         </div>
@@ -142,6 +146,32 @@
             <dd class="ml-16 flex items-baseline">
                 <p class="text-2xl font-semibold text-gray-900">{{ notes_count|default:0 }}</p>
             </dd>
+        </div>
+    </div>
+
+    <!-- Todo Stats -->
+    <div class="rounded-lg bg-white shadow">
+        <div class="border-b border-gray-200 px-4 py-5 sm:px-6 flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-gray-900">Todo Progress</h3>
+            <a href="{% url 'todos:list' %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                View all
+            </a>
+        </div>
+        <div class="px-4 py-5 sm:px-6">
+            <div class="grid grid-cols-3 gap-6">
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-green-600">{{ todos_completed_today|default:0 }}</p>
+                    <p class="text-sm text-gray-500">Completed Today</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-blue-600">{{ todos_completed_this_week|default:0 }}</p>
+                    <p class="text-sm text-gray-500">Completed This Week</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-amber-600">{{ todos_pending_count|default:0 }}</p>
+                    <p class="text-sm text-gray-500">Pending</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -268,7 +298,7 @@ function activityChart() {
     return {
         period: 'day',
         chart: null,
-        totals: { notes: 0, words: 0, companies: 0 },
+        totals: { notes: 0, words: 0, companies: 0, todos: 0 },
         loading: true,
         error: null,
 
@@ -328,6 +358,14 @@ function activityChart() {
                             data: data.notes,
                             backgroundColor: 'rgba(79, 70, 229, 0.8)',
                             borderColor: 'rgb(79, 70, 229)',
+                            borderWidth: 1,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Todos',
+                            data: data.todos,
+                            backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                            borderColor: 'rgb(245, 158, 11)',
                             borderWidth: 1,
                             yAxisID: 'y',
                         },
@@ -393,7 +431,7 @@ function activityChart() {
                             position: 'left',
                             title: {
                                 display: true,
-                                text: 'Notes / Companies'
+                                text: 'Count'
                             },
                             beginAtZero: true,
                             ticks: {
