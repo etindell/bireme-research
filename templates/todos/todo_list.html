@@ -71,7 +71,26 @@
                 {{ pending_count }} pending &middot; {{ completed_count }} completed
             </p>
         </div>
-        <div class="mt-4 flex gap-x-3 md:ml-4 md:mt-0">
+        <div class="mt-4 flex flex-wrap gap-3 md:ml-4 md:mt-0">
+            <!-- View Completed toggle -->
+            {% if current_status == 'completed' %}
+            <a href="?scope={{ current_scope }}"
+               class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                View Pending
+            </a>
+            {% else %}
+            <a href="?scope={{ current_scope }}&status=completed"
+               class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                View Completed
+            </a>
+            {% endif %}
+
             <!-- Select mode toggle -->
             <button @click="toggleSelectMode()"
                     type="button"
@@ -181,37 +200,6 @@
         </div>
     </div>
 
-    <!-- Category stats cards (dynamic) -->
-    <div class="flex flex-wrap gap-4">
-        {% for category in categories %}
-        <a href="?category={{ category.slug }}&status=pending&scope={{ current_scope }}"
-           class="flex-1 min-w-[200px] rounded-lg bg-white px-4 py-5 shadow hover:shadow-md transition-shadow {% if current_category == category.slug %}ring-2{% endif %}"
-           style="{% if current_category == category.slug %}--tw-ring-color: {{ category.color }};{% endif %}">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 rounded-md p-3" style="background-color: {{ category.color }}20;">
-                    <div class="h-6 w-6 rounded-full" style="background-color: {{ category.color }};"></div>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500">{{ category.name }}</p>
-                    <p class="mt-1 text-2xl font-semibold" style="color: {{ category.color }};">{{ category.pending_count }}</p>
-                </div>
-            </div>
-        </a>
-        {% empty %}
-        <div class="flex-1 rounded-lg bg-white px-4 py-5 shadow">
-            <p class="text-sm text-gray-500">No categories yet.
-                <a href="{% url 'todos:category_list' %}" class="text-primary-600 hover:text-primary-800">Create one</a>
-            </p>
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- Manage categories link -->
-    <div class="flex justify-end">
-        <a href="{% url 'todos:category_list' %}" class="text-sm text-gray-500 hover:text-gray-700">
-            Manage categories
-        </a>
-    </div>
 
     <!-- Filters (shown when viewing filtered list) -->
     {% if not show_sections %}
