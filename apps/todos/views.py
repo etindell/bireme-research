@@ -15,7 +15,8 @@ from core.mixins import OrganizationViewMixin
 from apps.companies.models import Company
 from .models import Todo, TodoCategory, WatchlistQuickAdd
 from .forms import TodoForm, QuickTodoForm, InvestorLetterTodoForm, WatchlistQuickAddFormSet, CompleteWithNoteForm, QuarterlySettingsForm
-from apps.notes.models import Note
+from apps.notes.models import Note, NoteCashFlow
+from apps.notes.forms import NoteCashFlowForm
 
 
 class TodoListView(OrganizationViewMixin, ListView):
@@ -510,9 +511,19 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
         )
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['organization'] = self.request.organization
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['todo'] = self.todo
+        if 'cash_flow_form' not in context:
+            context['cash_flow_form'] = NoteCashFlowForm()
+        # Pass company for profitability_metric label
+        if self.todo.company:
+            context['company'] = self.todo.company
         return context
 
     def get_initial(self):
@@ -522,6 +533,21 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
         return initial
 
     def form_valid(self, form):
+        # Pre-validate cash flow form BEFORE saving the note
+        if self.request.POST.get('include_cash_flows'):
+            cash_flow_form = NoteCashFlowForm(self.request.POST)
+            if not cash_flow_form.is_valid():
+                context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
+                return self.render_to_response(context)
+
+            # Check that we have a price
+            company = self.todo.company
+            form_price = cash_flow_form.cleaned_data.get('current_price')
+            if not form_price and (not company or not company.current_price):
+                cash_flow_form.add_error('current_price', 'Price is required (company has no market price available)')
+                context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
+                return self.render_to_response(context)
+
         # Create the note
         note = form.save(commit=False)
         note.organization = self.request.organization
@@ -531,12 +557,40 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
         if self.todo.company:
             note.company = self.todo.company
         else:
-            # If no company on todo, we need a company for the note
-            # This shouldn't happen often, but handle gracefully
             messages.error(self.request, 'Cannot create note without a company.')
             return self.form_invalid(form)
 
         note.save()
+
+        # Handle cash flow form
+        cash_flow_form = NoteCashFlowForm(self.request.POST)
+        if cash_flow_form.is_valid() and cash_flow_form.cleaned_data.get('include_cash_flows'):
+            price = cash_flow_form.cleaned_data.get('current_price') or note.company.current_price
+            cash_flow = NoteCashFlow(
+                note=note,
+                current_price=price,
+                fcf_year_1=cash_flow_form.cleaned_data['fcf_year_1'],
+                fcf_year_2=cash_flow_form.cleaned_data['fcf_year_2'],
+                fcf_year_3=cash_flow_form.cleaned_data['fcf_year_3'],
+                fcf_year_4=cash_flow_form.cleaned_data['fcf_year_4'],
+                fcf_year_5=cash_flow_form.cleaned_data['fcf_year_5'],
+                terminal_value=cash_flow_form.cleaned_data['terminal_value'],
+                revenue_year_1=cash_flow_form.cleaned_data.get('revenue_year_1'),
+                revenue_year_2=cash_flow_form.cleaned_data.get('revenue_year_2'),
+                revenue_year_3=cash_flow_form.cleaned_data.get('revenue_year_3'),
+                revenue_year_4=cash_flow_form.cleaned_data.get('revenue_year_4'),
+                revenue_year_5=cash_flow_form.cleaned_data.get('revenue_year_5'),
+                ebit_ebitda_year_1=cash_flow_form.cleaned_data.get('ebit_ebitda_year_1'),
+                ebit_ebitda_year_2=cash_flow_form.cleaned_data.get('ebit_ebitda_year_2'),
+                ebit_ebitda_year_3=cash_flow_form.cleaned_data.get('ebit_ebitda_year_3'),
+                ebit_ebitda_year_4=cash_flow_form.cleaned_data.get('ebit_ebitda_year_4'),
+                ebit_ebitda_year_5=cash_flow_form.cleaned_data.get('ebit_ebitda_year_5'),
+            )
+            cash_flow.calculated_irr = cash_flow.calculate_irr()
+            cash_flow.save()
+
+            # Update company's active valuation
+            self._update_company_valuation(note.company, cash_flow_form.cleaned_data)
 
         # Mark the todo complete with the note attached
         self.todo.mark_complete(user=self.request.user, note=note)
@@ -547,6 +601,43 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
         )
 
         return redirect(self.get_success_url())
+
+    def _update_company_valuation(self, company, cleaned_data):
+        """Update or create the company's active valuation with the cash flow data."""
+        from apps.companies.models import CompanyValuation
+        from django.utils import timezone
+
+        today = timezone.now().date()
+        price_override = cleaned_data.get('current_price') or None
+
+        valuation = company.get_active_valuation()
+
+        if valuation:
+            valuation.fcf_year_1 = cleaned_data['fcf_year_1']
+            valuation.fcf_year_2 = cleaned_data['fcf_year_2']
+            valuation.fcf_year_3 = cleaned_data['fcf_year_3']
+            valuation.fcf_year_4 = cleaned_data['fcf_year_4']
+            valuation.fcf_year_5 = cleaned_data['fcf_year_5']
+            valuation.terminal_value = cleaned_data['terminal_value']
+            valuation.price_override = price_override
+            valuation.as_of_date = today
+            valuation.calculate_irr()
+            valuation.save(history_user=self.request.user)
+        else:
+            valuation = CompanyValuation.objects.create(
+                company=company,
+                fcf_year_1=cleaned_data['fcf_year_1'],
+                fcf_year_2=cleaned_data['fcf_year_2'],
+                fcf_year_3=cleaned_data['fcf_year_3'],
+                fcf_year_4=cleaned_data['fcf_year_4'],
+                fcf_year_5=cleaned_data['fcf_year_5'],
+                terminal_value=cleaned_data['terminal_value'],
+                price_override=price_override,
+                as_of_date=today,
+                is_active=True,
+            )
+            valuation.calculate_irr()
+            valuation.save(history_user=self.request.user)
 
     def get_success_url(self):
         # Go to the todo detail to see the completion note

@@ -3,7 +3,7 @@
 {% block title %}Complete Todo - Bireme Research{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-2xl">
+<div class="mx-auto max-w-3xl">
     <div class="md:flex md:items-center md:justify-between mb-8">
         <div class="min-w-0 flex-1">
             <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
@@ -35,10 +35,29 @@
         </div>
     </div>
 
-    <form method="post" class="space-y-6">
+    <form method="post" class="space-y-8">
         {% csrf_token %}
 
+        <!-- General form errors -->
+        {% if form.non_field_errors %}
+        <div class="rounded-md bg-red-50 p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    {% for error in form.non_field_errors %}
+                    <p class="text-sm font-medium text-red-800">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="bg-white shadow rounded-lg p-6 space-y-6">
+            <!-- Title -->
             <div>
                 <label for="id_title" class="block text-sm font-medium leading-6 text-gray-900">
                     Note Title *
@@ -52,17 +71,96 @@
                 {% endif %}
             </div>
 
+            <!-- Content with formatting toolbar -->
             <div>
                 <label for="id_content" class="block text-sm font-medium leading-6 text-gray-900">
                     Details
                 </label>
-                <p class="text-xs text-gray-500 mb-2">Findings, notes, or evidence from completing this task</p>
-                <div class="mt-2">
-                    {{ form.content }}
+                <p class="text-xs text-gray-500 mb-2">
+                    Findings, notes, or evidence from completing this task.
+                    <span class="text-primary-600">You can paste images directly!</span>
+                </p>
+
+                <!-- Formatting Toolbar -->
+                <div class="mt-2 mb-1 flex items-center gap-1 border border-gray-300 border-b-0 rounded-t-md bg-gray-50 px-2 py-1.5">
+                    <button type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('italic')" title="Italic (Ctrl+I)"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4h4m-2 0l-4 16m0 0h4"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('underline')" title="Underline (Ctrl+U)"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v7a5 5 0 0010 0V4M5 20h14"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('strikethrough')" title="Strikethrough"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v6m0 4v6M4 12h16"></path>
+                        </svg>
+                    </button>
+                    <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                    <button type="button" onclick="formatText('bullet')" title="Bullet List"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h.01M8 6h12M4 12h.01M8 12h12M4 18h.01M8 18h12"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('number')" title="Numbered List"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <text x="2" y="8" font-size="7" font-weight="bold">1.</text>
+                            <text x="2" y="15" font-size="7" font-weight="bold">2.</text>
+                            <text x="2" y="22" font-size="7" font-weight="bold">3.</text>
+                            <line x1="11" y1="5" x2="22" y2="5" stroke="currentColor" stroke-width="2"/>
+                            <line x1="11" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="11" y1="19" x2="22" y2="19" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                    <button type="button" onclick="formatText('link')" title="Insert Link"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="formatText('quote')" title="Blockquote"
+                            class="p-1.5 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z"></path>
+                        </svg>
+                    </button>
+                    <span class="ml-auto text-xs text-gray-400">Formatting supported</span>
+                </div>
+
+                <div class="relative">
+                    <textarea id="id_content" name="content"
+                              class="block w-full rounded-t-none rounded-b-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                              rows="6"
+                              placeholder="Details, findings, notes from completing this task...">{{ form.content.value|default:'' }}</textarea>
+                    <div id="upload-indicator" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-md">
+                        <div class="flex items-center gap-2 text-gray-600">
+                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Uploading image...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <!-- Note Type -->
                 <div>
                     <label for="id_note_type" class="block text-sm font-medium leading-6 text-gray-900">
                         Note Type
@@ -72,6 +170,7 @@
                     </div>
                 </div>
 
+                <!-- Note Date -->
                 <div>
                     <label for="id_note_date" class="block text-sm font-medium leading-6 text-gray-900">
                         Event Date
@@ -82,25 +181,157 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Info box -->
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+            <!-- Cash Flow Assumptions (optional) -->
+            {% if cash_flow_form %}
+            <div class="border-t border-gray-200 pt-6" x-data="{ includeCashFlows: {% if cash_flow_form.include_cash_flows.value %}true{% else %}false{% endif %} }">
+                <div class="flex items-center gap-3 mb-4">
+                    <input type="checkbox" name="include_cash_flows" id="id_include_cash_flows"
+                           x-model="includeCashFlows"
+                           {% if cash_flow_form.include_cash_flows.value %}checked{% endif %}
+                           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                    <label for="id_include_cash_flows" class="text-sm font-medium text-gray-900">
+                        Include IRR Cash Flow Assumptions
+                    </label>
                 </div>
-                <div class="ml-3 text-sm text-gray-600">
-                    <p>This note will be:</p>
-                    <ul class="mt-1 list-disc list-inside">
-                        <li>Attached to the todo as completion evidence</li>
-                        <li>Visible on the company page with your other notes</li>
-                        <li>Searchable like any other note</li>
-                    </ul>
+
+                <div x-show="includeCashFlows" x-cloak class="space-y-4">
+                    <!-- Cash flow form error banner -->
+                    {% if cash_flow_form.errors %}
+                    <div class="rounded-md bg-red-50 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-red-800">Please fill in all required cash flow fields.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <p class="text-sm text-gray-500">
+                        Attach cash flow assumptions as a permanent snapshot with this note.
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div>
+                            <label for="id_current_price" class="block text-sm font-medium text-gray-700">Price Override</label>
+                            <p class="text-xs text-gray-400">Uses market price if blank</p>
+                            <div class="mt-1">{{ cash_flow_form.current_price }}</div>
+                            {% if cash_flow_form.current_price.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.current_price.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_1" class="block text-sm font-medium text-gray-700">Y1 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_1 }}</div>
+                            {% if cash_flow_form.fcf_year_1.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_1.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_2" class="block text-sm font-medium text-gray-700">Y2 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_2 }}</div>
+                            {% if cash_flow_form.fcf_year_2.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_2.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_3" class="block text-sm font-medium text-gray-700">Y3 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_3 }}</div>
+                            {% if cash_flow_form.fcf_year_3.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_3.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_4" class="block text-sm font-medium text-gray-700">Y4 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_4 }}</div>
+                            {% if cash_flow_form.fcf_year_4.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_4.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_fcf_year_5" class="block text-sm font-medium text-gray-700">Y5 FCF</label>
+                            <div class="mt-1">{{ cash_flow_form.fcf_year_5 }}</div>
+                            {% if cash_flow_form.fcf_year_5.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.fcf_year_5.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_terminal_value" class="block text-sm font-medium text-gray-700">Terminal Value</label>
+                            <div class="mt-1">{{ cash_flow_form.terminal_value }}</div>
+                            {% if cash_flow_form.terminal_value.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ cash_flow_form.terminal_value.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Revenue Projections (optional) -->
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <p class="text-sm font-medium text-gray-700 mb-3">Revenue (Optional)</p>
+                        <div class="grid grid-cols-5 gap-3">
+                            <div>
+                                <label for="id_revenue_year_1" class="block text-xs font-medium text-gray-500">Y1</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_1 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_2" class="block text-xs font-medium text-gray-500">Y2</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_2 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_3" class="block text-xs font-medium text-gray-500">Y3</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_3 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_4" class="block text-xs font-medium text-gray-500">Y4</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_4 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_revenue_year_5" class="block text-xs font-medium text-gray-500">Y5</label>
+                                <div class="mt-1">{{ cash_flow_form.revenue_year_5 }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profitability Metric Projections (optional) -->
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <p class="text-sm font-medium text-gray-700 mb-3">
+                            {% if company.profitability_metric %}
+                                {{ company.profitability_metric }}
+                            {% else %}
+                                Profitability Metric
+                            {% endif %}
+                            (Optional)
+                        </p>
+                        <div class="grid grid-cols-5 gap-3">
+                            <div>
+                                <label for="id_ebit_ebitda_year_1" class="block text-xs font-medium text-gray-500">Y1</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_1 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_2" class="block text-xs font-medium text-gray-500">Y2</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_2 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_3" class="block text-xs font-medium text-gray-500">Y3</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_3 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_4" class="block text-xs font-medium text-gray-500">Y4</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_4 }}</div>
+                            </div>
+                            <div>
+                                <label for="id_ebit_ebitda_year_5" class="block text-xs font-medium text-gray-500">Y5</label>
+                                <div class="mt-1">{{ cash_flow_form.ebit_ebitda_year_5 }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {% endif %}
         </div>
 
         <!-- Actions -->
@@ -116,4 +347,311 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Store selection when textarea loses focus (before button click takes effect)
+let savedSelection = { start: 0, end: 0 };
+
+(function initFormatToolbar() {
+    const textarea = document.getElementById('id_content');
+    if (!textarea) return;
+
+    // Save selection whenever it changes or textarea loses focus
+    textarea.addEventListener('blur', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+
+    textarea.addEventListener('select', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+
+    textarea.addEventListener('keyup', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+
+    textarea.addEventListener('mouseup', function() {
+        savedSelection = {
+            start: textarea.selectionStart,
+            end: textarea.selectionEnd
+        };
+    });
+})();
+
+// Formatting toolbar functionality
+function formatText(type) {
+    const textarea = document.getElementById('id_content');
+    if (!textarea) return;
+
+    // Use saved selection since clicking button clears textarea selection
+    const start = savedSelection.start;
+    const end = savedSelection.end;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    let before = '';
+    let after = '';
+    let insert = '';
+
+    switch (type) {
+        case 'bold':
+            before = '**';
+            after = '**';
+            insert = selectedText || 'bold text';
+            break;
+        case 'italic':
+            before = '*';
+            after = '*';
+            insert = selectedText || 'italic text';
+            break;
+        case 'underline':
+            before = '__';
+            after = '__';
+            insert = selectedText || 'underlined text';
+            break;
+        case 'strikethrough':
+            before = '~~';
+            after = '~~';
+            insert = selectedText || 'strikethrough text';
+            break;
+        case 'bullet':
+            // Add bullet at line start
+            const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const prefix = text.substring(0, lineStart);
+            const suffix = text.substring(lineStart);
+            textarea.value = prefix + '• ' + suffix;
+            textarea.setSelectionRange(lineStart + 2, lineStart + 2);
+            textarea.focus();
+            savedSelection = { start: lineStart + 2, end: lineStart + 2 };
+            return;
+        case 'number':
+            // Add number at line start
+            const nLineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const nPrefix = text.substring(0, nLineStart);
+            const nSuffix = text.substring(nLineStart);
+            textarea.value = nPrefix + '1. ' + nSuffix;
+            textarea.setSelectionRange(nLineStart + 3, nLineStart + 3);
+            textarea.focus();
+            savedSelection = { start: nLineStart + 3, end: nLineStart + 3 };
+            return;
+        case 'link':
+            const url = prompt('Enter URL:');
+            if (!url) return;
+            before = '[';
+            after = '](' + url + ')';
+            insert = selectedText || 'link text';
+            break;
+        case 'quote':
+            // Add > at line start for blockquote
+            const qLineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const qPrefix = text.substring(0, qLineStart);
+            const qSuffix = text.substring(qLineStart);
+            textarea.value = qPrefix + '> ' + qSuffix;
+            textarea.setSelectionRange(qLineStart + 2, qLineStart + 2);
+            textarea.focus();
+            savedSelection = { start: qLineStart + 2, end: qLineStart + 2 };
+            return;
+        default:
+            return;
+    }
+
+    const newText = text.substring(0, start) + before + insert + after + text.substring(end);
+    textarea.value = newText;
+
+    // Set cursor position - select the inserted/wrapped text
+    const newStart = start + before.length;
+    const newEnd = newStart + insert.length;
+    textarea.setSelectionRange(newStart, newEnd);
+    textarea.focus();
+
+    // Update saved selection
+    savedSelection = { start: newStart, end: newEnd };
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    const textarea = document.getElementById('id_content');
+    if (!textarea || document.activeElement !== textarea) return;
+
+    // Handle Enter for list continuation
+    if (e.key === 'Enter' && !e.shiftKey) {
+        const text = textarea.value;
+        const cursorPos = textarea.selectionStart;
+
+        // Find the start of the current line
+        const lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1;
+        const currentLine = text.substring(lineStart, cursorPos);
+
+        // Check for bullet list (• )
+        const bulletMatch = currentLine.match(/^(• )(.*)$/);
+        if (bulletMatch) {
+            e.preventDefault();
+            // If line only has bullet (empty item), remove the bullet
+            if (bulletMatch[2].trim() === '') {
+                textarea.value = text.substring(0, lineStart) + text.substring(cursorPos);
+                textarea.setSelectionRange(lineStart, lineStart);
+            } else {
+                // Continue the list
+                const newText = text.substring(0, cursorPos) + '\n• ' + text.substring(cursorPos);
+                textarea.value = newText;
+                textarea.setSelectionRange(cursorPos + 3, cursorPos + 3);
+            }
+            return;
+        }
+
+        // Check for numbered list (1. , 2. , etc.)
+        const numberMatch = currentLine.match(/^(\d+)\. (.*)$/);
+        if (numberMatch) {
+            e.preventDefault();
+            const nextNum = parseInt(numberMatch[1]) + 1;
+            // If line only has number (empty item), remove the number
+            if (numberMatch[2].trim() === '') {
+                textarea.value = text.substring(0, lineStart) + text.substring(cursorPos);
+                textarea.setSelectionRange(lineStart, lineStart);
+            } else {
+                // Continue the list with incremented number
+                const prefix = nextNum + '. ';
+                const newText = text.substring(0, cursorPos) + '\n' + prefix + text.substring(cursorPos);
+                textarea.value = newText;
+                textarea.setSelectionRange(cursorPos + 1 + prefix.length, cursorPos + 1 + prefix.length);
+            }
+            return;
+        }
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+            case 'b':
+                e.preventDefault();
+                formatText('bold');
+                break;
+            case 'i':
+                e.preventDefault();
+                formatText('italic');
+                break;
+            case 'u':
+                e.preventDefault();
+                formatText('underline');
+                break;
+        }
+    }
+});
+
+(function initImageUpload() {
+    const contentTextarea = document.getElementById('id_content');
+    const uploadIndicator = document.getElementById('upload-indicator');
+
+    if (!contentTextarea || contentTextarea.dataset.imageUploadInit) return;
+
+    // Mark as initialized to prevent duplicate listeners
+    contentTextarea.dataset.imageUploadInit = 'true';
+
+    // Handle paste events
+    contentTextarea.addEventListener('paste', async function(e) {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+
+                const file = item.getAsFile();
+                if (!file) continue;
+
+                await uploadImage(file);
+                break;
+            }
+        }
+    });
+
+    // Handle drag and drop
+    contentTextarea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        contentTextarea.classList.add('ring-2', 'ring-primary-500');
+    });
+
+    contentTextarea.addEventListener('dragleave', function(e) {
+        contentTextarea.classList.remove('ring-2', 'ring-primary-500');
+    });
+
+    contentTextarea.addEventListener('drop', async function(e) {
+        e.preventDefault();
+        contentTextarea.classList.remove('ring-2', 'ring-primary-500');
+
+        const files = e.dataTransfer?.files;
+        if (!files) return;
+
+        for (const file of files) {
+            if (file.type.startsWith('image/')) {
+                await uploadImage(file);
+            }
+        }
+    });
+
+    async function uploadImage(file) {
+        uploadIndicator.classList.remove('hidden');
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Get fresh CSRF token from cookie
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                || '{{ csrf_token }}';
+
+            const response = await fetch('{% url "notes:upload_image" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Insert markdown at cursor position
+                const cursorPos = contentTextarea.selectionStart;
+                const textBefore = contentTextarea.value.substring(0, cursorPos);
+                const textAfter = contentTextarea.value.substring(cursorPos);
+
+                // Add newlines if needed
+                const prefix = textBefore.length > 0 && !textBefore.endsWith('\n') ? '\n' : '';
+                const suffix = textAfter.length > 0 && !textAfter.startsWith('\n') ? '\n' : '';
+
+                contentTextarea.value = textBefore + prefix + data.markdown + suffix + textAfter;
+
+                // Move cursor after the inserted text
+                const newPos = cursorPos + prefix.length + data.markdown.length + suffix.length;
+                contentTextarea.setSelectionRange(newPos, newPos);
+                contentTextarea.focus();
+
+                // Show success toast
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: { message: 'Image uploaded!', type: 'success' }
+                }));
+            } else {
+                throw new Error(data.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: { message: error.message || 'Failed to upload image', type: 'error' }
+            }));
+        } finally {
+            uploadIndicator.classList.add('hidden');
+        }
+    }
+})();
+</script>
 {% endblock %}
