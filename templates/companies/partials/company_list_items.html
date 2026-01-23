@@ -1,83 +1,65 @@
 <!-- Company list items (HTMX partial) -->
 {% load company_extras %}
 {% if is_expanded_view %}
-<!-- Portfolio / On Deck expanded view -->
-<div class="space-y-4">
+<!-- Long Book / Short Book / On Deck compact view -->
+<div class="bg-white shadow rounded-lg overflow-hidden">
+    <ul role="list" class="divide-y divide-gray-200">
     {% for company in companies %}
-    <div class="bg-white shadow rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-        <a href="{{ company.get_absolute_url }}" class="block">
-            <div class="p-4">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-x-3">
-                            <h3 class="text-base font-semibold text-gray-900 truncate">{{ company.name }}</h3>
-                            {% include "companies/partials/status_badge.html" with status=company.status direction=company.direction %}
-                            {% if company.status == 'long_book' or company.status == 'short_book' %}
-                                {% if not company.has_irr %}
-                                <span class="inline-flex items-center rounded-full bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20">
-                                    Needs IRR
-                                </span>
-                                {% endif %}
+        <li class="hover:bg-gray-50">
+            <a href="{{ company.get_absolute_url }}" class="block px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-x-3 min-w-0 flex-1">
+                        <h3 class="text-sm font-semibold text-gray-900 truncate">{{ company.name }}</h3>
+                        {% for ticker in company.tickers.all|slice:":1" %}
+                        <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-xs text-gray-600">{{ ticker.symbol }}</span>
+                        {% endfor %}
+                        {% if company.status == 'long_book' or company.status == 'short_book' %}
+                            {% if not company.has_irr %}
+                            <span class="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
+                                Needs IRR
+                            </span>
                             {% endif %}
-                        </div>
-                        <div class="mt-1 flex items-center gap-x-2 text-sm text-gray-500">
-                            {% for ticker in company.tickers.all|slice:":2" %}
-                            <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-xs">{{ ticker.symbol }}</span>
-                            {% endfor %}
-                            {% if company.sector %}
-                            <span>{{ company.get_sector_display }}</span>
-                            {% endif %}
-                        </div>
+                        {% endif %}
+                        {% if company.business_summary %}
+                        <span class="hidden lg:inline text-xs text-gray-400 truncate max-w-xs">{{ company.business_summary|truncatewords:8 }}</span>
+                        {% endif %}
                     </div>
-                    <div class="ml-4 flex-shrink-0 text-right">
-                        <div class="flex items-center gap-4">
-                            {% if company.current_price %}
-                            <div>
-                                <p class="text-lg font-semibold text-gray-900">${{ company.current_price|floatformat:2 }}</p>
-                                <p class="text-xs text-gray-500">Price</p>
-                            </div>
-                            {% endif %}
-                            {% if company.ev_ebitda %}
-                            <div>
-                                <p class="text-lg font-semibold text-gray-900">{{ company.ev_ebitda|floatformat:1 }}x</p>
-                                <p class="text-xs text-gray-500">EV/EBITDA</p>
-                            </div>
-                            {% endif %}
-                            {% if company.market_cap %}
-                            <div>
-                                <p class="text-lg font-semibold text-gray-900">{{ company.market_cap|format_market_cap }}</p>
-                                <p class="text-xs text-gray-500">Mkt Cap</p>
-                            </div>
-                            {% endif %}
-                        </div>
+                    <div class="flex items-center gap-x-4 ml-4 flex-shrink-0">
+                        {% if company.last_activity_date %}
+                        <span class="text-xs text-gray-400 hidden sm:inline" title="Last activity">{{ company.last_activity_date|timesince }} ago</span>
+                        {% endif %}
+                        {% if company.current_price %}
+                        <span class="text-sm font-medium text-gray-900 w-16 text-right">${{ company.current_price|floatformat:2 }}</span>
+                        {% endif %}
+                        {% if company.calculated_irr %}
+                        <span class="text-sm font-semibold w-14 text-right {% if company.calculated_irr >= 15 %}text-green-600{% elif company.calculated_irr >= 0 %}text-gray-900{% else %}text-red-600{% endif %}">{{ company.calculated_irr|floatformat:1 }}%</span>
+                        {% endif %}
+                        <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                        </svg>
                     </div>
                 </div>
-                {% if company.business_summary %}
-                <p class="mt-3 text-sm text-gray-600 line-clamp-2">{{ company.business_summary }}</p>
-                {% elif company.description %}
-                <p class="mt-3 text-sm text-gray-600 line-clamp-2">{{ company.description }}</p>
-                {% endif %}
-            </div>
-        </a>
-    </div>
-    {% empty %}
-    <div class="bg-white shadow rounded-lg px-4 py-12 text-center">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-        <h3 class="mt-2 text-sm font-semibold text-gray-900">No companies</h3>
-        <p class="mt-1 text-sm text-gray-500">Get started by adding a company to track.</p>
-        <div class="mt-6">
-            <a href="{% url 'companies:create' %}"
-               class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                </svg>
-                Add Company
             </a>
-        </div>
-    </div>
+        </li>
+    {% empty %}
+        <li class="px-4 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h3 class="mt-2 text-sm font-semibold text-gray-900">No companies</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by adding a company to track.</p>
+            <div class="mt-6">
+                <a href="{% url 'companies:create' %}"
+                   class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                    </svg>
+                    Add Company
+                </a>
+            </div>
+        </li>
     {% endfor %}
+    </ul>
 </div>
 {% elif is_watchlist_view %}
 <!-- Watchlist table view -->
@@ -86,17 +68,17 @@
         <thead class="bg-gray-50">
             <tr>
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
                 <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">Low (Long)</th>
-                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">High (Short)</th>
+                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-green-600 uppercase tracking-wider">Low</th>
+                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-red-600 uppercase tracking-wider">High</th>
+                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Last Note</th>
                 <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
             {% for company in companies %}
             <tr class="hover:bg-gray-50 {% if company.is_low_alert_triggered %}bg-green-50{% elif company.is_high_alert_triggered %}bg-red-50{% endif %}">
-                <td class="px-4 py-4">
+                <td class="px-4 py-3">
                     <a href="{{ company.get_absolute_url }}" class="block">
                         <div class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ company.name }}</div>
                         <div class="text-xs text-gray-500 font-mono">
@@ -104,30 +86,30 @@
                         </div>
                     </a>
                 </td>
-                <td class="px-4 py-4 text-sm text-gray-500">
-                    {{ company.get_sector_display|default:"-" }}
-                </td>
-                <td class="px-4 py-4 text-sm text-right {% if company.is_low_alert_triggered %}text-green-600 font-semibold{% elif company.is_high_alert_triggered %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
+                <td class="px-4 py-3 text-sm text-right {% if company.is_low_alert_triggered %}text-green-600 font-semibold{% elif company.is_high_alert_triggered %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
                     {% if company.current_price %}${{ company.current_price|floatformat:2 }}{% else %}-{% endif %}
                 </td>
-                <td class="px-4 py-4 text-sm text-right {% if company.is_low_alert_triggered %}text-green-600 font-semibold{% else %}text-gray-500{% endif %}">
+                <td class="px-4 py-3 text-sm text-right {% if company.is_low_alert_triggered %}text-green-600 font-semibold{% else %}text-gray-500{% endif %}">
                     {% if company.alert_price_low %}${{ company.alert_price_low|floatformat:2 }}{% else %}-{% endif %}
                 </td>
-                <td class="px-4 py-4 text-sm text-right {% if company.is_high_alert_triggered %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">
+                <td class="px-4 py-3 text-sm text-right {% if company.is_high_alert_triggered %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">
                     {% if company.alert_price_high %}${{ company.alert_price_high|floatformat:2 }}{% else %}-{% endif %}
                 </td>
-                <td class="px-4 py-4 text-right">
+                <td class="px-4 py-3 text-xs text-right text-gray-400">
+                    {% if company.last_activity_date %}{{ company.last_activity_date|timesince }} ago{% else %}-{% endif %}
+                </td>
+                <td class="px-4 py-3 text-right">
                     {% if company.is_low_alert_triggered %}
-                    <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Long Alert
+                    <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                        Long
                     </span>
                     {% elif company.is_high_alert_triggered %}
-                    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                        Short Alert
+                    <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                        Short
                     </span>
                     {% elif company.alert_price_low and company.current_price %}
                     <span class="text-xs text-gray-400">
-                        {{ company.alert_discount_percent|floatformat:0 }}% to low
+                        {{ company.alert_discount_percent|floatformat:0 }}%
                     </span>
                     {% else %}
                     <span class="text-xs text-gray-400">-</span>
@@ -181,15 +163,17 @@
                             {% if company.sector %}
                             <span class="hidden sm:inline">{{ company.get_sector_display }}</span>
                             {% endif %}
-                            {% if company.country %}
-                            <span class="hidden sm:inline">{{ company.country }}</span>
-                            {% endif %}
                             {% if company.is_deleted and company.deleted_at %}
                             <span class="hidden sm:inline text-red-600">Deleted {{ company.deleted_at|timesince }} ago</span>
+                            {% elif company.last_activity_date %}
+                            <span class="hidden sm:inline text-gray-400">Last note {{ company.last_activity_date|timesince }} ago</span>
                             {% endif %}
                         </div>
                     </div>
-                    <div class="ml-4 flex-shrink-0">
+                    <div class="ml-4 flex-shrink-0 flex items-center gap-x-3">
+                        {% if company.last_activity_date %}
+                        <span class="sm:hidden text-xs text-gray-400">{{ company.last_activity_date|timesince }}</span>
+                        {% endif %}
                         <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
                         </svg>

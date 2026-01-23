@@ -27,8 +27,9 @@ class CompanyListView(OrganizationViewMixin, ListView):
     def get_queryset(self):
         from datetime import timedelta
         from django.utils import timezone
-        from django.db.models import Exists, OuterRef
-        from apps.notes.models import NoteCashFlow
+        from django.db.models import Exists, OuterRef, Max, Subquery, F
+        from django.db.models.functions import Coalesce, Greatest
+        from apps.notes.models import Note, NoteCashFlow
 
         status = self.request.GET.get('status')
 
@@ -82,8 +83,23 @@ class CompanyListView(OrganizationViewMixin, ListView):
             is_deleted=False,
             is_active=True
         )
+
+        # Get last note date and active valuation IRR
+        last_note_subquery = Note.objects.filter(
+            company=OuterRef('pk'),
+            is_deleted=False
+        ).order_by('-created_at').values('created_at')[:1]
+
+        valuation_irr_subquery = CompanyValuation.objects.filter(
+            company=OuterRef('pk'),
+            is_deleted=False,
+            is_active=True
+        ).values('calculated_irr')[:1]
+
         qs = qs.annotate(
-            has_irr=Exists(has_note_irr) | Exists(has_valuation_irr)
+            has_irr=Exists(has_note_irr) | Exists(has_valuation_irr),
+            last_activity_date=Subquery(last_note_subquery),
+            calculated_irr=Subquery(valuation_irr_subquery)
         )
 
         return qs

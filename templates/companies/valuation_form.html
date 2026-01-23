@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if object %}Edit Valuation{% else %}Add Valuation{% endif %} - {{ company.name }} - Bireme Research{% endblock %}
+{% block title %}{% if object %}Update Forecast{% else %}Add Forecast{% endif %} - {{ company.name }} - Bireme Research{% endblock %}
 
 {% block content %}
 <div class="mx-auto max-w-3xl">
@@ -16,9 +16,14 @@
                 </ol>
             </nav>
             <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
-                {% if object %}Edit Valuation{% else %}Add Valuation{% endif %}
+                {% if object %}Update Forecast{% else %}New Forecast{% endif %}
             </h1>
             <p class="mt-1 text-sm text-gray-500">{{ company.name }}</p>
+            {% if object %}
+            <p class="mt-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded inline-block">
+                Saving will create a new forecast. The current forecast will be preserved in history.
+            </p>
+            {% endif %}
         </div>
     </div>
 
@@ -334,7 +339,7 @@
             </a>
             <button type="submit"
                     class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                {% if object %}Save Changes{% else %}Create Valuation{% endif %}
+                {% if object %}Save New Forecast{% else %}Create Forecast{% endif %}
             </button>
         </div>
     </form>
