@@ -62,10 +62,19 @@
             </div>
 
             <!-- Content -->
-            <div>
-                <label for="id_content" class="block text-sm font-medium leading-6 text-gray-900">
-                    Details
-                </label>
+            <div x-data="{ expanded: false }">
+                <div class="flex items-center justify-between">
+                    <label for="id_content" class="block text-sm font-medium leading-6 text-gray-900">
+                        Details
+                    </label>
+                    <button type="button" @click="expanded = !expanded; $nextTick(() => { const ta = document.getElementById('id_content'); ta.style.height = expanded ? '400px' : '120px'; })"
+                            class="text-xs font-medium text-primary-600 hover:text-primary-500 flex items-center gap-1">
+                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                        <span x-text="expanded ? 'Collapse' : 'Expand'"></span>
+                    </button>
+                </div>
                 <p class="text-xs text-gray-500 mb-2">
                     Expanded content shown when the note is clicked.
                     <span class="text-primary-600">You can paste images directly!</span>
@@ -178,18 +187,6 @@
                         {{ form.written_at }}
                     </div>
                 </div>
-            </div>
-
-            <!-- Referenced Companies -->
-            <div>
-                <label for="id_referenced_companies" class="block text-sm font-medium leading-6 text-gray-900">
-                    Also Tag
-                </label>
-                <p class="text-xs text-gray-500 mb-2">Other companies mentioned in this note.</p>
-                <div class="mt-2">
-                    {{ form.referenced_companies }}
-                </div>
-                <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple.</p>
             </div>
 
             <!-- Complete Todo (optional) -->
