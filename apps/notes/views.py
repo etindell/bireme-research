@@ -464,7 +464,8 @@ class NoteDeleteView(OrganizationViewMixin, DeleteView):
         self.object.delete(user=self.request.user)
         messages.success(self.request, 'Note deleted.')
         if self.request.htmx:
-            return HttpResponse(status=204)
+            # Return empty response so hx-swap="outerHTML" removes the element
+            return HttpResponse('')
         return HttpResponse(status=302, headers={'Location': self.get_success_url()})
 
 
