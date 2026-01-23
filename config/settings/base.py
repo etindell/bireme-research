@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     # Third-party apps
     'allauth',
     'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'django_htmx',
     'compressor',
 
@@ -168,6 +170,30 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/accounts/login/'
+
+# Social account (Google OAuth) configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+            'hd': 'biremecapital.com',  # Restrict to biremecapital.com domain
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
+
+# Social account settings
+SOCIALACCOUNT_AUTO_SIGNUP = True  # Skip the signup form for social accounts
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Allow login to existing accounts via email
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect social account to existing email
+SOCIALACCOUNT_LOGIN_ON_GET = True  # Allow login via GET request (for OAuth redirect)
+
+# Custom adapter to restrict email domain
+SOCIALACCOUNT_ADAPTER = 'apps.users.adapters.BiremeSocialAccountAdapter'
 
 # Logging
 LOGGING = {
