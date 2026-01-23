@@ -43,7 +43,7 @@ class Organization(SoftDeleteModel):
     # Quarterly todo settings defaults
     DEFAULT_QUARTERLY_SETTINGS = {
         'enabled': True,
-        'statuses': ['portfolio', 'on_deck'],  # Which company statuses to create todos for
+        'statuses': ['book', 'on_deck'],  # Which company statuses to create todos for
         'investor_letter_enabled': True,
         'days_after_quarter': 21,  # Days after quarter end to generate
     }

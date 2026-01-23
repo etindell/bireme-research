@@ -32,10 +32,10 @@ class QuarterlySettingsForm(forms.Form):
         })
     )
 
-    portfolio_enabled = forms.BooleanField(
+    book_enabled = forms.BooleanField(
         required=False,
-        label='Portfolio companies',
-        help_text='Generate quarterly update todos for Portfolio companies',
+        label='Long/Short Book companies',
+        help_text='Generate quarterly update todos for Long Book and Short Book companies',
         widget=forms.CheckboxInput(attrs={
             'class': 'h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600',
         })
@@ -63,10 +63,10 @@ class QuarterlySettingsForm(forms.Form):
         super().__init__(*args, **kwargs)
         if organization:
             settings = organization.get_quarterly_settings()
-            statuses = settings.get('statuses', ['portfolio', 'on_deck'])
+            statuses = settings.get('statuses', ['book', 'on_deck'])
             self.initial['enabled'] = settings.get('enabled', True)
             self.initial['days_after_quarter'] = settings.get('days_after_quarter', 21)
-            self.initial['portfolio_enabled'] = 'portfolio' in statuses
+            self.initial['book_enabled'] = 'book' in statuses or 'portfolio' in statuses
             self.initial['on_deck_enabled'] = 'on_deck' in statuses
             self.initial['investor_letter_enabled'] = settings.get('investor_letter_enabled', True)
 

@@ -29,9 +29,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             org = self.request.organization
             now = timezone.now()
 
-            # Pipeline counts (Long Book + Short Book = Portfolio)
-            context['portfolio_count'] = Company.objects.filter(
-                organization=org, status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]
+            # Pipeline counts
+            context['long_book_count'] = Company.objects.filter(
+                organization=org, status=Company.Status.LONG_BOOK
+            ).count()
+            context['short_book_count'] = Company.objects.filter(
+                organization=org, status=Company.Status.SHORT_BOOK
             ).count()
             context['on_deck_count'] = Company.objects.filter(
                 organization=org, status=Company.Status.ON_DECK

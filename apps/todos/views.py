@@ -252,7 +252,7 @@ class TodoCreateView(OrganizationViewMixin, CreateView):
                 )
                 initial['company'] = company
                 # Auto-select category based on company status
-                if company.status == Company.Status.PORTFOLIO:
+                if company.status in [Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]:
                     cat = TodoCategory.objects.filter(
                         organization=self.request.organization,
                         category_type=TodoCategory.CategoryType.MAINTENANCE
@@ -364,7 +364,7 @@ class QuickTodoCreateView(OrganizationViewMixin, View):
                 todo.assigned_to = None
 
             # Auto-select category based on company status
-            if company.status == Company.Status.PORTFOLIO:
+            if company.status in [Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]:
                 todo.category = TodoCategory.objects.filter(
                     organization=request.organization,
                     category_type=TodoCategory.CategoryType.MAINTENANCE
@@ -694,8 +694,8 @@ class QuarterlySettingsView(OrganizationViewMixin, View):
         if form.is_valid():
             # Build the statuses list
             statuses = []
-            if form.cleaned_data['portfolio_enabled']:
-                statuses.append('portfolio')
+            if form.cleaned_data['book_enabled']:
+                statuses.append('book')
             if form.cleaned_data['on_deck_enabled']:
                 statuses.append('on_deck')
 

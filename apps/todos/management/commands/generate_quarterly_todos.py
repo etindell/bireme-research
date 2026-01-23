@@ -47,7 +47,7 @@ def get_quarter_info(reference_date=None):
 
 
 class Command(BaseCommand):
-    help = 'Generate quarterly update todos for Portfolio and On Deck companies'
+    help = 'Generate quarterly update todos for Long Book, Short Book, and On Deck companies'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -113,15 +113,15 @@ class Command(BaseCommand):
                 org, 'Research', 'research', '#3B82F6', dry_run
             )
 
-            # Portfolio companies -> Maintenance todos
-            portfolio_companies = Company.objects.filter(
+            # Long Book / Short Book companies -> Maintenance todos
+            book_companies = Company.objects.filter(
                 organization=org,
-                status=Company.Status.PORTFOLIO,
+                status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK],
                 is_deleted=False
             )
-            self.stdout.write(f"  Portfolio companies: {portfolio_companies.count()}")
+            self.stdout.write(f"  Long/Short Book companies: {book_companies.count()}")
 
-            for company in portfolio_companies:
+            for company in book_companies:
                 created = self._create_quarterly_todo(
                     org, company, quarter, fiscal_year, maintenance_cat, dry_run
                 )
