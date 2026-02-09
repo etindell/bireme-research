@@ -78,6 +78,27 @@ def restore_blank_lines(html):
     return html
 
 
+def process_links(html):
+    """
+    Add target="_blank" and rel="noopener noreferrer" to external links,
+    and add explicit styling classes to make links visible.
+    """
+    # Add target="_blank" and rel to links that don't already have target
+    # Also add a class for explicit styling
+    html = re.sub(
+        r'<a href="(https?://[^"]+)"(?![^>]*target=)',
+        r'<a href="\1" target="_blank" rel="noopener noreferrer" class="text-primary-600 underline hover:text-primary-500"',
+        html
+    )
+    # For links that might not have styling, add it
+    html = re.sub(
+        r'<a href="([^"]+)"(?![^>]*class=)',
+        r'<a href="\1" class="text-primary-600 underline hover:text-primary-500"',
+        html
+    )
+    return html
+
+
 @register.filter(name='markdown')
 def render_markdown(value):
     """
@@ -127,5 +148,8 @@ def render_markdown(value):
 
     # Restore blank line markers as visible spacing
     clean_html = restore_blank_lines(clean_html)
+
+    # Process links to add styling and target="_blank" for external links
+    clean_html = process_links(clean_html)
 
     return mark_safe(clean_html)
