@@ -14,18 +14,19 @@
         </div>
         {% endif %}
 
-        <!-- Complete checkbox -->
+        <!-- Complete checkbox - large touch target for mobile -->
         <button hx-post="{% url 'todos:toggle_complete' todo.pk %}"
                 hx-target="#todo-{{ todo.pk }}"
                 hx-swap="outerHTML"
-                class="mt-0.5 flex-shrink-0"
-                {% if selectable %}x-show="!selectMode"{% endif %}>
+                class="flex-shrink-0 -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 touch-manipulation"
+                {% if selectable %}x-show="!selectMode"{% endif %}
+                title="{% if todo.is_completed %}Mark incomplete{% else %}Mark complete{% endif %}">
             {% if todo.is_completed %}
-            <svg class="h-6 w-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="h-7 w-7 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
             </svg>
             {% else %}
-            <svg class="h-6 w-6 text-gray-300 hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <svg class="h-7 w-7 text-gray-400 hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <circle cx="12" cy="12" r="9" />
             </svg>
             {% endif %}
