@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Pomodoros - Bireme Research{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Pomodoros</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Focus timer &middot; <span id="todays-count">{{ todays_count }}</span> completed today
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Timer Section -->
+        <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">Timer</h2>
+
+            {% if active_pomodoro %}
+                {% include "pomodoros/partials/timer_display.html" with pomodoro=active_pomodoro %}
+            {% elif expired_pomodoro %}
+                {% include "pomodoros/partials/completion_prompt.html" with pomodoro=expired_pomodoro %}
+            {% else %}
+                {% include "pomodoros/partials/start_form.html" %}
+            {% endif %}
+        </div>
+
+        <!-- Weekly Chart Section -->
+        <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-6"
+             x-data="weeklyChart()"
+             x-init="loadData()"
+             @refresh-chart.window="loadData()">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900">Weekly Progress</h2>
+                <div class="flex items-center gap-x-2">
+                    <button @click="prevWeek()"
+                            class="rounded-md p-1 text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                    </button>
+                    <span class="text-sm text-gray-600 min-w-[160px] text-center" x-text="weekLabel"></span>
+                    <button @click="nextWeek()"
+                            :disabled="weekOffset >= 0"
+                            :class="weekOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:text-gray-500 hover:bg-gray-100'"
+                            class="rounded-md p-1 text-gray-400">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="h-64">
+                <canvas x-ref="chartCanvas"></canvas>
+            </div>
+
+            <!-- Weekly total & topic breakdown -->
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Weekly Total</span>
+                    <span class="text-sm font-bold text-gray-900" x-text="total + ' pomodoros'"></span>
+                </div>
+                <template x-if="Object.keys(topics).length > 0">
+                    <div class="space-y-1">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">By Topic</p>
+                        <template x-for="[label, count] in sortedTopics" :key="label">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600 truncate" x-text="label"></span>
+                                <span class="text-gray-900 font-medium ml-2" x-text="count"></span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function weeklyChart() {
+    return {
+        weekOffset: 0,
+        weekLabel: 'Loading...',
+        total: 0,
+        topics: {},
+        chart: null,
+
+        get sortedTopics() {
+            return Object.entries(this.topics).sort((a, b) => b[1] - a[1]);
+        },
+
+        async loadData() {
+            const resp = await fetch('/pomodoros/weekly-data/?week_offset=' + this.weekOffset);
+            const data = await resp.json();
+
+            this.weekLabel = data.week_label;
+            this.total = data.total;
+            this.topics = data.topics;
+
+            this.renderChart(data);
+        },
+
+        renderChart(data) {
+            const canvas = this.$refs.chartCanvas;
+            if (!canvas) return;
+
+            if (this.chart) {
+                this.chart.destroy();
+            }
+
+            this.chart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: data.days,
+                    datasets: [
+                        {
+                            label: 'Focused',
+                            data: data.focused,
+                            backgroundColor: '#22c55e',
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'Distracted',
+                            data: data.distracted,
+                            backgroundColor: '#ef4444',
+                            borderRadius: 4,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 16,
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                precision: 0
+                            },
+                            grid: {
+                                color: '#f3f4f6'
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        prevWeek() {
+            this.weekOffset--;
+            this.loadData();
+        },
+
+        nextWeek() {
+            if (this.weekOffset < 0) {
+                this.weekOffset++;
+                this.loadData();
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

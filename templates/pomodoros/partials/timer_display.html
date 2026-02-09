@@ -1,0 +1,107 @@
+<div id="timer-container"
+     x-data="pomodoroTimer({{ pomodoro.seconds_remaining }}, {{ pomodoro.pk }}, '{{ pomodoro.topic_label|escapejs }}')"
+     x-init="startTimer()"
+     class="text-center space-y-6">
+
+    <!-- Topic label -->
+    <div class="text-sm font-medium text-gray-500">
+        Working on: <span class="text-gray-900">{{ pomodoro.topic_label }}</span>
+    </div>
+
+    <!-- Circular timer -->
+    <div class="relative inline-flex items-center justify-center">
+        <svg class="transform -rotate-90" width="200" height="200">
+            <!-- Background circle -->
+            <circle cx="100" cy="100" r="90"
+                    stroke="#e5e7eb" stroke-width="8" fill="none" />
+            <!-- Progress circle -->
+            <circle cx="100" cy="100" r="90"
+                    stroke="#2563eb" stroke-width="8" fill="none"
+                    stroke-linecap="round"
+                    :stroke-dasharray="circumference"
+                    :stroke-dashoffset="dashOffset"
+                    class="transition-all duration-1000 ease-linear" />
+        </svg>
+        <!-- Time display -->
+        <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-4xl font-mono font-bold text-gray-900"
+                  x-text="displayTime"></span>
+        </div>
+    </div>
+
+    <!-- Cancel button -->
+    <div>
+        <button hx-post="{% url 'pomodoros:cancel' pomodoro.pk %}"
+                hx-target="#timer-container"
+                hx-swap="outerHTML"
+                hx-confirm="Cancel this pomodoro?"
+                class="inline-flex items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancel
+        </button>
+    </div>
+</div>
+
+<script>
+function pomodoroTimer(secondsRemaining, pomodoroId, topicLabel) {
+    return {
+        seconds: secondsRemaining,
+        totalSeconds: {{ pomodoro.duration_minutes }} * 60,
+        circumference: 2 * Math.PI * 90,
+        interval: null,
+
+        get displayTime() {
+            const mins = Math.floor(this.seconds / 60);
+            const secs = this.seconds % 60;
+            return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        },
+
+        get dashOffset() {
+            const progress = this.seconds / this.totalSeconds;
+            return this.circumference * (1 - progress);
+        },
+
+        startTimer() {
+            this.interval = setInterval(() => {
+                if (this.seconds <= 0) {
+                    clearInterval(this.interval);
+                    this.playBeep();
+                    // Auto-fire completion
+                    htmx.ajax('POST', '/pomodoros/' + pomodoroId + '/complete/', {
+                        target: '#timer-container',
+                        swap: 'outerHTML',
+                    });
+                    return;
+                }
+                this.seconds--;
+            }, 1000);
+        },
+
+        playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                // Play 3 beeps
+                [0, 0.3, 0.6].forEach(delay => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 800;
+                    osc.type = 'sine';
+                    gain.gain.value = 0.3;
+                    osc.start(ctx.currentTime + delay);
+                    osc.stop(ctx.currentTime + delay + 0.15);
+                });
+            } catch(e) {
+                // Audio not available
+            }
+        },
+
+        destroy() {
+            if (this.interval) clearInterval(this.interval);
+        }
+    };
+}
+</script>

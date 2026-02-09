@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'apps.export',
     'apps.news',
     'apps.share',
+    'apps.pomodoros',
     'core',
 ]
 

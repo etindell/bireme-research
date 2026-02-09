@@ -22,6 +22,7 @@ def organization(request):
         'user_organizations': [],
         'pending_todo_count': 0,
         'unread_news_count': 0,
+        'todays_pomodoro_count': 0,
     }
 
     if request.user.is_authenticated:
@@ -45,5 +46,13 @@ def organization(request):
                 organization=request.organization,
                 is_read=False
             ).count()
+
+            # Add today's pomodoro count for sidebar badge
+            from apps.pomodoros.models import Pomodoro
+            context['todays_pomodoro_count'] = Pomodoro.objects.filter(
+                organization=request.organization,
+                user=request.user,
+                is_completed=True,
+            ).today().count()
 
     return context

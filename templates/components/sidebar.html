@@ -118,6 +118,20 @@
                             {% endif %}
                         </a>
                     </li>
+                    <li>
+                        <a href="{% url 'pomodoros:timer' %}"
+                           class="{% if 'pomodoros' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Pomodoros
+                            {% if todays_pomodoro_count %}
+                            <span class="ml-auto inline-flex items-center rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
+                                {{ todays_pomodoro_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                    </li>
                 </ul>
             </li>
 
