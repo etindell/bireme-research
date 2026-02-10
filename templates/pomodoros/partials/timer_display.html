@@ -51,6 +51,9 @@ function pomodoroTimer(secondsRemaining, pomodoroId, topicLabel) {
         totalSeconds: {{ pomodoro.duration_minutes }} * 60,
         circumference: 2 * Math.PI * 90,
         interval: null,
+        endTime: Date.now() + secondsRemaining * 1000,
+        completed: false,
+        visibilityHandler: null,
 
         get displayTime() {
             const mins = Math.floor(this.seconds / 60);
@@ -63,26 +66,34 @@ function pomodoroTimer(secondsRemaining, pomodoroId, topicLabel) {
             return this.circumference * (1 - progress);
         },
 
+        tick() {
+            this.seconds = Math.max(0, Math.round((this.endTime - Date.now()) / 1000));
+            if (this.seconds <= 0 && !this.completed) {
+                this.completed = true;
+                clearInterval(this.interval);
+                this.playBeep();
+                htmx.ajax('POST', '/pomodoros/' + pomodoroId + '/complete/', {
+                    target: '#timer-container',
+                    swap: 'outerHTML',
+                });
+            }
+        },
+
         startTimer() {
-            this.interval = setInterval(() => {
-                if (this.seconds <= 0) {
-                    clearInterval(this.interval);
-                    this.playBeep();
-                    // Auto-fire completion
-                    htmx.ajax('POST', '/pomodoros/' + pomodoroId + '/complete/', {
-                        target: '#timer-container',
-                        swap: 'outerHTML',
-                    });
-                    return;
-                }
-                this.seconds--;
-            }, 1000);
+            // Use wall-clock time so background tab throttling doesn't matter
+            this.tick();
+            this.interval = setInterval(() => this.tick(), 250);
+
+            // Re-sync immediately when tab becomes visible again
+            this.visibilityHandler = () => {
+                if (!document.hidden) this.tick();
+            };
+            document.addEventListener('visibilitychange', this.visibilityHandler);
         },
 
         playBeep() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                // Play 3 beeps
                 [0, 0.3, 0.6].forEach(delay => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
@@ -101,6 +112,9 @@ function pomodoroTimer(secondsRemaining, pomodoroId, topicLabel) {
 
         destroy() {
             if (this.interval) clearInterval(this.interval);
+            if (this.visibilityHandler) {
+                document.removeEventListener('visibilitychange', this.visibilityHandler);
+            }
         }
     };
 }
