@@ -36,7 +36,6 @@
         <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-6"
              x-data="weeklyChart()"
              x-init="loadData()"
-             @pomodoro-completed.window="loadData(); updateCounts($event.detail)"
              @refresh-chart.window="loadData()">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-lg font-semibold text-gray-900">Weekly Progress</h2>
@@ -102,89 +101,85 @@ function weeklyChart() {
         },
 
         async loadData() {
-            const resp = await fetch('/pomodoros/weekly-data/?week_offset=' + this.weekOffset);
-            const data = await resp.json();
+            try {
+                const resp = await fetch('/pomodoros/weekly-data/?week_offset=' + this.weekOffset);
+                const data = await resp.json();
 
-            this.weekLabel = data.week_label;
-            this.total = data.total;
-            this.topics = data.topics;
+                this.weekLabel = data.week_label;
+                this.total = data.total;
+                this.topics = data.topics;
 
-            this.renderChart(data);
+                // Use $nextTick to ensure canvas is ready
+                this.$nextTick(() => this.renderChart(data));
+            } catch (err) {
+                console.error('Failed to load chart data:', err);
+            }
         },
 
         renderChart(data) {
-            const canvas = this.$refs.chartCanvas;
-            if (!canvas) return;
+            try {
+                const canvas = this.$refs.chartCanvas;
+                if (!canvas) return;
 
-            if (this.chart) {
-                this.chart.destroy();
-            }
+                if (this.chart) {
+                    this.chart.destroy();
+                    this.chart = null;
+                }
 
-            this.chart = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: data.days,
-                    datasets: [
-                        {
-                            label: 'Focused',
-                            data: data.focused,
-                            backgroundColor: '#22c55e',
-                            borderRadius: 4,
-                        },
-                        {
-                            label: 'Distracted',
-                            data: data.distracted,
-                            backgroundColor: '#ef4444',
-                            borderRadius: 4,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                padding: 16,
-                                font: { size: 12 }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            stacked: true,
-                            grid: { display: false },
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                precision: 0
+                this.chart = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: data.days,
+                        datasets: [
+                            {
+                                label: 'Focused',
+                                data: data.focused,
+                                backgroundColor: '#22c55e',
+                                borderRadius: 4,
                             },
-                            grid: {
-                                color: '#f3f4f6'
+                            {
+                                label: 'Distracted',
+                                data: data.distracted,
+                                backgroundColor: '#ef4444',
+                                borderRadius: 4,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 16,
+                                    font: { size: 12 }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                grid: { display: false },
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    precision: 0
+                                },
+                                grid: {
+                                    color: '#f3f4f6'
+                                }
                             }
                         }
                     }
-                }
-            });
-        },
-
-        updateCounts(detail) {
-            // Update header count
-            const countEl = document.getElementById('todays-count');
-            if (countEl && detail && detail.count !== undefined) {
-                countEl.textContent = detail.count;
-            }
-            // Update sidebar badge
-            const badge = document.getElementById('sidebar-pomodoro-badge');
-            if (badge && detail && detail.count) {
-                badge.textContent = detail.count;
-                badge.classList.remove('hidden');
+                });
+            } catch (err) {
+                console.error('Failed to render chart:', err);
             }
         },
 
@@ -202,9 +197,27 @@ function weeklyChart() {
     };
 }
 
-// Listen for HTMX-triggered pomodoroCompleted event and re-dispatch as Alpine event
+// Refresh chart + counts after pomodoro completion
+// Listen on htmx:afterSettle so the DOM swap is fully done
 document.body.addEventListener('pomodoroCompleted', function(e) {
-    window.dispatchEvent(new CustomEvent('pomodoro-completed', { detail: e.detail }));
+    // Delay to ensure HTMX swap is fully settled
+    setTimeout(function() {
+        // Update header count
+        var detail = e.detail || {};
+        var countEl = document.getElementById('todays-count');
+        if (countEl && detail.count !== undefined) {
+            countEl.textContent = detail.count;
+        }
+        // Update sidebar badge
+        var badge = document.getElementById('sidebar-pomodoro-badge');
+        if (badge && detail.count) {
+            badge.textContent = detail.count;
+            badge.classList.remove('hidden');
+        }
+        // Trigger Alpine chart refresh
+        window.dispatchEvent(new CustomEvent('refresh-chart'));
+    }, 300);
 });
+
 </script>
 {% endblock %}
