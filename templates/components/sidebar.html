@@ -125,11 +125,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             Pomodoros
-                            {% if todays_pomodoro_count %}
-                            <span class="ml-auto inline-flex items-center rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
-                                {{ todays_pomodoro_count }}
+                            <span id="sidebar-pomodoro-badge" class="{% if not todays_pomodoro_count %}hidden {% endif %}ml-auto inline-flex items-center rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
+                                {{ todays_pomodoro_count|default:"0" }}
                             </span>
-                            {% endif %}
                         </a>
                     </li>
                 </ul>

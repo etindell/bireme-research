@@ -43,11 +43,4 @@
         </div>
     </form>
 
-    <!-- Trigger chart refresh and count update -->
-    <script>
-        // Update today's count in header
-        document.getElementById('todays-count').textContent = '{{ todays_count }}';
-        // Refresh chart
-        window.dispatchEvent(new CustomEvent('refresh-chart'));
-    </script>
 </div>

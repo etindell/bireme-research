@@ -36,6 +36,7 @@
         <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-6"
              x-data="weeklyChart()"
              x-init="loadData()"
+             @pomodoro-completed.window="loadData(); updateCounts($event.detail)"
              @refresh-chart.window="loadData()">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-lg font-semibold text-gray-900">Weekly Progress</h2>
@@ -173,6 +174,20 @@ function weeklyChart() {
             });
         },
 
+        updateCounts(detail) {
+            // Update header count
+            const countEl = document.getElementById('todays-count');
+            if (countEl && detail && detail.count !== undefined) {
+                countEl.textContent = detail.count;
+            }
+            // Update sidebar badge
+            const badge = document.getElementById('sidebar-pomodoro-badge');
+            if (badge && detail && detail.count) {
+                badge.textContent = detail.count;
+                badge.classList.remove('hidden');
+            }
+        },
+
         prevWeek() {
             this.weekOffset--;
             this.loadData();
@@ -186,5 +201,10 @@ function weeklyChart() {
         }
     };
 }
+
+// Listen for HTMX-triggered pomodoroCompleted event and re-dispatch as Alpine event
+document.body.addEventListener('pomodoroCompleted', function(e) {
+    window.dispatchEvent(new CustomEvent('pomodoro-completed', { detail: e.detail }));
+});
 </script>
 {% endblock %}

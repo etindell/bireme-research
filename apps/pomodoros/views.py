@@ -131,7 +131,11 @@ class PomodoroFocusResponseView(LoginRequiredMixin, View):
             'form': form,
             'todays_count': todays_count,
         }, request=request)
-        return HttpResponse(html)
+        response = HttpResponse(html)
+        response['HX-Trigger'] = json.dumps({
+            'pomodoroCompleted': {'count': todays_count}
+        })
+        return response
 
 
 class PomodoroCancelView(LoginRequiredMixin, View):
