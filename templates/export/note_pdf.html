@@ -1,0 +1,281 @@
+{% load markdown_extras %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ note.title|truncatewords:8 }} - {{ note.company.name }}</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 0.75in;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            max-width: 6.5in;
+        }
+
+        h1 {
+            font-size: 16pt;
+            margin: 0 0 0.25em 0;
+            color: #111;
+            line-height: 1.3;
+        }
+
+        h2 {
+            font-size: 12pt;
+            margin: 1.5em 0 0.5em 0;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.25em;
+        }
+
+        .header {
+            border-bottom: 2px solid #333;
+            padding-bottom: 1em;
+            margin-bottom: 1.5em;
+        }
+
+        .company-name {
+            font-size: 11pt;
+            color: #555;
+            margin-bottom: 0.5em;
+        }
+
+        .meta {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 0.5em;
+        }
+
+        .meta-item {
+            display: inline-block;
+            margin-right: 1.5em;
+        }
+
+        .note-type {
+            display: inline-block;
+            font-size: 8pt;
+            padding: 0.15em 0.5em;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .content {
+            margin-top: 1.5em;
+        }
+
+        .content p {
+            margin: 0.5em 0;
+        }
+
+        .content ul, .content ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+        }
+
+        .content li {
+            margin: 0.25em 0;
+        }
+
+        .content blockquote {
+            border-left: 3px solid #ddd;
+            padding-left: 1em;
+            margin: 0.75em 0;
+            color: #555;
+        }
+
+        .content strong {
+            color: #111;
+        }
+
+        .content a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .content img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .cash-flow {
+            margin-top: 1.5em;
+            padding: 1em;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+
+        .cash-flow h3 {
+            font-size: 10pt;
+            margin: 0 0 0.75em 0;
+            color: #555;
+        }
+
+        .cf-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5em 1.5em;
+        }
+
+        .cf-item {
+            min-width: 4em;
+        }
+
+        .cf-label {
+            font-size: 8pt;
+            color: #888;
+        }
+
+        .cf-value {
+            font-size: 10pt;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .cf-section-label {
+            font-size: 8pt;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.75em;
+            margin-bottom: 0.25em;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 0.5em;
+        }
+
+        .referenced {
+            margin-top: 1.5em;
+            padding-top: 1em;
+            border-top: 1px solid #ddd;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .footer {
+            margin-top: 2em;
+            padding-top: 1em;
+            border-top: 1px solid #ddd;
+            font-size: 8pt;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">{{ note.company.name }}</div>
+        <h1>{{ note.title }}</h1>
+        <div class="meta">
+            {% if note.note_type %}
+            <span class="meta-item">
+                <span class="note-type" style="background-color: {{ note.note_type.color }}">
+                    {{ note.note_type.name }}
+                </span>
+            </span>
+            {% endif %}
+            <span class="meta-item">{{ note.display_date|date:"M j, Y" }}</span>
+            {% if note.created_by %}
+            <span class="meta-item">by {{ note.created_by.get_full_name }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if note.content %}
+    <div class="content">
+        {{ note.content|markdown }}
+    </div>
+    {% endif %}
+
+    {% with note.cash_flow as cash_flow %}
+    {% if cash_flow %}
+    <div class="cash-flow">
+        <h3>IRR Cash Flow Assumptions
+            {% if cash_flow.calculated_irr %} &mdash; {{ cash_flow.calculated_irr|floatformat:1 }}% IRR{% endif %}
+        </h3>
+        <div class="cf-grid">
+            <div class="cf-item">
+                <div class="cf-label">Price</div>
+                <div class="cf-value">${{ cash_flow.current_price }}</div>
+            </div>
+            <div class="cf-item">
+                <div class="cf-label">Y1 FCF</div>
+                <div class="cf-value">${{ cash_flow.fcf_year_1 }}</div>
+            </div>
+            <div class="cf-item">
+                <div class="cf-label">Y2 FCF</div>
+                <div class="cf-value">${{ cash_flow.fcf_year_2 }}</div>
+            </div>
+            <div class="cf-item">
+                <div class="cf-label">Y3 FCF</div>
+                <div class="cf-value">${{ cash_flow.fcf_year_3 }}</div>
+            </div>
+            <div class="cf-item">
+                <div class="cf-label">Y4 FCF</div>
+                <div class="cf-value">${{ cash_flow.fcf_year_4 }}</div>
+            </div>
+            <div class="cf-item">
+                <div class="cf-label">Y5 FCF</div>
+                <div class="cf-value">${{ cash_flow.fcf_year_5 }}</div>
+            </div>
+            <div class="cf-item">
+                <div class="cf-label">Terminal</div>
+                <div class="cf-value">${{ cash_flow.terminal_value }}</div>
+            </div>
+        </div>
+
+        {% if cash_flow.revenue_year_1 or cash_flow.revenue_year_2 or cash_flow.revenue_year_3 or cash_flow.revenue_year_4 or cash_flow.revenue_year_5 %}
+        <div class="cf-section-label">Revenue Per Share</div>
+        <div class="cf-grid">
+            <div class="cf-item"><div class="cf-label">Y1</div><div class="cf-value">{% if cash_flow.revenue_year_1 %}${{ cash_flow.revenue_year_1 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y2</div><div class="cf-value">{% if cash_flow.revenue_year_2 %}${{ cash_flow.revenue_year_2 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y3</div><div class="cf-value">{% if cash_flow.revenue_year_3 %}${{ cash_flow.revenue_year_3 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y4</div><div class="cf-value">{% if cash_flow.revenue_year_4 %}${{ cash_flow.revenue_year_4 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y5</div><div class="cf-value">{% if cash_flow.revenue_year_5 %}${{ cash_flow.revenue_year_5 }}{% else %}-{% endif %}</div></div>
+        </div>
+        {% endif %}
+
+        {% if cash_flow.ebit_ebitda_year_1 or cash_flow.ebit_ebitda_year_2 or cash_flow.ebit_ebitda_year_3 or cash_flow.ebit_ebitda_year_4 or cash_flow.ebit_ebitda_year_5 %}
+        <div class="cf-section-label">{{ note.company.profitability_metric|default:'EBITDA' }} Per Share</div>
+        <div class="cf-grid">
+            <div class="cf-item"><div class="cf-label">Y1</div><div class="cf-value">{% if cash_flow.ebit_ebitda_year_1 %}${{ cash_flow.ebit_ebitda_year_1 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y2</div><div class="cf-value">{% if cash_flow.ebit_ebitda_year_2 %}${{ cash_flow.ebit_ebitda_year_2 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y3</div><div class="cf-value">{% if cash_flow.ebit_ebitda_year_3 %}${{ cash_flow.ebit_ebitda_year_3 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y4</div><div class="cf-value">{% if cash_flow.ebit_ebitda_year_4 %}${{ cash_flow.ebit_ebitda_year_4 }}{% else %}-{% endif %}</div></div>
+            <div class="cf-item"><div class="cf-label">Y5</div><div class="cf-value">{% if cash_flow.ebit_ebitda_year_5 %}${{ cash_flow.ebit_ebitda_year_5 }}{% else %}-{% endif %}</div></div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% if note.referenced_companies.exists %}
+    <div class="referenced">
+        <strong>Also tagged:</strong>
+        {% for company in note.referenced_companies.all %}
+            {{ company.name }}{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        Generated on {{ export_date|date:"F j, Y" }} | Bireme Research
+    </div>
+</body>
+</html>

@@ -25,6 +25,47 @@ except (ImportError, OSError):
     WeasyTemplateResponseMixin = object  # Dummy class
 
 
+class BaseNotePDFView(LoginRequiredMixin, DetailView):
+    """Base view for individual note PDF export."""
+    model = Note
+    template_name = 'export/note_pdf.html'
+
+    def get_queryset(self):
+        if hasattr(self.request, 'organization') and self.request.organization:
+            return Note.objects.filter(
+                organization=self.request.organization,
+                is_deleted=False,
+            ).select_related('company', 'note_type', 'created_by')
+        return Note.objects.none()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['note'] = self.object
+        context['export_date'] = timezone.now()
+        return context
+
+
+if WEASYPRINT_AVAILABLE:
+    class NotePDFView(WeasyTemplateResponseMixin, BaseNotePDFView):
+        """Export individual note as PDF using WeasyPrint."""
+        pdf_stylesheets = []
+
+        def get_pdf_filename(self):
+            note = self.object
+            slug = note.company.slug if note.company else 'note'
+            return f'{slug}-{note.pk}-{timezone.now().strftime("%Y%m%d")}.pdf'
+else:
+    class NotePDFView(BaseNotePDFView):
+        """Fallback: Export note as HTML when WeasyPrint is unavailable."""
+        def render_to_response(self, context, **response_kwargs):
+            html = render_to_string(self.template_name, context, request=self.request)
+            response = HttpResponse(html, content_type='text/html')
+            note = self.object
+            slug = note.company.slug if note.company else 'note'
+            response['Content-Disposition'] = f'inline; filename="{slug}-{note.pk}.html"'
+            return response
+
+
 class BaseCompanyPDFView(LoginRequiredMixin, DetailView):
     """Base view for company PDF export."""
     model = Company

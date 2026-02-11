@@ -109,6 +109,12 @@
                class="text-xs text-gray-500 hover:text-gray-700">
                 Edit
             </a>
+            <a href="{% url 'export:note_pdf' note.pk %}"
+               hx-boost="false"
+               @click.stop
+               class="text-xs text-gray-500 hover:text-gray-700">
+                PDF
+            </a>
             <button hx-post="{% url 'notes:toggle_pin' note.pk %}"
                     hx-swap="none"
                     class="text-xs text-gray-500 hover:text-gray-700">
