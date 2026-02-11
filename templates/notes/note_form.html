@@ -414,10 +414,12 @@ function contentExpander() {
 
             if (this.expanded) {
                 // Expand to fit all content
+                const scrollY = window.scrollY;
                 this.textarea.style.height = 'auto';
                 const scrollHeight = this.textarea.scrollHeight;
                 this.textarea.style.height = Math.max(scrollHeight, 400) + 'px';
                 this.textarea.style.overflow = 'auto';
+                window.scrollTo(0, scrollY);
             } else {
                 // Collapse back
                 this.textarea.style.height = '120px';
@@ -427,10 +429,14 @@ function contentExpander() {
 
         autoGrow() {
             if (!this.textarea) return;
+            // Save scroll position so the viewport doesn't jump
+            const scrollY = window.scrollY;
             // Temporarily shrink to get true scrollHeight
             this.textarea.style.height = 'auto';
             const scrollHeight = this.textarea.scrollHeight;
             this.textarea.style.height = Math.max(scrollHeight, 400) + 'px';
+            // Restore scroll position to keep cursor in same visual spot
+            window.scrollTo(0, scrollY);
         }
     };
 }
