@@ -153,6 +153,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Live image previews -->
+                <div id="image-preview-strip" class="hidden mt-2 space-y-2"></div>
             </div>
 
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -726,6 +729,9 @@ document.addEventListener('keydown', function(e) {
                 contentTextarea.setSelectionRange(newPos, newPos);
                 contentTextarea.focus();
 
+                // Refresh image previews
+                refreshImagePreviews();
+
                 // Show success toast
                 window.dispatchEvent(new CustomEvent('toast', {
                     detail: { message: 'Image uploaded!', type: 'success' }
@@ -742,6 +748,62 @@ document.addEventListener('keydown', function(e) {
             uploadIndicator.classList.add('hidden');
         }
     }
+})();
+
+// Live image preview strip
+function refreshImagePreviews() {
+    const textarea = document.getElementById('id_content');
+    const strip = document.getElementById('image-preview-strip');
+    if (!textarea || !strip) return;
+
+    const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    const images = [];
+    let match;
+    while ((match = regex.exec(textarea.value)) !== null) {
+        images.push({ alt: match[1], url: match[2] });
+    }
+
+    if (images.length === 0) {
+        strip.classList.add('hidden');
+        strip.innerHTML = '';
+        return;
+    }
+
+    strip.classList.remove('hidden');
+
+    // Build preview HTML - only update if images changed
+    const key = images.map(i => i.url).join('|');
+    if (strip.dataset.key === key) return;
+    strip.dataset.key = key;
+
+    strip.innerHTML = '<p class="text-xs font-medium text-gray-500">Image previews</p>' +
+        '<div class="flex flex-wrap gap-3">' +
+        images.map(img =>
+            '<div class="relative group">' +
+                '<img src="' + img.url.replace(/"/g, '&quot;') + '" ' +
+                     'alt="' + img.alt.replace(/"/g, '&quot;') + '" ' +
+                     'class="max-h-40 rounded border border-gray-200 shadow-sm">' +
+                '<span class="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity truncate max-w-[200px]">' +
+                    img.alt.replace(/</g, '&lt;') +
+                '</span>' +
+            '</div>'
+        ).join('') +
+        '</div>';
+}
+
+(function initImagePreviews() {
+    const textarea = document.getElementById('id_content');
+    if (!textarea) return;
+
+    // Render on page load (for existing notes with images)
+    refreshImagePreviews();
+
+    // Refresh on input, debounced
+    let previewTimer;
+    textarea.addEventListener('input', function() {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(refreshImagePreviews, 500);
+    });
 })();
 </script>
 {% endblock %}
