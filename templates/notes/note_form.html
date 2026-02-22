@@ -62,12 +62,12 @@
             </div>
 
             <!-- Content -->
-            <div x-data="{ expanded: false }">
+            <div x-data="contentExpander()" x-init="init()">
                 <div class="flex items-center justify-between">
                     <label for="id_content" class="block text-sm font-medium leading-6 text-gray-900">
                         Details
                     </label>
-                    <button type="button" @click="expanded = !expanded; $nextTick(() => { const ta = document.getElementById('id_content'); ta.style.height = expanded ? '400px' : '120px'; })"
+                    <button type="button" @click="toggle()"
                             class="text-xs font-medium text-primary-600 hover:text-primary-500 flex items-center gap-1">
                         <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -386,6 +386,55 @@
 
 {% block extra_js %}
 <script>
+// Content expander - auto-grows textarea to fit content
+function contentExpander() {
+    return {
+        expanded: false,
+        textarea: null,
+
+        init() {
+            this.textarea = document.getElementById('id_content');
+            if (!this.textarea) return;
+
+            // Set initial collapsed height
+            this.textarea.style.height = '120px';
+            this.textarea.style.overflow = 'hidden';
+
+            // Listen for input to auto-grow when expanded
+            this.textarea.addEventListener('input', () => {
+                if (this.expanded) {
+                    this.autoGrow();
+                }
+            });
+        },
+
+        toggle() {
+            this.expanded = !this.expanded;
+            if (!this.textarea) return;
+
+            if (this.expanded) {
+                // Expand to fit all content
+                this.textarea.style.height = 'auto';
+                const scrollHeight = this.textarea.scrollHeight;
+                this.textarea.style.height = Math.max(scrollHeight, 400) + 'px';
+                this.textarea.style.overflow = 'auto';
+            } else {
+                // Collapse back
+                this.textarea.style.height = '120px';
+                this.textarea.style.overflow = 'hidden';
+            }
+        },
+
+        autoGrow() {
+            if (!this.textarea) return;
+            // Temporarily shrink to get true scrollHeight
+            this.textarea.style.height = 'auto';
+            const scrollHeight = this.textarea.scrollHeight;
+            this.textarea.style.height = Math.max(scrollHeight, 400) + 'px';
+        }
+    };
+}
+
 // Store selection when textarea loses focus (before button click takes effect)
 let savedSelection = { start: 0, end: 0 };
 

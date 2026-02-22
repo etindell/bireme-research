@@ -36,6 +36,9 @@ urlpatterns = [
     # News
     path('news/', include('apps.news.urls', namespace='news')),
 
+    # Pomodoros
+    path('pomodoros/', include('apps.pomodoros.urls', namespace='pomodoros')),
+
     # Share (public, no auth required)
     path('share/', include('apps.share.urls', namespace='share')),
 ]
