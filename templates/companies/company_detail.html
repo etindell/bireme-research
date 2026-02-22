@@ -146,9 +146,6 @@
         </div>
     </div>
 
-    <!-- AI Summary -->
-    {% include "companies/partials/summary_section.html" with company=company %}
-
     <!-- Description -->
     {% if company.description %}
     <div class="bg-white shadow rounded-lg p-6">
@@ -156,6 +153,28 @@
         <p class="text-gray-700 whitespace-pre-wrap">{{ company.description }}</p>
     </div>
     {% endif %}
+
+    <!-- Business Summary (from Yahoo Finance) -->
+    {% if company.business_summary %}
+    <div class="bg-white shadow rounded-lg" x-data="{ expanded: false }">
+        <button @click="expanded = !expanded"
+                type="button"
+                class="w-full flex items-center justify-between p-6 text-left">
+            <h3 class="text-sm font-medium text-gray-500">Business Summary (Yahoo Finance)</h3>
+            <svg class="h-5 w-5 text-gray-400 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+        </button>
+        <div x-show="expanded" x-collapse>
+            <div class="px-6 pb-6">
+                <p class="text-sm text-gray-700 leading-relaxed">{{ company.business_summary }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- AI Summary -->
+    {% include "companies/partials/summary_section.html" with company=company %}
 
     <!-- Investment Thesis -->
     {% if company.thesis %}
