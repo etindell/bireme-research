@@ -13,8 +13,18 @@ from core.mixins import OrganizationMixin
 class Event(SoftDeleteModel, OrganizationMixin):
     """A dinner or event with invited guests."""
 
+    EVENT_TYPE_CHOICES = [
+        ('rsvp', 'Firm Date RSVP'),
+        ('poll', 'Date Availability Poll'),
+    ]
+
+    event_type = models.CharField(
+        max_length=10,
+        choices=EVENT_TYPE_CHOICES,
+        default='rsvp',
+    )
     name = models.CharField(max_length=255)
-    date = models.DateTimeField()
+    date = models.DateTimeField(null=True, blank=True)
     location = models.CharField(max_length=500)
     description = models.TextField(blank=True)
     email_subject = models.CharField(
@@ -28,7 +38,7 @@ class Event(SoftDeleteModel, OrganizationMixin):
     )
 
     class Meta:
-        ordering = ['-date']
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.name
@@ -71,6 +81,29 @@ class GuestScreenshot(SoftDeleteModel, OrganizationMixin):
 
     def __str__(self):
         return f'Screenshot for {self.event.name} ({self.created_at:%Y-%m-%d})'
+
+
+class EventDate(SoftDeleteModel, OrganizationMixin):
+    """A proposed date for a poll-type event."""
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='event_dates',
+    )
+    date = models.DateTimeField()
+    label = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Optional description, e.g. "Tuesday evening"',
+    )
+
+    class Meta:
+        ordering = ['date']
+
+    def __str__(self):
+        label = f' ({self.label})' if self.label else ''
+        return f'{self.date:%b %d, %Y %I:%M %p}{label}'
 
 
 class Guest(SoftDeleteModel, OrganizationMixin):
@@ -129,3 +162,27 @@ class Guest(SoftDeleteModel, OrganizationMixin):
         if request:
             return request.build_absolute_uri(path)
         return path
+
+
+class GuestAvailability(models.Model):
+    """A guest's availability for a specific proposed date."""
+
+    guest = models.ForeignKey(
+        Guest,
+        on_delete=models.CASCADE,
+        related_name='availabilities',
+    )
+    event_date = models.ForeignKey(
+        EventDate,
+        on_delete=models.CASCADE,
+        related_name='availabilities',
+    )
+    is_available = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ['guest', 'event_date']
+        verbose_name_plural = 'guest availabilities'
+
+    def __str__(self):
+        status = 'Available' if self.is_available else 'Unavailable'
+        return f'{self.guest.name} - {self.event_date} - {status}'

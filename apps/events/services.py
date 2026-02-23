@@ -120,17 +120,18 @@ def extract_guests_from_screenshot(image_path):
         return []
 
 
-def generate_invitation_email(guest_name, event_name, event_date, event_location, event_description, rsvp_url):
+def generate_invitation_email(guest_name, event_name, event_date, event_location, event_description, rsvp_url, is_poll=False):
     """
-    Generate a personalized dinner invitation email using Claude.
+    Generate a personalized invitation email using Claude.
 
     Args:
         guest_name: Name of the guest.
         event_name: Name of the event.
-        event_date: Date/time of the event.
+        event_date: Date/time of the event (or description for polls).
         event_location: Location of the event.
         event_description: Description of the event.
         rsvp_url: Full URL for the RSVP page.
+        is_poll: Whether this is a date availability poll.
 
     Returns:
         Generated email text, or a fallback template on failure.
@@ -139,14 +140,43 @@ def generate_invitation_email(guest_name, event_name, event_date, event_location
         import anthropic
     except ImportError:
         logger.error("anthropic package not installed")
-        return _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url)
+        return _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url, is_poll)
 
     api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
         logger.error("ANTHROPIC_API_KEY environment variable not set")
-        return _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url)
+        return _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url, is_poll)
 
     client = anthropic.Anthropic(api_key=api_key)
+
+    if is_poll:
+        prompt = (
+            f'Write a warm, professional email asking a guest to share their date availability for an upcoming event.\n\n'
+            f'Guest name: {guest_name}\n'
+            f'Event: {event_name}\n'
+            f'Date: {event_date}\n'
+            f'Location: {event_location}\n'
+            f'Description: {event_description}\n'
+            f'Availability link: {rsvp_url}\n\n'
+            f'Write ONLY the email body (no subject line). '
+            f'Start with a greeting using the guest\'s name. '
+            f'Explain that we are finding the best date for the event and ask them to share which dates work for them by clicking the link. '
+            f'Keep it concise (under 150 words), warm, and professional.'
+        )
+    else:
+        prompt = (
+            f'Write a warm, professional dinner invitation email for the following event.\n\n'
+            f'Guest name: {guest_name}\n'
+            f'Event: {event_name}\n'
+            f'Date: {event_date}\n'
+            f'Location: {event_location}\n'
+            f'Description: {event_description}\n'
+            f'RSVP link: {rsvp_url}\n\n'
+            f'Write ONLY the email body (no subject line). '
+            f'Start with a greeting using the guest\'s name. '
+            f'Include the event details and the RSVP link. '
+            f'Keep it concise (under 150 words), warm, and professional.'
+        )
 
     try:
         response = client.messages.create(
@@ -155,30 +185,28 @@ def generate_invitation_email(guest_name, event_name, event_date, event_location
             messages=[
                 {
                     'role': 'user',
-                    'content': (
-                        f'Write a warm, professional dinner invitation email for the following event.\n\n'
-                        f'Guest name: {guest_name}\n'
-                        f'Event: {event_name}\n'
-                        f'Date: {event_date}\n'
-                        f'Location: {event_location}\n'
-                        f'Description: {event_description}\n'
-                        f'RSVP link: {rsvp_url}\n\n'
-                        f'Write ONLY the email body (no subject line). '
-                        f'Start with a greeting using the guest\'s name. '
-                        f'Include the event details and the RSVP link. '
-                        f'Keep it concise (under 150 words), warm, and professional.'
-                    ),
+                    'content': prompt,
                 }
             ],
         )
         return response.content[0].text.strip()
     except Exception as e:
         logger.error(f"Error generating invitation email: {e}")
-        return _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url)
+        return _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url, is_poll)
 
 
-def _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url):
+def _fallback_email(guest_name, event_name, event_date, event_location, rsvp_url, is_poll=False):
     """Fallback email template when Claude API is unavailable."""
+    if is_poll:
+        return (
+            f'Dear {guest_name},\n\n'
+            f'We are planning {event_name} and would love for you to join us!\n\n'
+            f'Location: {event_location}\n\n'
+            f'We have a few possible dates and would appreciate if you could let us know which ones work for you:\n'
+            f'{rsvp_url}\n\n'
+            f'We look forward to finding a date that works for everyone!\n\n'
+            f'Best regards'
+        )
     return (
         f'Dear {guest_name},\n\n'
         f'You are cordially invited to {event_name}!\n\n'

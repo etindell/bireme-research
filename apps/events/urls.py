@@ -22,6 +22,10 @@ urlpatterns = [
     path('<int:pk>/add-guest/', views.AddGuestView.as_view(), name='add_guest'),
     path('<int:pk>/remove-guest/<int:guest_pk>/', views.RemoveGuestView.as_view(), name='remove_guest'),
 
+    # Poll date management
+    path('<int:pk>/add-date/', views.AddEventDateView.as_view(), name='add_date'),
+    path('<int:pk>/remove-date/<int:date_pk>/', views.RemoveEventDateView.as_view(), name='remove_date'),
+
     # Email generation & sending
     path('<int:pk>/generate-emails/', views.GenerateEmailsView.as_view(), name='generate_emails'),
     path('<int:pk>/preview-email/<int:guest_pk>/', views.PreviewEmailView.as_view(), name='preview_email'),

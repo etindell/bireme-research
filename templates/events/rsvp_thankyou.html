@@ -26,7 +26,9 @@
     <header class="bg-white border-b border-gray-200">
         <div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-14 items-center">
-                <span class="text-sm font-medium text-gray-500">Event RSVP</span>
+                <span class="text-sm font-medium text-gray-500">
+                    {% if event.event_type == 'poll' %}Date Availability{% else %}Event RSVP{% endif %}
+                </span>
             </div>
         </div>
     </header>
@@ -34,7 +36,17 @@
     <!-- Main content -->
     <main class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-8">
         <div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-900/5 overflow-hidden text-center py-12 px-6">
-            {% if guest.rsvp_status == 'yes' %}
+            {% if event.event_type == 'poll' %}
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+                <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+            </div>
+            <h1 class="mt-4 text-2xl font-bold text-gray-900">Thanks for sharing your availability!</h1>
+            <p class="mt-2 text-gray-600">
+                Thank you, {{ guest.name }}! We'll use your response to find the best date for <strong>{{ event.name }}</strong>.
+            </p>
+            {% elif guest.rsvp_status == 'yes' %}
             <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
                 <svg class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -59,7 +71,7 @@
             <div class="mt-6 p-4 bg-gray-50 rounded-lg inline-block">
                 <p class="text-sm text-gray-500">
                     <strong>{{ event.name }}</strong><br>
-                    {{ event.date|date:"l, F j, Y \a\t g:i A" }}<br>
+                    {% if event.date %}{{ event.date|date:"l, F j, Y \a\t g:i A" }}<br>{% endif %}
                     {{ event.location }}
                 </p>
             </div>
