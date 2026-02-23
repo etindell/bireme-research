@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP - {{ event.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+                            800: '#1e40af', 900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-14 items-center">
+                <span class="text-sm font-medium text-gray-500">Event RSVP</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white shadow-sm rounded-lg ring-1 ring-gray-900/5 overflow-hidden">
+            <!-- Event header -->
+            <div class="bg-primary-600 px-6 py-8 text-center text-white">
+                <h1 class="text-2xl font-bold">{{ event.name }}</h1>
+                <p class="mt-2 text-primary-100">{{ event.date|date:"l, F j, Y \a\t g:i A" }}</p>
+                <p class="mt-1 text-primary-200">{{ event.location }}</p>
+            </div>
+
+            <div class="p-6 sm:p-8">
+                <!-- Greeting -->
+                <p class="text-gray-700 mb-6">
+                    Hello <span class="font-semibold">{{ guest.name }}</span>, please let us know if you can join us!
+                </p>
+
+                {% if event.description %}
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-600">{{ event.description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- RSVP Form -->
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="rounded-md bg-red-50 p-4">
+                        <p class="text-sm text-red-700">Please make a selection below.</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- RSVP Status -->
+                    <div>
+                        <label class="text-base font-semibold text-gray-900">Will you attend?</label>
+                        <fieldset class="mt-3">
+                            <div class="space-y-3">
+                                {% for radio in form.rsvp_status %}
+                                <div class="flex items-center">
+                                    {{ radio.tag }}
+                                    <label for="{{ radio.id_for_label }}" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                        {% if form.rsvp_status.errors %}<p class="mt-1 text-sm text-red-600">{{ form.rsvp_status.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- Food Preference -->
+                    <div>
+                        <label class="text-base font-semibold text-gray-900">Dietary Preference</label>
+                        <p class="text-sm text-gray-500">Select your food preference for the event.</p>
+                        <fieldset class="mt-3">
+                            <div class="space-y-3">
+                                {% for radio in form.food_preference %}
+                                <div class="flex items-center">
+                                    {{ radio.tag }}
+                                    <label for="{{ radio.id_for_label }}" class="ml-3 block text-sm font-medium leading-6 text-gray-900">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Dietary Notes -->
+                    <div>
+                        <label for="id_dietary_notes" class="block text-sm font-medium leading-6 text-gray-900">Additional Notes</label>
+                        <div class="mt-2">{{ form.dietary_notes }}</div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit"
+                                class="w-full rounded-md bg-primary-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">
+                            Submit RSVP
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

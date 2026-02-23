@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'apps.news',
     'apps.share',
     'apps.pomodoros',
+    'apps.events',
     'core',
 ]
 

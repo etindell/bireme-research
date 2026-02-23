@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}RSVP Dashboard - {{ event.name }} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <a href="{% url 'events:detail' event.pk %}" class="text-sm text-gray-500 hover:text-gray-700">&larr; Back to {{ event.name }}</a>
+        <h1 class="mt-2 text-2xl font-bold text-gray-900">RSVP Dashboard</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ event.name }} &middot; {{ event.date|date:"M j, Y" }}</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-4">
+        <div class="bg-white overflow-hidden shadow-sm ring-1 ring-gray-900/5 rounded-lg px-4 py-5">
+            <dt class="text-sm font-medium text-gray-500 truncate">Total Guests</dt>
+            <dd class="mt-1 text-3xl font-semibold text-gray-900">{{ event.guest_count }}</dd>
+        </div>
+        <div class="bg-white overflow-hidden shadow-sm ring-1 ring-gray-900/5 rounded-lg px-4 py-5">
+            <dt class="text-sm font-medium text-gray-500 truncate">Attending</dt>
+            <dd class="mt-1 text-3xl font-semibold text-green-600">{{ event.rsvp_yes_count }}</dd>
+        </div>
+        <div class="bg-white overflow-hidden shadow-sm ring-1 ring-gray-900/5 rounded-lg px-4 py-5">
+            <dt class="text-sm font-medium text-gray-500 truncate">Declined</dt>
+            <dd class="mt-1 text-3xl font-semibold text-red-600">{{ event.rsvp_no_count }}</dd>
+        </div>
+        <div class="bg-white overflow-hidden shadow-sm ring-1 ring-gray-900/5 rounded-lg px-4 py-5">
+            <dt class="text-sm font-medium text-gray-500 truncate">Pending</dt>
+            <dd class="mt-1 text-3xl font-semibold text-yellow-600">{{ event.rsvp_pending_count }}</dd>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Guest Table -->
+        <div class="lg:col-span-2 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Guest Responses</h2>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RSVP</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Food Preference</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responded</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for guest in guests %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ guest.name }}</div>
+                            <div class="text-sm text-gray-500">{{ guest.email }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if guest.rsvp_status == 'yes' %}
+                            <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Yes</span>
+                            {% elif guest.rsvp_status == 'no' %}
+                            <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">No</span>
+                            {% else %}
+                            <span class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if guest.rsvp_status == 'yes' %}
+                                {{ guest.get_food_preference_display }}
+                                {% if guest.dietary_notes %}<br><span class="text-xs text-gray-400">{{ guest.dietary_notes|truncatewords:10 }}</span>{% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if guest.rsvp_responded_at %}
+                                {{ guest.rsvp_responded_at|date:"M j, g:i A" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No guests added yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Food Preference Breakdown -->
+        <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Food Preferences</h2>
+            <p class="text-xs text-gray-500 mb-4">Among confirmed attendees</p>
+
+            {% if food_breakdown %}
+            <div class="space-y-3">
+                {% for label, count in food_breakdown.items %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">{{ label }}</span>
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-400">No confirmed attendees yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

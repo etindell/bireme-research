@@ -30,6 +30,7 @@ class OrganizationMiddleware:
         '/organizations/create/',
         '/organizations/join/',
         '/share/',
+        '/events/rsvp/',
     ]
 
     def __init__(self, get_response):

@@ -1,0 +1,33 @@
+<div class="fixed inset-0 z-50 overflow-y-auto" x-data="{ open: true }" x-show="open">
+    <div class="flex min-h-full items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="open = false; document.getElementById('email-preview-modal').innerHTML = ''"></div>
+
+        <!-- Modal -->
+        <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6 z-10">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Email Preview - {{ guest.name }}</h3>
+                <button @click="open = false; document.getElementById('email-preview-modal').innerHTML = ''"
+                        class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-xs font-medium text-gray-500">To:</span>
+                <span class="text-sm text-gray-900">{{ guest.email }}</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-xs font-medium text-gray-500">Subject:</span>
+                <span class="text-sm text-gray-900">{{ event.email_subject|default:event.name }}</span>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4">
+                <pre class="text-sm text-gray-700 whitespace-pre-wrap font-sans">{{ guest.generated_email }}</pre>
+            </div>
+        </div>
+    </div>
+</div>

@@ -39,6 +39,9 @@ urlpatterns = [
     # Pomodoros
     path('pomodoros/', include('apps.pomodoros.urls', namespace='pomodoros')),
 
+    # Events
+    path('events/', include('apps.events.urls', namespace='events')),
+
     # Share (public, no auth required)
     path('share/', include('apps.share.urls', namespace='share')),
 ]

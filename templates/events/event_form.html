@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Event - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div>
+        <a href="{% if form.instance.pk %}{% url 'events:detail' form.instance.pk %}{% else %}{% url 'events:list' %}{% endif %}"
+           class="text-sm text-gray-500 hover:text-gray-700">&larr; Back</a>
+        <h1 class="mt-2 text-2xl font-bold text-gray-900">
+            {% if form.instance.pk %}Edit Event{% else %}Create Event{% endif %}
+        </h1>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg">
+        <form method="post" class="p-6 space-y-6" hx-boost="false">
+            {% csrf_token %}
+
+            {% if form.errors %}
+            <div class="rounded-md bg-red-50 p-4">
+                <div class="text-sm text-red-700">
+                    Please correct the errors below.
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label for="id_name" class="block text-sm font-medium leading-6 text-gray-900">Event Name</label>
+                    <div class="mt-2">{{ form.name }}</div>
+                    {% if form.name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="id_date" class="block text-sm font-medium leading-6 text-gray-900">Date & Time</label>
+                    <div class="mt-2">{{ form.date }}</div>
+                    {% if form.date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.date.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="id_location" class="block text-sm font-medium leading-6 text-gray-900">Location</label>
+                    <div class="mt-2">{{ form.location }}</div>
+                    {% if form.location.errors %}<p class="mt-1 text-sm text-red-600">{{ form.location.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="id_description" class="block text-sm font-medium leading-6 text-gray-900">Description</label>
+                    <div class="mt-2">{{ form.description }}</div>
+                    {% if form.description.errors %}<p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="id_email_subject" class="block text-sm font-medium leading-6 text-gray-900">Email Subject</label>
+                    <div class="mt-2">{{ form.email_subject }}</div>
+                    {% if form.email_subject.errors %}<p class="mt-1 text-sm text-red-600">{{ form.email_subject.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="id_email_body_template" class="block text-sm font-medium leading-6 text-gray-900">Email Body Template</label>
+                    <p class="text-xs text-gray-500 mt-1">Leave blank to auto-generate personalized emails with AI.</p>
+                    <div class="mt-2">{{ form.email_body_template }}</div>
+                    {% if form.email_body_template.errors %}<p class="mt-1 text-sm text-red-600">{{ form.email_body_template.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-x-3 pt-4 border-t border-gray-200">
+                <a href="{% if form.instance.pk %}{% url 'events:detail' form.instance.pk %}{% else %}{% url 'events:list' %}{% endif %}"
+                   class="text-sm font-semibold text-gray-900 hover:text-gray-700">Cancel</a>
+                <button type="submit"
+                        class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">
+                    {% if form.instance.pk %}Update Event{% else %}Create Event{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
