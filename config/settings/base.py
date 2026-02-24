@@ -153,6 +153,10 @@ COMPRESS_ENABLED = True
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Public-facing site URL (used for RSVP/poll links in emails)
+# Set to e.g. 'https://events.biremecapital.com' in production
+SITE_URL = env('SITE_URL', default='')
+
 # django-allauth configuration
 SITE_ID = 1
 

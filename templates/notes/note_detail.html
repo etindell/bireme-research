@@ -9,9 +9,15 @@
     <nav class="flex" aria-label="Breadcrumb">
         <ol role="list" class="flex items-center space-x-2">
             <li>
+                {% if note.company %}
                 <a href="{{ note.company.get_absolute_url }}" class="text-sm text-gray-500 hover:text-gray-700">
                     {{ note.company.name }}
                 </a>
+                {% else %}
+                <a href="{% url 'notes:list' %}?company=general" class="text-sm text-gray-500 hover:text-gray-700">
+                    General Notes
+                </a>
+                {% endif %}
             </li>
             {% for ancestor in ancestors %}
             <li class="flex items-center">
@@ -176,7 +182,7 @@
                     <!-- Profitability Metric Projections -->
                     {% if cash_flow.ebit_ebitda_year_1 or cash_flow.ebit_ebitda_year_2 or cash_flow.ebit_ebitda_year_3 or cash_flow.ebit_ebitda_year_4 or cash_flow.ebit_ebitda_year_5 %}
                     <div class="mt-4 pt-4 border-t border-gray-200">
-                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ note.company.profitability_metric|default:'EBITDA' }} Per Share</span>
+                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">{% if note.company %}{{ note.company.profitability_metric|default:'EBITDA' }}{% else %}EBITDA{% endif %} Per Share</span>
                         <div class="mt-2 grid grid-cols-5 gap-4 text-sm">
                             <div>
                                 <span class="text-gray-500">Y1</span>

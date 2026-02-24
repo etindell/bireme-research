@@ -128,6 +128,7 @@
                         hx-include="[name='type'], [name='q']"
                         class="rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">All Companies</option>
+                    <option value="general" {% if current_company == 'general' %}selected{% endif %}>General Notes</option>
                     {% for company in companies %}
                     <option value="{{ company.slug }}" {% if current_company == company.slug %}selected{% endif %}>
                         {{ company.name }}

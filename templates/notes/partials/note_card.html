@@ -65,6 +65,8 @@
                    @click.stop>
                     {{ note.company.name }}
                 </a>
+                {% elif show_company and not note.company %}
+                <span class="text-gray-400 italic">General</span>
                 {% endif %}
 
                 <span>{{ note.display_date|date:"M j, Y" }}</span>

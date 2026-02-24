@@ -80,10 +80,12 @@ class Note(SoftDeleteModel, OrganizationMixin):
     - `title`: The bullet point text (always visible)
     - `content`: Expanded content (shown when clicked)
     """
-    # Primary company this note is about
+    # Primary company this note is about (nullable for general notes)
     company = models.ForeignKey(
         'companies.Company',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='notes'
     )
 
@@ -206,7 +208,7 @@ class Note(SoftDeleteModel, OrganizationMixin):
 
     def get_all_companies(self):
         """Return primary company plus all referenced companies."""
-        companies = [self.company]
+        companies = [self.company] if self.company else []
         companies.extend(self.referenced_companies.all())
         return companies
 

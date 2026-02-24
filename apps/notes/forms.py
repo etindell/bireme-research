@@ -61,6 +61,9 @@ class NoteForm(forms.ModelForm):
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.fields['company'].required = False
+        self.fields['company'].empty_label = 'General (no company)'
+
         if organization:
             # Filter companies and note types by organization
             self.fields['company'].queryset = Company.objects.filter(

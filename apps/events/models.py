@@ -157,8 +157,11 @@ class Guest(SoftDeleteModel, OrganizationMixin):
 
     def get_rsvp_url(self, request=None):
         """Get the full RSVP URL for this guest."""
+        from django.conf import settings
         from django.urls import reverse
         path = reverse('events:rsvp_public', kwargs={'token': self.rsvp_token})
+        if settings.SITE_URL:
+            return settings.SITE_URL.rstrip('/') + path
         if request:
             return request.build_absolute_uri(path)
         return path

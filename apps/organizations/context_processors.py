@@ -15,7 +15,10 @@ def organization(request):
     - current_membership: User's membership in current organization
     - user_organizations: All organizations the user belongs to
     - pending_todo_count: Count of pending todos for sidebar badge
+    - SITE_URL: Public-facing base URL for external links
     """
+    from django.conf import settings
+
     context = {
         'current_organization': getattr(request, 'organization', None),
         'current_membership': getattr(request, 'membership', None),
@@ -23,6 +26,7 @@ def organization(request):
         'pending_todo_count': 0,
         'unread_news_count': 0,
         'todays_pomodoro_count': 0,
+        'SITE_URL': getattr(settings, 'SITE_URL', ''),
     }
 
     if request.user.is_authenticated:

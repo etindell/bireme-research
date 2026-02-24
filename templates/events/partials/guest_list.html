@@ -87,7 +87,7 @@
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <button onclick="navigator.clipboard.writeText(window.location.origin + '{% url 'events:rsvp_public' guest.rsvp_token %}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy Link', 2000)"
+                        <button onclick="navigator.clipboard.writeText('{% if SITE_URL %}{{ SITE_URL }}{% else %}' + window.location.origin + '{% endif %}{% url 'events:rsvp_public' guest.rsvp_token %}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy Link', 2000)"
                                 class="text-xs text-primary-600 hover:text-primary-800 underline">Copy Link</button>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right">

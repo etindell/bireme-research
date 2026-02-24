@@ -35,12 +35,15 @@ class NoteListView(OrganizationViewMixin, ListView):
         # Filter by company
         company_slug = self.request.GET.get('company')
         if company_slug:
-            company = get_object_or_404(
-                Company,
-                organization=self.request.organization,
-                slug=company_slug
-            )
-            qs = qs.for_company(company)
+            if company_slug == 'general':
+                qs = qs.filter(company__isnull=True)
+            else:
+                company = get_object_or_404(
+                    Company,
+                    organization=self.request.organization,
+                    slug=company_slug
+                )
+                qs = qs.for_company(company)
 
         # Filter by type
         note_type = self.request.GET.get('type')
@@ -181,7 +184,8 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         cash_flow_form = NoteCashFlowForm(self.request.POST)
         if cash_flow_form.is_valid() and cash_flow_form.cleaned_data.get('include_cash_flows'):
             # Use form price if provided, otherwise use company's Yahoo Finance price
-            price = cash_flow_form.cleaned_data.get('current_price') or self.object.company.current_price
+            company_price = self.object.company.current_price if self.object.company else None
+            price = cash_flow_form.cleaned_data.get('current_price') or company_price
             cash_flow = NoteCashFlow(
                 note=self.object,
                 current_price=price,
@@ -208,7 +212,8 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
             cash_flow.save()
 
             # Also update or create the company's active valuation
-            self._update_company_valuation(cash_flow_form.cleaned_data)
+            if self.object.company:
+                self._update_company_valuation(cash_flow_form.cleaned_data)
 
         # Handle todo completion
         complete_todo = form.cleaned_data.get('complete_todo')
@@ -265,7 +270,7 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
 
     def get_success_url(self):
         # Return to company page if we came from there
-        if self.request.GET.get('company'):
+        if self.request.GET.get('company') and self.object.company:
             return self.object.company.get_absolute_url()
         return self.object.get_absolute_url()
 
@@ -330,7 +335,7 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                 return self.render_to_response(context)
 
             # Check that we have a price (either from form or from company)
-            company = self.object.company
+            company = form.cleaned_data.get('company') or self.object.company
             form_price = cash_flow_form.cleaned_data.get('current_price')
             if not form_price and (not company or not company.current_price):
                 cash_flow_form.add_error('current_price', 'Price is required (company has no market price available)')
@@ -348,7 +353,8 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                 existing_cash_flow = self.object.cash_flow
                 if include:
                     # Update existing - use form price if provided, otherwise use company's Yahoo Finance price
-                    price = cash_flow_form.cleaned_data.get('current_price') or self.object.company.current_price
+                    company_price = self.object.company.current_price if self.object.company else None
+                    price = cash_flow_form.cleaned_data.get('current_price') or company_price
                     existing_cash_flow.current_price = price
                     existing_cash_flow.fcf_year_1 = cash_flow_form.cleaned_data['fcf_year_1']
                     existing_cash_flow.fcf_year_2 = cash_flow_form.cleaned_data['fcf_year_2']
@@ -371,14 +377,16 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     existing_cash_flow.calculated_irr = existing_cash_flow.calculate_irr()
                     existing_cash_flow.save()
                     # Also update company valuation
-                    self._update_company_valuation(cash_flow_form.cleaned_data)
+                    if self.object.company:
+                        self._update_company_valuation(cash_flow_form.cleaned_data)
                 else:
                     # Remove cash flows if unchecked
                     existing_cash_flow.delete()
             except NoteCashFlow.DoesNotExist:
                 if include:
                     # Create new - use form price if provided, otherwise use company's Yahoo Finance price
-                    price = cash_flow_form.cleaned_data.get('current_price') or self.object.company.current_price
+                    company_price = self.object.company.current_price if self.object.company else None
+                    price = cash_flow_form.cleaned_data.get('current_price') or company_price
                     cash_flow = NoteCashFlow(
                         note=self.object,
                         current_price=price,
@@ -404,7 +412,8 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     cash_flow.calculated_irr = cash_flow.calculate_irr()
                     cash_flow.save()
                     # Also update company valuation
-                    self._update_company_valuation(cash_flow_form.cleaned_data)
+                    if self.object.company:
+                        self._update_company_valuation(cash_flow_form.cleaned_data)
 
         messages.success(self.request, 'Note updated.')
         return response
@@ -458,7 +467,9 @@ class NoteDeleteView(OrganizationViewMixin, DeleteView):
     model = Note
 
     def get_success_url(self):
-        return self.object.company.get_absolute_url()
+        if self.object.company:
+            return self.object.company.get_absolute_url()
+        return reverse('notes:list')
 
     def form_valid(self, form):
         self.object.delete(user=self.request.user)
@@ -972,12 +983,12 @@ class NoteCreateTodoView(OrganizationViewMixin, View):
             category_type=TodoCategory.CategoryType.IDEA_GENERATION
         ).first()
 
-        # Create the todo
+        # Create the todo (company may be None for general notes)
         todo = Todo.objects.create(
             organization=request.organization,
             title=f'Finish note: {note.title[:80]}',
             description=f'Complete the research note started on {note.created_at.strftime("%b %d, %Y")}.',
-            company=note.company,
+            company=note.company if note.company else None,
             category=category,
             todo_type=Todo.TodoType.NOTE_TODO,
             source_note=note,
