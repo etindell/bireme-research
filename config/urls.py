@@ -42,6 +42,9 @@ urlpatterns = [
     # Events
     path('events/', include('apps.events.urls', namespace='events')),
 
+    # Public RSVP shortcut at root — so guests get events.biremecapital.com/<token>/
+    path('<uuid:token>/', include('apps.events.urls_public')),
+
     # Share (public, no auth required)
     path('share/', include('apps.share.urls', namespace='share')),
 ]
