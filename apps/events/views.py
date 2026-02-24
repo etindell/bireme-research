@@ -410,6 +410,45 @@ class SendEmailsView(OrganizationViewMixin, View):
         return redirect('events:detail', pk=pk)
 
 
+class SendTestEmailView(OrganizationViewMixin, View):
+    """Send a guest's generated email to the logged-in user as a test."""
+
+    def get_queryset(self):
+        return Event.objects.all()
+
+    def post(self, request, pk, guest_pk):
+        event = get_object_or_404(Event, pk=pk, organization=request.organization)
+        guest = get_object_or_404(Guest, pk=guest_pk, event=event)
+
+        if not guest.generated_email:
+            messages.warning(request, f'No generated email for {guest.name}. Generate emails first.')
+        else:
+            subject = event.email_subject or f"You're Invited: {event.name}"
+            test_subject = f'[TEST] {subject}'
+            try:
+                send_mail(
+                    subject=test_subject,
+                    message=guest.generated_email,
+                    from_email=None,
+                    recipient_list=[request.user.email],
+                    fail_silently=False,
+                )
+                messages.success(request, f'Test email sent to {request.user.email} (using {guest.name}\'s invite).')
+            except Exception as e:
+                messages.error(request, f'Failed to send test email: {e}')
+
+        if request.htmx:
+            guests = event.guests.all()
+            html = render_to_string('events/partials/guest_list.html', {
+                'event': event,
+                'guests': guests,
+                'guest_form': GuestForm(),
+            }, request=request)
+            return HttpResponse(html)
+
+        return redirect('events:detail', pk=pk)
+
+
 class RsvpDashboardView(OrganizationViewMixin, DetailView):
     """Dashboard showing RSVP status and food preference breakdown."""
     model = Event

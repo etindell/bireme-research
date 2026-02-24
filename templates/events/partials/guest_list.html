@@ -85,6 +85,12 @@
                         {% else %}
                         <span class="text-xs text-gray-400">Not generated</span>
                         {% endif %}
+                        {% if guest.generated_email %}
+                        <button hx-post="{% url 'events:send_test_email' event.pk guest.pk %}"
+                                hx-target="#guest-list-section"
+                                hx-swap="outerHTML"
+                                class="ml-2 text-xs text-amber-600 hover:text-amber-800 underline">Send Test</button>
+                        {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <button onclick="navigator.clipboard.writeText('{% if SITE_URL %}{{ SITE_URL }}{% else %}' + window.location.origin + '{% endif %}{% url 'events:rsvp_public' guest.rsvp_token %}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy Link', 2000)"

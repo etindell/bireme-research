@@ -30,6 +30,7 @@ urlpatterns = [
     path('<int:pk>/generate-emails/', views.GenerateEmailsView.as_view(), name='generate_emails'),
     path('<int:pk>/preview-email/<int:guest_pk>/', views.PreviewEmailView.as_view(), name='preview_email'),
     path('<int:pk>/send-emails/', views.SendEmailsView.as_view(), name='send_emails'),
+    path('<int:pk>/send-test-email/<int:guest_pk>/', views.SendTestEmailView.as_view(), name='send_test_email'),
 
     # RSVP dashboard (authenticated)
     path('<int:pk>/rsvp-dashboard/', views.RsvpDashboardView.as_view(), name='rsvp_dashboard'),
