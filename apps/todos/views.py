@@ -556,11 +556,12 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
         # Use todo's company if available
         if self.todo.company:
             note.company = self.todo.company
-        else:
-            messages.error(self.request, 'Cannot create note without a company.')
-            return self.form_invalid(form)
 
         note.save()
+
+        # Save referenced companies (M2M, needs save first)
+        if form.cleaned_data.get('referenced_companies'):
+            note.referenced_companies.set(form.cleaned_data['referenced_companies'])
 
         # Handle cash flow form
         cash_flow_form = NoteCashFlowForm(self.request.POST)

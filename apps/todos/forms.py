@@ -197,16 +197,25 @@ WatchlistQuickAddFormSet = inlineformset_factory(
 class CompleteWithNoteForm(forms.ModelForm):
     """Form for creating a note to complete a todo."""
 
+    referenced_companies = forms.ModelMultipleChoiceField(
+        queryset=Company.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+        }),
+        help_text='Tag other companies mentioned in this note'
+    )
+
     class Meta:
         model = Note
-        fields = ['title', 'content', 'note_type', 'note_date']
+        fields = ['title', 'content', 'note_type', 'referenced_companies', 'note_date', 'written_at']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
                 'placeholder': 'Summary of what was done...',
             }),
             'content': forms.Textarea(attrs={
-                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'class': 'block w-full rounded-t-none rounded-b-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
                 'rows': 6,
                 'placeholder': 'Details, findings, notes from completing this task...',
             }),
@@ -217,6 +226,10 @@ class CompleteWithNoteForm(forms.ModelForm):
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
                 'type': 'date',
             }),
+            'written_at': forms.DateTimeInput(attrs={
+                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
+                'type': 'datetime-local',
+            }),
         }
 
     def __init__(self, *args, organization=None, **kwargs):
@@ -226,3 +239,7 @@ class CompleteWithNoteForm(forms.ModelForm):
                 organization=organization
             )
             self.fields['note_type'].required = False
+            self.fields['referenced_companies'].queryset = Company.objects.filter(
+                organization=organization,
+                is_deleted=False
+            )
