@@ -42,6 +42,12 @@
     <style>
         [x-cloak] { display: none !important; }
 
+        /* Make paragraph breaks in rendered notes look like a blank line,
+           matching what the user sees when typing in the textarea. */
+        .prose p + p {
+            margin-top: 1.25em;
+        }
+
         /* Smooth collapse animation */
         .htmx-settling {
             transition: opacity 200ms ease-out;

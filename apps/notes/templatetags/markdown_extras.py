@@ -47,29 +47,28 @@ BLANK_LINE_MARKER = 'BLANKLINEMARKER8675309'
 
 def preserve_blank_lines(text):
     """
-    Preserve blank lines so rendered output matches what the user typed.
+    Preserve multiple consecutive blank lines by inserting markers.
 
-    With nl2br, a single newline becomes <br>. A double newline (\n\n) becomes
-    a paragraph break, but visually that looks almost the same as <br> with
-    prose-sm styling. We insert markers so that each blank line the user typed
-    produces visible spacing in the output.
+    Standard markdown collapses multiple blank lines into one paragraph break.
+    This inserts special markers that get converted to visible spacing after processing.
+    A single blank line (\n\n) is left as a normal paragraph break (styled via CSS).
     """
     # Normalize line endings
     text = text.replace('\r\n', '\n').replace('\r', '\n')
 
-    # Find sequences of 2+ newlines (1+ blank lines)
-    # and insert markers for visible spacing
+    # Find sequences of 3+ newlines (which means 2+ blank lines)
+    # and insert markers for the extra blank lines
     def replace_blank_lines(match):
         newlines = match.group(0)
         # Count blank lines (n newlines = n-1 blank lines)
         blank_count = newlines.count('\n') - 1
-        if blank_count < 1:
-            return newlines
-        # Each blank line gets a marker for visible spacing
-        markers = (BLANK_LINE_MARKER + '\n\n') * blank_count
+        if blank_count <= 1:
+            return newlines  # Standard paragraph break, leave as is
+        # Insert markers for extra blank lines (beyond the first one which is a normal paragraph break)
+        markers = (BLANK_LINE_MARKER + '\n\n') * (blank_count - 1)
         return '\n\n' + markers
 
-    return re.sub(r'\n{2,}', replace_blank_lines, text)
+    return re.sub(r'\n{3,}', replace_blank_lines, text)
 
 
 def restore_blank_lines(html):
