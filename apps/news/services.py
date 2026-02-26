@@ -40,14 +40,17 @@ ONLY include news that meets these criteria:
 - Must specifically mention this company (not just the industry)
 - Must be actual news articles (not stock price pages, company profiles, or generic financial data)
 {blacklist_instruction}
+DEDUPLICATE: If multiple articles cover the same story or event, keep ONLY the single most detailed and informative article. Do not return two items about the same underlying news.
+{existing_instruction}
 REJECT everything else including:
 - Stock quote/price pages
 - Company profile pages
 - Minor analyst mentions
 - Industry news that doesn't specifically impact this company
 - Routine press releases with no material information
+- Duplicate coverage of the same story (keep only the best article)
 
-Return a JSON array with AT MOST 3 items (fewer is fine, zero if nothing important):
+Return a JSON array with AT MOST 3 items (fewer is fine, zero if nothing important). Each item must be about a DIFFERENT story:
 [
   {{
     "url": "the original URL",
@@ -528,6 +531,7 @@ def process_news_with_ai(
     company,
     raw_news: list[dict],
     blacklisted_domains: list = None,
+    existing_headlines: list[str] = None,
 ) -> list[dict]:
     """
     Use Gemini 3 Flash to filter, summarize, and classify news items.
@@ -585,11 +589,22 @@ Source: {item.get('source_name') or item.get('source', 'Unknown')}
             f"{', '.join(blacklisted_domains)}\n"
         )
 
+    # Add existing headlines so Gemini can skip duplicate stories
+    existing_instruction = ""
+    if existing_headlines:
+        headlines_list = '\n'.join(f'  - {h}' for h in existing_headlines[:20])
+        existing_instruction = (
+            f"\nThese stories have ALREADY been stored. "
+            f"Do NOT return any item that covers the same story as these:\n"
+            f"{headlines_list}\n"
+        )
+
     prompt = NEWS_PROCESSING_PROMPT.format(
         company_name=company.name,
         tickers=tickers,
         news_items=news_text,
         blacklist_instruction=blacklist_instruction,
+        existing_instruction=existing_instruction,
     )
 
     try:
@@ -754,11 +769,21 @@ def fetch_and_store_news(company) -> int:
     # Build a lookup from URL -> raw item (for date recovery later)
     raw_by_url = {item.get('url'): item for item in filtered_news}
 
+    # Fetch recent existing headlines for cross-run dedup
+    existing_headlines = list(
+        CompanyNews.objects.filter(
+            company=company,
+            published_at__gte=timezone.now() - timedelta(days=7),
+        ).values_list('headline', flat=True)[:20]
+    )
+
     # ------------------------------------------------------------------
     # Step 3: AI classification
     # ------------------------------------------------------------------
     processed = process_news_with_ai(
-        company, filtered_news, blacklisted_domains=blacklisted_domains
+        company, filtered_news,
+        blacklisted_domains=blacklisted_domains,
+        existing_headlines=existing_headlines,
     )
 
     if not processed:
