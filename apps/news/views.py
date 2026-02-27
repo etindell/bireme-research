@@ -270,26 +270,33 @@ class ClearAllNewsView(OrganizationViewMixin, View):
 
 
 class FetchAllNewsView(OrganizationViewMixin, View):
-    """Fetch fresh news for all portfolio companies."""
+    """Fetch fresh news for all portfolio companies (runs in background)."""
 
     def post(self, request):
+        import threading
+        from django.db import connection
         from .services import fetch_news_for_companies
 
-        companies = Company.objects.filter(
-            organization=request.organization,
-            is_deleted=False,
-            status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]
+        companies = list(
+            Company.objects.filter(
+                organization=request.organization,
+                is_deleted=False,
+                status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]
+            ).select_related('organization').prefetch_related('tickers')
         )
 
-        total, errors = fetch_news_for_companies(companies)
-
-        if total > 0:
-            messages.success(request, f'Fetched {total} news items for {companies.count()} companies.')
+        if not companies:
+            messages.info(request, 'No portfolio companies to fetch news for.')
         else:
-            messages.info(request, 'No new news items found.')
+            def _run():
+                try:
+                    fetch_news_for_companies(companies)
+                finally:
+                    connection.close()
 
-        for error in errors[:3]:  # Show max 3 errors
-            messages.warning(request, error)
+            thread = threading.Thread(target=_run, daemon=True)
+            thread.start()
+            messages.info(request, f'Fetching news for {len(companies)} companies in the background. Refresh in a minute to see results.')
 
         if request.htmx:
             return HttpResponse(status=204, headers={'HX-Refresh': 'true'})

@@ -953,14 +953,13 @@ def fetch_and_store_news(company) -> int:
     return stored_count
 
 
-def fetch_news_for_companies(companies, max_workers=4) -> tuple[int, list[str]]:
+def fetch_news_for_companies(companies, max_workers=8) -> tuple[int, list[str]]:
     """
     Fetch news for multiple companies concurrently.
 
     Returns (total_new_items, list_of_error_strings).
 
     max_workers controls how many companies are processed in parallel.
-    Keep this moderate (4-5) to avoid hammering external API rate limits.
     """
     total = 0
     errors = []
