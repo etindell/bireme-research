@@ -21,19 +21,27 @@ class Migration(migrations.Migration):
             name='feedback',
             field=models.SmallIntegerField(blank=True, choices=[(1, 'Thumbs Up'), (-1, 'Thumbs Down')], default=None, null=True),
         ),
-        migrations.CreateModel(
-            name='BlacklistedDomain',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('domain', models.CharField(help_text='Domain to block (e.g., msn.com)', max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blacklisted_domains', to='organizations.organization')),
+        # BlacklistedDomain table already exists in the database but was
+        # never tracked in migrations. Use SeparateDatabaseAndState to
+        # register it in Django's migration state without re-creating the table.
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name='BlacklistedDomain',
+                    fields=[
+                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('domain', models.CharField(help_text='Domain to block (e.g., msn.com)', max_length=255)),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blacklisted_domains', to='organizations.organization')),
+                    ],
+                    options={
+                        'verbose_name': 'Blacklisted Domain',
+                        'verbose_name_plural': 'Blacklisted Domains',
+                        'ordering': ['domain'],
+                        'unique_together': {('organization', 'domain')},
+                    },
+                ),
             ],
-            options={
-                'verbose_name': 'Blacklisted Domain',
-                'verbose_name_plural': 'Blacklisted Domains',
-                'ordering': ['domain'],
-                'unique_together': {('organization', 'domain')},
-            },
+            database_operations=[],
         ),
     ]
