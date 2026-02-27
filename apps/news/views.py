@@ -242,6 +242,21 @@ class BlacklistManageView(OrganizationViewMixin, ListView):
         ).order_by('domain')
 
 
+class ClearAllNewsView(OrganizationViewMixin, View):
+    """Delete all news items for this organization."""
+
+    def post(self, request):
+        count, _ = CompanyNews.objects.filter(
+            organization=request.organization
+        ).delete()
+        messages.success(request, f'Cleared {count} news items.')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        from django.shortcuts import redirect
+        return redirect('news:dashboard')
+
+
 class FetchAllNewsView(OrganizationViewMixin, View):
     """Fetch fresh news for all portfolio companies."""
 
