@@ -15,5 +15,6 @@ urlpatterns = [
     path('blacklist/', views.BlacklistManageView.as_view(), name='manage_blacklist'),
     path('blacklist/<str:domain>/remove/', views.UnblacklistDomainView.as_view(), name='unblacklist_domain'),
     path('fetch/', views.FetchAllNewsView.as_view(), name='fetch_all'),
+    path('generate-profile/', views.GenerateProfileView.as_view(), name='generate_profile'),
     path('clear/', views.ClearAllNewsView.as_view(), name='clear_all'),
 ]

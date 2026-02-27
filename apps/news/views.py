@@ -258,6 +258,34 @@ class BlacklistManageView(OrganizationViewMixin, ListView):
         ).order_by('domain')
 
 
+class GenerateProfileView(OrganizationViewMixin, View):
+    """Generate the news preference profile from feedback."""
+
+    def post(self, request):
+        from django.core.management import call_command
+        from io import StringIO
+
+        org = request.organization
+        feedback_count = CompanyNews.objects.filter(
+            organization=org, feedback__isnull=False
+        ).count()
+
+        if not feedback_count:
+            messages.warning(request, 'No feedback yet. Rate some news items first.')
+        else:
+            try:
+                out = StringIO()
+                call_command('generate_news_profile', org=org.slug, stdout=out)
+                messages.success(request, 'Preference profile updated.')
+            except Exception as e:
+                messages.error(request, f'Failed to generate profile: {e}')
+
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Refresh': 'true'})
+        from django.shortcuts import redirect
+        return redirect('news:dashboard')
+
+
 class ClearAllNewsView(OrganizationViewMixin, View):
     """Delete all news items for this organization."""
 

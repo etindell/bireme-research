@@ -101,7 +101,16 @@
             <p class="text-indigo-600">{{ preference_profile }}</p>
             <p class="mt-2 text-xs text-indigo-400">Generated from your thumbs up/down feedback. Updated automatically after each news fetch.</p>
             {% else %}
-            <p class="text-indigo-500">No preference profile yet. Use the thumbs up/down buttons on news items to teach the AI what you care about. After the next news fetch, a profile will be generated from your feedback and used to calibrate importance ratings.</p>
+            <p class="text-indigo-500">No preference profile yet. Use the thumbs up/down buttons on news items to teach the AI what you care about, then click the button below to generate your profile.</p>
+            {% endif %}
+            {% if feedback_count %}
+            <form hx-post="{% url 'news:generate_profile' %}" hx-swap="none" class="mt-2">
+                {% csrf_token %}
+                <button type="submit"
+                        class="inline-flex items-center rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-500">
+                    {% if preference_profile %}Regenerate Profile{% else %}Generate Profile{% endif %}
+                </button>
+            </form>
             {% endif %}
         </div>
     </div>
