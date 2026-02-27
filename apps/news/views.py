@@ -72,6 +72,9 @@ class NewsDashboardView(OrganizationViewMixin, ListView):
             is_read=False
         ).count()
 
+        # Preference profile
+        context['preference_profile'] = self.request.organization.get_news_preference_profile()
+
         return context
 
 
@@ -137,6 +140,10 @@ class SetNewsFeedbackView(OrganizationViewMixin, View):
         else:
             news.feedback = value
         news.save(update_fields=['feedback'])
+
+        # Thumbs-down: remove the item from the list
+        if news.feedback == CompanyNews.Feedback.THUMBS_DOWN:
+            return HttpResponse('')
 
         return render(
             request,
