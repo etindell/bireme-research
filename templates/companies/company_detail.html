@@ -173,6 +173,9 @@
     </div>
     {% endif %}
 
+    <!-- Key Questions (prominent placement) -->
+    {% include "companies/partials/key_questions_section.html" with company=company %}
+
     <!-- Notes (primary content - shown first) -->
     <div class="bg-white shadow rounded-lg">
         <div class="border-b border-gray-200 px-4 py-5 sm:px-6 flex items-center justify-between">
@@ -236,71 +239,6 @@
             </div>
             {% endif %}
 
-            <!-- Key Questions -->
-            <div id="key-questions-section">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Key Questions</h4>
-                    <button type="button"
-                            x-data
-                            @click.stop="$dispatch('toggle-edit-questions')"
-                            class="text-xs font-medium text-primary-600 hover:text-primary-500">
-                        Edit
-                    </button>
-                </div>
-
-                <div x-data="{ editing: false }"
-                     @toggle-edit-questions.window="editing = !editing">
-                    <!-- View mode -->
-                    <div x-show="!editing">
-                        {% if company.key_questions %}
-                        <ul class="space-y-1">
-                            {% for question in company.key_questions.splitlines %}
-                            {% if question.strip %}
-                            <li class="flex items-start gap-x-2">
-                                <svg class="h-4 w-4 flex-shrink-0 text-primary-500 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                                </svg>
-                                <span class="text-sm text-gray-700">{{ question }}</span>
-                            </li>
-                            {% endif %}
-                            {% endfor %}
-                        </ul>
-                        {% else %}
-                        <p class="text-gray-500 text-sm italic">No key questions defined.</p>
-                        {% endif %}
-                    </div>
-
-                    <!-- Edit mode -->
-                    <form x-show="editing"
-                          x-cloak
-                          hx-post="{% url 'companies:update_key_questions' company.slug %}"
-                          hx-target="#key-questions-section"
-                          hx-swap="outerHTML"
-                          class="space-y-3"
-                          @click.stop>
-                        {% csrf_token %}
-                        <div>
-                            <label for="key_questions" class="sr-only">Key Questions</label>
-                            <textarea id="key_questions"
-                                      name="key_questions"
-                                      rows="6"
-                                      placeholder="Enter key questions to investigate (one per line)"
-                                      class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">{{ company.key_questions }}</textarea>
-                        </div>
-                        <div class="flex justify-end gap-x-3">
-                            <button type="button"
-                                    @click="editing = false"
-                                    class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                                Cancel
-                            </button>
-                            <button type="submit"
-                                    class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                                Save
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
         </div>
     </div>
 
