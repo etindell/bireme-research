@@ -5,6 +5,7 @@ Designed to be run as a scheduled job (e.g., daily via Railway cron).
 from django.core.management.base import BaseCommand
 
 from apps.companies.models import Company
+from apps.news.models import CompanyNews
 from apps.news.services import fetch_and_store_news
 from apps.organizations.models import Organization
 
@@ -106,3 +107,27 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS(f"Complete! {total_new} total new items stored")
             )
+
+            # Regenerate preference profiles for orgs that have feedback
+            self._update_preference_profiles(companies)
+
+    def _update_preference_profiles(self, companies):
+        """Regenerate preference profiles for orgs that have feedback."""
+        from django.core.management import call_command
+
+        org_ids = companies.values_list('organization_id', flat=True).distinct()
+        orgs_with_feedback = Organization.objects.filter(
+            pk__in=org_ids,
+            news_items__feedback__isnull=False,
+        ).distinct()
+
+        if not orgs_with_feedback:
+            return
+
+        self.stdout.write('-' * 50)
+        self.stdout.write('Updating news preference profiles...')
+        for org in orgs_with_feedback:
+            try:
+                call_command('generate_news_profile', org=org.slug, stdout=self.stdout)
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f"  Profile update failed for {org.slug}: {e}"))
