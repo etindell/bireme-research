@@ -254,8 +254,16 @@ def search_google_news(
     primary_ticker = company.get_primary_ticker()
     queries = []
 
-    # Query 1: company name (quoted for exact match)
-    queries.append(quote_plus(f'"{company.name}"'))
+    # Query 1: company common name (strip legal suffixes like ", Inc.")
+    # Google News exact-match on "Moderna, Inc." misses most articles
+    common_names = _extract_common_names(company.name)
+    # Pick the shortest non-trivial name variant (the "common" name)
+    short_name = min(
+        (n for n in common_names if len(n) > 2),
+        key=len,
+        default=company.name,
+    )
+    queries.append(quote_plus(f'"{short_name}"'))
 
     # Query 2: ticker symbol + "stock" to bias toward financial news
     if primary_ticker:
@@ -352,10 +360,19 @@ def search_tavily(
         return []
 
     primary_ticker = company.get_primary_ticker()
+
+    # Use common name (strip legal suffixes) for better search results
+    common_names = _extract_common_names(company.name)
+    short_name = min(
+        (n for n in common_names if len(n) > 2),
+        key=len,
+        default=company.name,
+    )
+
     if primary_ticker:
-        query = f'"{company.name}" OR "{primary_ticker.symbol}" news'
+        query = f'"{short_name}" OR "{primary_ticker.symbol}" news'
     else:
-        query = f'"{company.name}" news'
+        query = f'"{short_name}" news'
 
     exclude_domains = [
         'finance.yahoo.com',
@@ -371,8 +388,10 @@ def search_tavily(
     try:
         response = requests.post(
             'https://api.tavily.com/search',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+            },
             json={
-                'api_key': api_key,
                 'query': query,
                 'topic': 'news',
                 'search_depth': 'basic',
