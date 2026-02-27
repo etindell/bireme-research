@@ -1,134 +1,70 @@
-<div id="news-item-{{ item.pk }}" class="bg-white shadow rounded-lg p-4 {% if not item.is_read %}ring-2 ring-primary-100{% endif %}">
-    <div class="flex items-start justify-between gap-4">
+<div id="news-item-{{ item.pk }}" class="bg-white shadow-sm rounded px-3 py-2 {% if not item.is_read %}ring-1 ring-primary-100{% endif %}">
+    <div class="flex items-center gap-3">
+        <!-- Main content -->
         <div class="flex-1 min-w-0">
-            <!-- Company and badges -->
-            <div class="flex items-center gap-2 mb-2 flex-wrap">
-                <a href="{{ item.company.get_absolute_url }}"
-                   class="text-sm font-medium text-primary-600 hover:text-primary-500">
-                    {{ item.company.name }}
-                </a>
-                {% with ticker=item.company.get_primary_ticker %}
-                {% if ticker %}
-                <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-xs text-gray-600">
-                    {{ ticker.symbol }}
-                </span>
-                {% endif %}
-                {% endwith %}
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Importance dot -->
+                <span class="inline-block w-2 h-2 rounded-full flex-shrink-0 {% if item.importance == 'high' %}bg-red-500{% elif item.importance == 'medium' %}bg-yellow-400{% else %}bg-gray-300{% endif %}" title="{{ item.importance|title }} importance"></span>
 
-                <!-- Importance badge -->
-                {% if item.importance == 'high' %}
-                <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">
-                    High
-                </span>
-                {% elif item.importance == 'medium' %}
-                <span class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">
-                    Medium
-                </span>
-                {% else %}
-                <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                    Low
-                </span>
-                {% endif %}
+                <!-- Company -->
+                <a href="{{ item.company.get_absolute_url }}" class="text-xs font-medium text-primary-600 hover:text-primary-500 flex-shrink-0">{{ item.company.name }}</a>
 
-                <!-- Event type -->
-                {% if item.event_type %}
-                <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                    {{ item.event_type|title }}
-                </span>
-                {% endif %}
-
-                <!-- Source type -->
-                {% if item.source_type == 'sec_edgar' %}
-                <span class="inline-flex items-center rounded-full bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
-                    SEC Filing
-                </span>
-                {% endif %}
-            </div>
-
-            <!-- Headline -->
-            <h3 class="text-base font-semibold text-gray-900 mb-1">
+                <!-- Headline -->
                 <a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer"
-                   class="hover:text-primary-600">
+                   class="text-sm font-medium text-gray-900 hover:text-primary-600 truncate">
                     {{ item.headline }}
-                    <svg class="inline-block w-4 h-4 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
                 </a>
-            </h3>
 
-            <!-- Summary -->
-            <p class="text-sm text-gray-600 mb-2">{{ item.summary }}</p>
-
-            <!-- Meta info -->
-            <div class="flex items-center gap-4 text-xs text-gray-500">
-                <span>{{ item.source_name }}</span>
-                <span>&middot;</span>
-                <span>{{ item.published_at|timesince }} ago</span>
+                <!-- Badges (compact) -->
+                {% if item.source_type == 'sec_edgar' %}
+                <span class="inline-flex items-center rounded-full bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 flex-shrink-0">SEC</span>
+                {% endif %}
+                {% if item.event_type %}
+                <span class="inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 flex-shrink-0">{{ item.event_type|title }}</span>
+                {% endif %}
             </div>
+            <p class="text-xs text-gray-500 truncate mt-0.5">{{ item.summary }} &mdash; {{ item.source_name }}, {{ item.published_at|timesince }} ago</p>
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center gap-2 flex-shrink-0">
-            <!-- Thumbs up button -->
-            <form hx-post="{% url 'news:set_feedback' item.pk %}"
-                  hx-target="#news-item-{{ item.pk }}"
-                  hx-swap="outerHTML">
+        <div class="flex items-center gap-1 flex-shrink-0">
+            <form hx-post="{% url 'news:set_feedback' item.pk %}" hx-target="#news-item-{{ item.pk }}" hx-swap="outerHTML">
                 {% csrf_token %}
                 <input type="hidden" name="feedback" value="1">
-                <button type="submit"
-                        class="p-1.5 rounded-md {% if item.feedback == 1 %}text-green-500 hover:text-green-600{% else %}text-gray-400 hover:text-gray-500{% endif %}"
-                        title="Thumbs up">
-                    <svg class="h-5 w-5" fill="{% if item.feedback == 1 %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <button type="submit" class="p-1 rounded {% if item.feedback == 1 %}text-green-500{% else %}text-gray-300 hover:text-gray-400{% endif %}" title="Thumbs up">
+                    <svg class="h-4 w-4" fill="{% if item.feedback == 1 %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V3a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m.729-14.3a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h.008a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-.008Z" />
                     </svg>
                 </button>
             </form>
-
-            <!-- Thumbs down button -->
-            <form hx-post="{% url 'news:set_feedback' item.pk %}"
-                  hx-target="#news-item-{{ item.pk }}"
-                  hx-swap="outerHTML">
+            <form hx-post="{% url 'news:set_feedback' item.pk %}" hx-target="#news-item-{{ item.pk }}" hx-swap="outerHTML">
                 {% csrf_token %}
                 <input type="hidden" name="feedback" value="-1">
-                <button type="submit"
-                        class="p-1.5 rounded-md {% if item.feedback == -1 %}text-red-500 hover:text-red-600{% else %}text-gray-400 hover:text-gray-500{% endif %}"
-                        title="Thumbs down">
-                    <svg class="h-5 w-5" fill="{% if item.feedback == -1 %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <button type="submit" class="p-1 rounded {% if item.feedback == -1 %}text-red-500{% else %}text-gray-300 hover:text-gray-400{% endif %}" title="Thumbs down">
+                    <svg class="h-4 w-4" fill="{% if item.feedback == -1 %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715A12.137 12.137 0 0 1 2.25 12c0-2.848.992-5.464 2.649-7.521C5.287 3.997 5.886 3.75 6.504 3.75h4.369c.483 0 .964.078 1.423.23l3.114 1.04a4.501 4.501 0 0 0 1.423.23h1.294M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.75 2.25 2.25 0 0 0 9.75 22a.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384" />
                     </svg>
                 </button>
             </form>
-
-            <!-- Read/Unread button -->
-            <form hx-post="{% url 'news:toggle_read' item.pk %}"
-                  hx-target="#news-item-{{ item.pk }}"
-                  hx-swap="outerHTML">
+            <form hx-post="{% url 'news:toggle_read' item.pk %}" hx-target="#news-item-{{ item.pk }}" hx-swap="outerHTML">
                 {% csrf_token %}
-                <button type="submit"
-                        class="p-1.5 rounded-md {% if item.is_read %}text-gray-400 hover:text-gray-500{% else %}text-primary-600 hover:text-primary-500{% endif %}"
-                        title="{% if item.is_read %}Mark as unread{% else %}Mark as read{% endif %}">
+                <button type="submit" class="p-1 rounded {% if item.is_read %}text-gray-300 hover:text-gray-400{% else %}text-primary-600 hover:text-primary-500{% endif %}" title="{% if item.is_read %}Mark as unread{% else %}Mark as read{% endif %}">
                     {% if item.is_read %}
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V8.844a2.25 2.25 0 011.183-1.98l7.5-4.04a2.25 2.25 0 012.134 0l7.5 4.04a2.25 2.25 0 011.183 1.98V19.5z" />
                     </svg>
                     {% else %}
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
                     </svg>
                     {% endif %}
                 </button>
             </form>
-
-            <!-- Block source button -->
-            <form hx-post="{% url 'news:blacklist_domain' item.pk %}"
-                  hx-target="#news-item-{{ item.pk }}"
-                  hx-swap="outerHTML"
-                  hx-confirm="Block all news from {{ item.source_domain }}? This will exclude this source from future news fetches.">
+            <form hx-post="{% url 'news:blacklist_domain' item.pk %}" hx-target="#news-item-{{ item.pk }}" hx-swap="outerHTML"
+                  hx-confirm="Block all news from {{ item.source_domain }}?">
                 {% csrf_token %}
-                <button type="submit"
-                        class="p-1.5 rounded-md text-gray-400 hover:text-red-500"
-                        title="Block news from {{ item.source_domain }}">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <button type="submit" class="p-1 rounded text-gray-300 hover:text-red-500" title="Block {{ item.source_domain }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
                 </button>
