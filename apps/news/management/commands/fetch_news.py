@@ -84,27 +84,20 @@ class Command(BaseCommand):
         self.stdout.write('-' * 50)
 
         total_new = 0
-        for company in companies:
-            if dry_run:
+        if dry_run:
+            for company in companies:
                 self.stdout.write(
                     f"[DRY RUN] Would fetch news for: {company.name} "
                     f"({company.get_status_display()})"
                 )
-            else:
-                self.stdout.write(f"Fetching news for: {company.name}...")
-                try:
-                    count = fetch_and_store_news(company)
-                    total_new += count
-                    if count > 0:
-                        self.stdout.write(
-                            self.style.SUCCESS(f"  -> {count} new items")
-                        )
-                    else:
-                        self.stdout.write(f"  -> No new items")
-                except Exception as e:
-                    self.stderr.write(
-                        self.style.ERROR(f"  -> Error: {e}")
-                    )
+        else:
+            from apps.news.services import fetch_news_for_companies
+
+            self.stdout.write(f"Fetching news for {companies.count()} companies concurrently...")
+            total_new, errors = fetch_news_for_companies(companies)
+
+            for error in errors:
+                self.stderr.write(self.style.ERROR(f"  -> Error: {error}"))
 
         self.stdout.write('-' * 50)
         if dry_run:

@@ -246,7 +246,7 @@ class FetchAllNewsView(OrganizationViewMixin, View):
     """Fetch fresh news for all portfolio companies."""
 
     def post(self, request):
-        from .services import fetch_and_store_news
+        from .services import fetch_news_for_companies
 
         companies = Company.objects.filter(
             organization=request.organization,
@@ -254,14 +254,7 @@ class FetchAllNewsView(OrganizationViewMixin, View):
             status__in=[Company.Status.LONG_BOOK, Company.Status.SHORT_BOOK]
         )
 
-        total = 0
-        errors = []
-        for company in companies:
-            try:
-                count = fetch_and_store_news(company)
-                total += count
-            except Exception as e:
-                errors.append(f"{company.name}: {e}")
+        total, errors = fetch_news_for_companies(companies)
 
         if total > 0:
             messages.success(request, f'Fetched {total} news items for {companies.count()} companies.')

@@ -15,6 +15,7 @@ import logging
 import os
 import re
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Optional
@@ -722,21 +723,22 @@ def fetch_and_store_news(company) -> int:
     )
 
     # ------------------------------------------------------------------
-    # Step 1: Gather raw news from all sources
+    # Step 1: Gather raw news from all sources (in parallel)
     # ------------------------------------------------------------------
     raw_news = []
 
-    # Primary: Google News RSS
-    google_results = search_google_news(company)
-    raw_news.extend(google_results)
-
-    # Supplementary: Tavily (only if API key is configured)
-    tavily_results = search_tavily(company, extra_exclude_domains=blacklisted_domains)
-    raw_news.extend(tavily_results)
-
-    # SEC EDGAR filings
-    edgar_results = fetch_edgar_filings(company)
-    raw_news.extend(edgar_results)
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = {
+            pool.submit(search_google_news, company): 'google_news',
+            pool.submit(search_tavily, company, 3, blacklisted_domains): 'tavily',
+            pool.submit(fetch_edgar_filings, company): 'edgar',
+        }
+        for future in as_completed(futures):
+            source_name = futures[future]
+            try:
+                raw_news.extend(future.result())
+            except Exception as e:
+                logger.error(f"Source {source_name} failed for {company.name}: {e}")
 
     if not raw_news:
         logger.info(f"No raw news found for {company.name}")
@@ -836,3 +838,32 @@ def fetch_and_store_news(company) -> int:
 
     logger.info(f"Stored {stored_count} new news items for {company.name}")
     return stored_count
+
+
+def fetch_news_for_companies(companies, max_workers=4) -> tuple[int, list[str]]:
+    """
+    Fetch news for multiple companies concurrently.
+
+    Returns (total_new_items, list_of_error_strings).
+
+    max_workers controls how many companies are processed in parallel.
+    Keep this moderate (4-5) to avoid hammering external API rate limits.
+    """
+    total = 0
+    errors = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        future_to_company = {
+            pool.submit(fetch_and_store_news, company): company
+            for company in companies
+        }
+        for future in as_completed(future_to_company):
+            company = future_to_company[future]
+            try:
+                count = future.result()
+                total += count
+            except Exception as e:
+                logger.error(f"News fetch failed for {company.name}: {e}")
+                errors.append(f"{company.name}: {e}")
+
+    return total, errors
