@@ -74,6 +74,10 @@ class NewsDashboardView(OrganizationViewMixin, ListView):
 
         # Preference profile
         context['preference_profile'] = self.request.organization.get_news_preference_profile()
+        context['feedback_count'] = CompanyNews.objects.filter(
+            organization=self.request.organization,
+            feedback__isnull=False,
+        ).count()
 
         return context
 
