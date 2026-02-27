@@ -34,6 +34,7 @@ class CompanyNews(models.Model):
     summary = models.TextField(help_text='AI-generated summary')
     source_url = models.URLField(max_length=2000)
     source_name = models.CharField(max_length=100)  # "Reuters", "SEC EDGAR", etc.
+    publisher_domain = models.CharField(max_length=200, blank=True, default='')  # actual domain for blacklisting
     source_type = models.CharField(
         max_length=20,
         choices=SourceType.choices,
@@ -96,7 +97,9 @@ class CompanyNews(models.Model):
 
     @property
     def source_domain(self):
-        """Extract domain from source URL for blacklist feature."""
+        """Extract domain for blacklist feature, preferring publisher_domain."""
+        if self.publisher_domain:
+            return self.publisher_domain
         from urllib.parse import urlparse
         try:
             parsed = urlparse(self.source_url)

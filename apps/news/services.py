@@ -318,6 +318,14 @@ def search_google_news(
                 # Description is often HTML; strip tags for a usable snippet
                 description = re.sub(r'<[^>]+>', ' ', description).strip()
 
+                # Extract the real publisher domain from RSS <source url="...">
+                source_el = item_el.find('source')
+                publisher_url = ''
+                if source_el is not None:
+                    publisher_url = source_el.get('url', '')
+                    if not source_name:
+                        source_name = (source_el.text or '').strip()
+
                 results.append({
                     'url': link,
                     'title': title,
@@ -325,6 +333,7 @@ def search_google_news(
                     'published_date': published_date,
                     'source': 'google_news',
                     'source_name': source_name,
+                    'publisher_url': publisher_url,
                 })
 
                 if len(results) >= max_results:
@@ -894,6 +903,12 @@ def fetch_and_store_news(company) -> int:
         raw_item = raw_by_url.get(url, {})
         published_at = _parse_published_date(raw_item, item)
 
+        # Extract publisher domain from publisher_url (Google News) or source_url
+        publisher_domain = ''
+        publisher_url = raw_item.get('publisher_url', '')
+        if publisher_url:
+            publisher_domain = _extract_domain(publisher_url)
+
         try:
             _, created = CompanyNews.objects.get_or_create(
                 company=company,
@@ -909,6 +924,7 @@ def fetch_and_store_news(company) -> int:
                         or 'Unknown'
                     )[:100],
                     'source_type': source_type,
+                    'publisher_domain': publisher_domain,
                     'importance': item.get('importance', 'medium'),
                     'event_type': item.get('event_type', '')[:50],
                     'published_at': published_at,
