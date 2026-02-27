@@ -113,6 +113,70 @@ def _extract_domain(url: str) -> str:
         return ''
 
 
+# Legal suffixes to strip (order matters — check longer ones first)
+_LEGAL_SUFFIXES = [
+    ', Inc.', ', Inc', ' Inc.', ' Inc',
+    ', LLC', ' LLC',
+    ', Ltd.', ', Ltd', ' Ltd.', ' Ltd',
+    ', PLC', ' PLC', ', Plc', ' Plc',
+    ' Corporation', ' Corp.', ' Corp',
+    ' Company', ' Co.', ' Co',
+    ' Incorporated',
+    ' Limited',
+    ' Group',
+    ' Holdings',
+    ' N.V.', ' N.V',
+    ' S.A.', ' S.A',
+    ' SE',
+    ' AG',
+    ' S.p.A.', ' S.p.A',
+    ' Oyj',
+    ' ASA',
+    ' AB',
+]
+
+# Generic business words that would cause too many false-positive matches
+_GENERIC_WORDS = {
+    'the', 'and', 'for', 'from', 'with', 'group', 'holdings',
+    'international', 'technologies', 'systems', 'services', 'global',
+    'capital', 'financial', 'resources', 'industries', 'partners',
+    'management', 'solutions', 'enterprises',
+}
+
+
+def _extract_common_names(company_name: str) -> set[str]:
+    """
+    Extract name variants from a company's legal name for relevance matching.
+
+    "Moderna, Inc." → {"moderna, inc.", "moderna"}
+    "Apple Inc." → {"apple inc.", "apple"}
+    "BP" → {"bp"}
+    """
+    names = {company_name.lower()}
+
+    # Strip legal suffixes
+    short = company_name
+    for suffix in _LEGAL_SUFFIXES:
+        if short.endswith(suffix):
+            short = short[:-len(suffix)].strip()
+            break
+
+    short_lower = short.lower()
+    if short_lower and short_lower != company_name.lower():
+        names.add(short_lower)
+
+    # For multi-word names, also add individual significant words
+    # This helps match "Semiconductor" in articles about TSMC, etc.
+    # Only add words with 4+ chars to avoid false positives
+    words = short_lower.split()
+    if len(words) > 1:
+        for word in words:
+            if len(word) >= 4 and word not in _GENERIC_WORDS:
+                names.add(word)
+
+    return names
+
+
 def prefilter_results(
     raw_news: list[dict],
     company_name: str,
@@ -132,7 +196,7 @@ def prefilter_results(
     kept = []
 
     # Build a set of lowercase terms to check title relevance
-    relevance_terms = {company_name.lower()}
+    relevance_terms = _extract_common_names(company_name)
     for sym in ticker_symbols:
         relevance_terms.add(sym.lower())
         # Also add without exchange suffix (e.g. "7203" from "7203.T")
