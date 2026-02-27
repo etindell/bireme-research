@@ -9,6 +9,10 @@ from django.db import models
 class CompanyNews(models.Model):
     """News item for a company, fetched and processed by AI."""
 
+    class Feedback(models.IntegerChoices):
+        THUMBS_UP = 1, 'Thumbs Up'
+        THUMBS_DOWN = -1, 'Thumbs Down'
+
     class Importance(models.TextChoices):
         HIGH = 'high', 'High'
         MEDIUM = 'medium', 'Medium'
@@ -59,7 +63,12 @@ class CompanyNews(models.Model):
 
     # User interaction
     is_read = models.BooleanField(default=False)
-    is_starred = models.BooleanField(default=False)
+    feedback = models.SmallIntegerField(
+        choices=Feedback.choices,
+        null=True,
+        blank=True,
+        default=None,
+    )
 
     # Deduplication
     url_hash = models.CharField(max_length=64, db_index=True)

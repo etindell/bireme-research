@@ -64,6 +64,15 @@ class Organization(SoftDeleteModel):
         self.settings['quarterly_todos'] = current
         self.save(update_fields=['settings', 'updated_at'])
 
+    def get_news_preference_profile(self):
+        """Get the AI-generated news preference profile text."""
+        return self.settings.get('news_preference_profile', '')
+
+    def set_news_preference_profile(self, profile_text):
+        """Save an AI-generated news preference profile."""
+        self.settings['news_preference_profile'] = profile_text
+        self.save(update_fields=['settings', 'updated_at'])
+
     def get_members(self):
         """Return all active members of this organization."""
         return self.memberships.filter(is_deleted=False).select_related('user')

@@ -43,10 +43,6 @@ class NewsDashboardView(OrganizationViewMixin, ListView):
         if self.request.GET.get('unread') == '1':
             qs = qs.filter(is_read=False)
 
-        # Filter by starred
-        if self.request.GET.get('starred') == '1':
-            qs = qs.filter(is_starred=True)
-
         return qs.order_by('-published_at')
 
     def get_template_names(self):
@@ -69,7 +65,6 @@ class NewsDashboardView(OrganizationViewMixin, ListView):
         context['current_company'] = self.request.GET.get('company', '')
         context['current_source'] = self.request.GET.get('source', '')
         context['show_unread'] = self.request.GET.get('unread') == '1'
-        context['show_starred'] = self.request.GET.get('starred') == '1'
 
         # Unread count
         context['unread_count'] = CompanyNews.objects.filter(
@@ -121,8 +116,8 @@ class ToggleNewsReadView(OrganizationViewMixin, View):
         )
 
 
-class ToggleNewsStarredView(OrganizationViewMixin, View):
-    """Toggle starred status for a news item (HTMX)."""
+class SetNewsFeedbackView(OrganizationViewMixin, View):
+    """Set thumbs-up/down feedback for a news item (HTMX)."""
 
     def post(self, request, pk):
         news = get_object_or_404(
@@ -130,8 +125,18 @@ class ToggleNewsStarredView(OrganizationViewMixin, View):
             pk=pk,
             organization=request.organization
         )
-        news.is_starred = not news.is_starred
-        news.save(update_fields=['is_starred'])
+        value = request.POST.get('feedback')
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            value = None
+
+        # Toggle: clicking the same feedback again clears it
+        if news.feedback == value:
+            news.feedback = None
+        else:
+            news.feedback = value
+        news.save(update_fields=['feedback'])
 
         return render(
             request,

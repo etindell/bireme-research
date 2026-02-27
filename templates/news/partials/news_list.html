@@ -19,7 +19,7 @@
         <div>
             <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm">
                 {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}&company={{ current_company }}&importance={{ current_importance }}&source={{ current_source }}{% if show_unread %}&unread=1{% endif %}{% if show_starred %}&starred=1{% endif %}"
+                <a href="?page={{ page_obj.previous_page_number }}&company={{ current_company }}&importance={{ current_importance }}&source={{ current_source }}{% if show_unread %}&unread=1{% endif %}"
                    class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                     <span class="sr-only">Previous</span>
                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -29,7 +29,7 @@
                 {% endif %}
 
                 {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}&company={{ current_company }}&importance={{ current_importance }}&source={{ current_source }}{% if show_unread %}&unread=1{% endif %}{% if show_starred %}&starred=1{% endif %}"
+                <a href="?page={{ page_obj.next_page_number }}&company={{ current_company }}&importance={{ current_importance }}&source={{ current_source }}{% if show_unread %}&unread=1{% endif %}"
                    class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                     <span class="sr-only">Next</span>
                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -50,7 +50,7 @@
     </svg>
     <h3 class="mt-2 text-sm font-semibold text-gray-900">No news items</h3>
     <p class="mt-1 text-sm text-gray-500">
-        {% if current_company or current_importance or show_unread or show_starred %}
+        {% if current_company or current_importance or show_unread %}
         Try adjusting your filters.
         {% else %}
         News will appear here after the daily fetch runs.

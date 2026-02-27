@@ -43,6 +43,7 @@ ONLY include news that meets these criteria:
 {blacklist_instruction}
 DEDUPLICATE: If multiple articles cover the same story or event, keep ONLY the single most detailed and informative article. Do not return two items about the same underlying news.
 {existing_instruction}
+{preference_instruction}
 REJECT everything else including:
 - Stock quote/price pages
 - Company profile pages
@@ -625,6 +626,7 @@ def process_news_with_ai(
     raw_news: list[dict],
     blacklisted_domains: list = None,
     existing_headlines: list[str] = None,
+    preference_profile: str = None,
 ) -> list[dict]:
     """
     Use Gemini 3 Flash to filter, summarize, and classify news items.
@@ -682,6 +684,14 @@ Source: {item.get('source_name') or item.get('source', 'Unknown')}
             f"{', '.join(blacklisted_domains)}\n"
         )
 
+    # Build preference instruction from user feedback profile
+    preference_instruction = ""
+    if preference_profile:
+        preference_instruction = (
+            f"USER PREFERENCE PROFILE (use this to calibrate importance ratings "
+            f"and selection of news):\n{preference_profile}\n"
+        )
+
     # Add existing headlines so Gemini can skip duplicate stories
     existing_instruction = ""
     if existing_headlines:
@@ -698,6 +708,7 @@ Source: {item.get('source_name') or item.get('source', 'Unknown')}
         news_items=news_text,
         blacklist_instruction=blacklist_instruction,
         existing_instruction=existing_instruction,
+        preference_instruction=preference_instruction,
     )
 
     try:
@@ -874,10 +885,13 @@ def fetch_and_store_news(company) -> int:
     # ------------------------------------------------------------------
     # Step 3: AI classification
     # ------------------------------------------------------------------
+    preference_profile = company.organization.get_news_preference_profile()
+
     processed = process_news_with_ai(
         company, filtered_news,
         blacklisted_domains=blacklisted_domains,
         existing_headlines=existing_headlines,
+        preference_profile=preference_profile,
     )
 
     if not processed:
