@@ -42,6 +42,9 @@ urlpatterns = [
     # Events
     path('events/', include('apps.events.urls', namespace='events')),
 
+    # Research (deep research prompt generator)
+    path('research/', include('apps.research.urls', namespace='research')),
+
     # Public RSVP shortcut at root — so guests get events.biremecapital.com/<token>/
     path('<uuid:token>/', include('apps.events.urls_public')),
 

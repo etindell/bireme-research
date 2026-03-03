@@ -89,6 +89,42 @@
                 </svg>
                 Export PDF
             </a>
+            <!-- Deep Research button -->
+            <div x-data="{ showResearch: false }" class="relative">
+                <button @click="showResearch = true"
+                        hx-get="{% url 'research:modal' company.slug %}"
+                        hx-target="#research-modal-body"
+                        hx-trigger="click once"
+                        type="button"
+                        class="inline-flex items-center rounded-md bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                    Deep Research
+                </button>
+                <!-- Modal overlay -->
+                <div x-show="showResearch"
+                     x-cloak
+                     class="fixed inset-0 z-50 overflow-y-auto"
+                     aria-labelledby="research-modal-title"
+                     role="dialog"
+                     aria-modal="true">
+                    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showResearch = false"></div>
+                        <div class="relative transform overflow-hidden rounded-lg bg-white px-6 pb-6 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
+                            <div id="research-modal-body">
+                                <!-- Content loaded via HTMX -->
+                                <div class="flex items-center justify-center py-12">
+                                    <svg class="animate-spin h-8 w-8 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Delete button with confirmation -->
             <div x-data="{ confirmDelete: false }" class="relative">
                 <button @click="confirmDelete = true"

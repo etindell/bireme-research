@@ -34,10 +34,13 @@ logger = logging.getLogger(__name__)
 
 NEWS_PROCESSING_PROMPT = """You are a strict news filter for {company_name} (tickers: {tickers}).
 
-Your job is to identify ONLY the 2-3 MOST IMPORTANT news items that investors absolutely need to know about. Be very selective.
+Your job is to identify the MOST IMPORTANT news items that investors need to know about. Be selective but do not miss material events.
 
-ONLY include news that meets these criteria:
-- Material events: earnings releases, M&A announcements, major contracts, executive changes, regulatory actions, significant legal developments
+Include news that meets these criteria:
+- Material events: earnings releases, M&A announcements, major contracts, executive changes
+- Regulatory actions: drug approvals, government approvals, sanctions, compliance actions
+- Significant legal developments: lawsuits, settlements, investigations
+- Major product launches, partnerships, or market expansions
 - Must specifically mention this company (not just the industry)
 - Must be actual news articles (not stock price pages, company profiles, or generic financial data)
 {blacklist_instruction}
@@ -47,7 +50,7 @@ DEDUPLICATE: If multiple articles cover the same story or event, keep ONLY the s
 REJECT everything else including:
 - Stock quote/price pages
 - Company profile pages
-- Minor analyst mentions
+- Minor analyst mentions or price target changes
 - Industry news that doesn't specifically impact this company
 - Routine press releases with no material information
 - Duplicate coverage of the same story (keep only the best article)

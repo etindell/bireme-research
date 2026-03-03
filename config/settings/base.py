@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'apps.share',
     'apps.pomodoros',
     'apps.events',
+    'apps.research',
     'core',
 ]
 

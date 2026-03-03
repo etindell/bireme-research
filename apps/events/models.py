@@ -163,7 +163,11 @@ class Guest(SoftDeleteModel, OrganizationMixin):
         if settings.SITE_URL:
             return settings.SITE_URL.rstrip('/') + path
         if request:
-            return request.build_absolute_uri(path)
+            url = request.build_absolute_uri(path)
+            # Ensure HTTPS in production
+            if not settings.DEBUG and url.startswith('http://'):
+                url = 'https://' + url[7:]
+            return url
         return path
 
 

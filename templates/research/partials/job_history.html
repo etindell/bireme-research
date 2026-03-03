@@ -1,0 +1,41 @@
+<div class="space-y-3">
+    <h3 class="text-base font-semibold text-gray-900">Research History</h3>
+
+    {% if jobs %}
+    <div class="divide-y divide-gray-200">
+        {% for job in jobs %}
+        <div class="py-3 {% if forloop.first %}pt-0{% endif %}">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-sm text-gray-900">{{ job.created_at|date:"M d, Y g:i A" }}</span>
+                    <span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                        {% if job.status == 'completed' %}bg-green-50 text-green-700
+                        {% elif job.status == 'in_progress' %}bg-blue-50 text-blue-700
+                        {% elif job.status == 'failed' %}bg-red-50 text-red-700
+                        {% else %}bg-gray-50 text-gray-600{% endif %}">
+                        {{ job.get_status_display }}
+                    </span>
+                </div>
+                {% if job.notebook_url %}
+                <a href="{{ job.notebook_url }}" target="_blank"
+                   class="text-sm text-primary-600 hover:text-primary-500">
+                    Open NotebookLM →
+                </a>
+                {% endif %}
+            </div>
+            {% if job.status == 'completed' %}
+            <div class="mt-1 text-xs text-gray-500">
+                {{ job.files_found }} documents, {{ job.videos_found }} videos
+                {% if job.completed_at %}· Completed {{ job.completed_at|timesince }} ago{% endif %}
+            </div>
+            {% endif %}
+            {% if job.notes_text %}
+            <p class="mt-1 text-xs text-gray-600">{{ job.notes_text|truncatewords:30 }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-500">No research runs yet for this company.</p>
+    {% endif %}
+</div>
