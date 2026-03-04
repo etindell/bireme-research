@@ -90,23 +90,38 @@ def _build_header(company, ticker_symbol, profile):
 
 You are a research assistant for an investment fund. Your job is to gather
 every important public document about {company.name} and organize them for
-deep analysis. Work through each step below methodically. Download files to
-the local folder structure, and at the end upload everything to NotebookLM.
+deep analysis. Work through each step below methodically. Download every file
+directly into a single flat folder using descriptive filenames, and at the end
+upload everything to NotebookLM.
 
-## DOWNLOAD FOLDER STRUCTURE
+## DOWNLOAD FOLDER
 
-Create this folder structure before starting:
+All files go into one folder — no subfolders:
 
 ```
 {company.slug}/
-├── filings/          # SEC filings (10-K, 10-Q, 8-K, proxy)
-├── transcripts/      # Earnings call transcripts
-├── presentations/    # Investor day, conference presentations
-├── annual-reports/   # Annual reports / shareholder letters
-├── other-ir/         # Other IR documents (factsheets, etc.)
-├── youtube/          # YouTube video URLs and metadata
-└── podcasts/         # Podcast episode URLs and metadata
-```"""
+```
+
+### File Naming Convention
+
+| Document type | Filename pattern | Example |
+|---|---|---|
+| Annual report | `Annual-Report-FY{{year}}.pdf` | `Annual-Report-FY2025.pdf` |
+| 10-K | `10-K-FY{{year}}.pdf` | `10-K-FY2024.pdf` |
+| 10-Q | `10-Q-{{quarter}}-FY{{year}}.pdf` | `10-Q-Q3-FY2025.pdf` |
+| 8-K | `8-K-{{date}}-{{topic}}.pdf` | `8-K-2024-03-15-acquisition.pdf` |
+| Proxy / DEF 14A | `Proxy-FY{{year}}.pdf` | `Proxy-FY2024.pdf` |
+| Earnings transcript | `Transcript-{ticker_symbol}-Q{{n}}-FY{{year}}.pdf` | `Transcript-{ticker_symbol}-Q3-FY2025.pdf` |
+| Investor presentation | `Presentation-{{event}}-{{date}}.pdf` | `Presentation-InvestorDay-2024-09.pdf` |
+| Conference deck | `Conference-{{name}}-{{date}}.pdf` | `Conference-GoldmanSachs-2024-06.pdf` |
+| Fact sheet / other IR | `Factsheet-{{description}}.pdf` | `Factsheet-CompanyOverview-2025.pdf` |
+| YouTube list | `video_list.txt` | |
+| Podcast list | `podcast_list.txt` | |
+
+### Download Tips
+- Use `curl -L -o "{company.slug}/filename.pdf" "URL"` for direct PDF links
+- For pages that render HTML, print/save as PDF into `{company.slug}/`
+- Prefer PDF over HTML whenever both are available"""
 
 
 def _build_ir_section(company, profile, ticker_symbol, years):
@@ -127,16 +142,17 @@ def _build_ir_section(company, profile, ticker_symbol, years):
 
 {find_ir}
 
-Once on the IR site, systematically download the following from the last {years} years:
+Once on the IR site, systematically download the following from the last {years} years.
+Save **everything** to `{company.slug}/` using the naming conventions above.
 
 ### A. Quarterly & Annual Financial Reports
-- **Annual Reports** (10-K or glossy annual report PDFs) → save to `annual-reports/`
-- **Quarterly Reports** (10-Q filings or quarterly result PDFs) → save to `filings/`
-- **Shareholder Letters** (if separate from annual report) → save to `annual-reports/`
+- **Annual Reports** (10-K or glossy annual report PDFs) → `Annual-Report-FY{{year}}.pdf`
+- **Quarterly Reports** (10-Q filings or quarterly result PDFs) → `10-Q-Q{{n}}-FY{{year}}.pdf`
+- **Shareholder Letters** (if separate from annual report) → `Annual-Report-FY{{year}}-Letter.pdf`
 - Look for sections labeled: "SEC Filings", "Financial Reports", "Annual Reports", "Quarterly Results"
 
 ### B. Earnings Call Transcripts
-- Download any earnings call transcripts available on the IR site → save to `transcripts/`
+- Download any earnings call transcripts available on the IR site → `Transcript-{ticker_symbol}-Q{{n}}-FY{{year}}.pdf`
 - These are often under "Events & Presentations" or "Quarterly Results"
 - If transcripts are not on the IR site, we'll get them in Step 3
 
@@ -145,19 +161,19 @@ Once on the IR site, systematically download the following from the last {years}
 - **Conference presentations** (Goldman Sachs, JP Morgan, etc.)
 - **Capital Markets Day decks**
 - **Analyst Day materials**
-- Save all to `presentations/`
+- Use names like `Presentation-InvestorDay-{{date}}.pdf`, `Conference-{{name}}-{{date}}.pdf`
 
 ### D. Other Useful IR Documents
-- **Fact sheets** or **company overviews**
-- **ESG/sustainability reports** (if relevant to the investment thesis)
-- **Proxy statements** (DEF 14A — shows executive compensation)
-- Save to `other-ir/`
+- **Fact sheets** or **company overviews** → `Factsheet-{{description}}.pdf`
+- **ESG/sustainability reports** → `ESG-Report-{{year}}.pdf`
+- **Proxy statements** (DEF 14A) → `Proxy-FY{{year}}.pdf`
 
 ### TIPS FOR IR SITE NAVIGATION
 - Many IR sites use tabs or dropdowns — check all sections
 - Look for an "Archive" or "Past Events" section for older materials
 - Some sites require you to select a year/quarter filter
-- PDFs are preferred; if only HTML is available, save/print as PDF
+- Use `curl -L -o "{company.slug}/filename.pdf" "URL"` for direct PDF links
+- If only HTML is available, save/print as PDF
 - If a document requires email registration, skip it"""
 
 
@@ -172,22 +188,22 @@ Go to SEC EDGAR and search for {company.name} (ticker: {ticker_symbol}).
 
 Or search at: https://efts.sec.gov/LATEST/search-index?q=%22{ticker_symbol}%22&dateRange=custom&startdt={datetime.now().year - years}-01-01
 
-Download these filing types from the last {years} years → save to `filings/`:
+Download these filing types from the last {years} years → save to `{company.slug}/`:
 
-| Filing Type | What It Is | Priority |
-|-------------|-----------|----------|
-| **10-K** | Annual report (full financials + MD&A) | MUST HAVE |
-| **10-Q** | Quarterly report | MUST HAVE |
-| **8-K** | Material events (acquisitions, leadership changes) | HIGH — skim titles, download important ones |
-| **DEF 14A** | Proxy statement (exec comp, governance) | NICE TO HAVE — get the most recent one |
-| **S-1** | IPO prospectus (if company IPO'd in last {years} years) | HIGH if available |
+| Filing Type | What It Is | Filename Pattern | Priority |
+|-------------|-----------|-----------------|----------|
+| **10-K** | Annual report (full financials + MD&A) | `10-K-FY{{year}}.pdf` | MUST HAVE |
+| **10-Q** | Quarterly report | `10-Q-Q{{n}}-FY{{year}}.pdf` | MUST HAVE |
+| **8-K** | Material events (acquisitions, leadership changes) | `8-K-{{date}}-{{topic}}.pdf` | HIGH — skim titles, download important ones |
+| **DEF 14A** | Proxy statement (exec comp, governance) | `Proxy-FY{{year}}.pdf` | NICE TO HAVE — get the most recent one |
+| **S-1** | IPO prospectus (if company IPO'd in last {years} years) | `S-1-{{date}}.pdf` | HIGH if available |
 
 ### HOW TO DOWNLOAD FROM EDGAR
 1. Find the filing in the index
 2. Click into the filing detail page
 3. Look for the main document (usually the first .htm or .pdf link)
 4. Download the full document, not just the index page
-5. Name files descriptively: `10-K_2024.pdf`, `10-Q_2024-Q3.pdf`, `8-K_2024-03-15_acquisition.pdf`
+5. Use `curl -L -o "{company.slug}/10-K-FY2024.pdf" "URL"` for direct links
 
 ### SKIP
 - XBRL viewer pages (these are just formatted versions of the same data)
@@ -213,9 +229,10 @@ If you didn't find transcripts on the IR site in Step 1, search for them now.
 ### What to Get
 - All quarterly earnings call transcripts from the last {years} years
 - Any special calls (guidance updates, pre-announcements, strategic reviews)
-- Save to `transcripts/` with names like: `{ticker_symbol}_Q3_2024_earnings_transcript.pdf`
+- Save to `{company.slug}/` with names like: `Transcript-{ticker_symbol}-Q3-FY2024.pdf`
 
 ### TIPS
+- Use `curl -L -o "{company.slug}/Transcript-{ticker_symbol}-Q3-FY2024.pdf" "URL"` for direct links
 - If full transcripts aren't freely available, at minimum get the **prepared remarks**
   (the scripted portion at the beginning of the call)
 - Management commentary > Q&A section if you have to choose
@@ -266,7 +283,7 @@ Search YouTube for interviews, presentations, and discussions about {company.nam
 3. Skip: random stock tip videos, AI-generated content, clickbait
 
 ### What to Save
-For each relevant video, create a line in `youtube/video_list.txt`:
+For each relevant video, create a line in `{company.slug}/video_list.txt`:
 ```
 Title: [Video Title]
 URL: [YouTube URL]
@@ -312,7 +329,7 @@ Search for podcast episodes featuring {company.name} or its executives.
 - Any podcast where the CEO/CFO is a guest
 
 ### What to Save
-Create `podcasts/podcast_list.txt` with entries:
+Create `{company.slug}/podcast_list.txt` with entries:
 ```
 Title: [Episode Title]
 Show: [Podcast Name]
@@ -344,18 +361,13 @@ Now that all materials are gathered, create a NotebookLM notebook and load every
 
 **A. Upload PDF Documents**
 - Click "Add source" → "Upload" (or the "+" icon on the sources panel)
-- Upload all PDFs from the download folders:
-  - `filings/` — 10-Ks, 10-Qs, 8-Ks
-  - `transcripts/` — earnings call transcripts
-  - `presentations/` — investor day decks, conference presentations
-  - `annual-reports/` — annual reports, shareholder letters
-  - `other-ir/` — proxy statements, fact sheets
+- Select all PDFs from `{company.slug}/`
 - NotebookLM has a limit of ~50 sources per notebook and ~500K words per source
 - **Prioritize**: 10-Ks > transcripts > presentations > 10-Qs > 8-Ks
 
 **B. Add YouTube URLs**
 - Click "Add source" → "YouTube"
-- Paste each YouTube URL from `youtube/video_list.txt`
+- Paste each YouTube URL from `{company.slug}/video_list.txt`
 - NotebookLM will automatically transcribe the audio
 - Prioritize long-form interviews and investor day presentations
 
