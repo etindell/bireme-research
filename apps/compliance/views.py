@@ -288,7 +288,7 @@ class TaskDeleteView(OrganizationViewMixin, DeleteView):
 
 
 class TaskStatusUpdateView(OrganizationViewMixin, View):
-    """HTMX view to update task status."""
+    """HTMX view to update task status and redirect to list."""
 
     def post(self, request, pk):
         task = get_object_or_404(
@@ -327,12 +327,12 @@ class TaskStatusUpdateView(OrganizationViewMixin, View):
             description=f'Status changed from {old_status} to {new_status}',
         )
 
-        html = render_to_string(
-            'compliance/partials/task_status_badge.html',
-            {'task': task},
-            request=request,
-        )
-        return HttpResponse(html)
+        messages.success(request, f'Task "{task.title}" updated.')
+
+        redirect_url = reverse('compliance:task_list') + f'?year={task.year}'
+        if request.htmx:
+            return HttpResponse(status=204, headers={'HX-Redirect': redirect_url})
+        return redirect(redirect_url)
 
 
 # ============ Evidence (Phase 4) ============

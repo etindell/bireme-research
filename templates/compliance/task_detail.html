@@ -83,14 +83,21 @@
             <form method="post" action="{% url 'compliance:task_status_update' task.pk %}" class="flex items-center gap-x-3"
                   hx-post="{% url 'compliance:task_status_update' task.pk %}"
                   hx-target="#task-status-badge"
-                  hx-swap="outerHTML">
+                  hx-swap="outerHTML"
+                  hx-indicator="#save-indicator">
                 {% csrf_token %}
                 <select name="status" class="rounded-md border-0 py-1.5 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600">
                     {% for value, label in statuses %}
                     <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Update</button>
+                <button type="submit" class="inline-flex items-center gap-x-2 rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+                    <svg id="save-indicator" class="htmx-indicator animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Save Task</span>
+                </button>
             </form>
         </div>
     </div>
