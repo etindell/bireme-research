@@ -51,7 +51,7 @@
                 {% for doc in documents %}
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-3">
-                        <a href="{% url 'compliance:document_download' doc.pk %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">{{ doc.name }}</a>
+                        <a href="{% url 'compliance:document_download' doc.pk %}" hx-boost="false" class="text-sm font-medium text-primary-600 hover:text-primary-500">{{ doc.name }}</a>
                         {% if doc.description %}<p class="text-xs text-gray-500">{{ doc.description|truncatechars:60 }}</p>{% endif %}
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-500">{{ doc.category|default:"-" }}</td>

@@ -19,9 +19,9 @@
                     Generate {{ year }} Tasks
                 </button>
             </form>
-            <a href="{% url 'compliance:export_csv' year %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">CSV</a>
-            <a href="{% url 'compliance:export_zip' year %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">ZIP</a>
-            <a href="{% url 'compliance:export_pdf' year %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">PDF</a>
+            <a href="{% url 'compliance:export_csv' year %}" hx-boost="false" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">CSV</a>
+            <a href="{% url 'compliance:export_zip' year %}" hx-boost="false" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">ZIP</a>
+            <a href="{% url 'compliance:export_pdf' year %}" hx-boost="false" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">PDF</a>
         </div>
     </div>
 

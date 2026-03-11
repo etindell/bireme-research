@@ -32,11 +32,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
                 </svg>
                 <div>
-                    <a href="{% url 'compliance:evidence_download' task.pk ev.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ ev.original_filename }}</a>
+                    <a href="{% url 'compliance:evidence_download' task.pk ev.pk %}" hx-boost="false" class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ ev.original_filename }}</a>
                     <p class="text-xs text-gray-500">{{ ev.size_bytes|filesizeformat }} &middot; {{ ev.created_at|date:"M j, Y" }}{% if ev.uploaded_by %} by {{ ev.uploaded_by.email }}{% endif %}</p>
                     {% if ev.description %}<p class="text-xs text-gray-500">{{ ev.description }}</p>{% endif %}
-                </div>
-                {% endif %}
+                </div>                {% endif %}
             </div>
             <form method="post" action="{% url 'compliance:evidence_delete' task.pk ev.pk %}"
                   hx-post="{% url 'compliance:evidence_delete' task.pk ev.pk %}"
