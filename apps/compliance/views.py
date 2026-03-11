@@ -472,7 +472,9 @@ class EvidenceDeleteView(OrganizationViewMixin, View):
         if evidence.file:
             evidence.file.delete(save=False)
         evidence.delete()
-        messages.success(request, 'Evidence removed.')
+        
+        msg = 'Evidence removed.'
+        messages.success(request, msg)
 
         if request.htmx:
             evidence_items = task.evidence_items.all()
@@ -481,7 +483,10 @@ class EvidenceDeleteView(OrganizationViewMixin, View):
                 {'task': task, 'evidence_items': evidence_items, 'evidence_form': EvidenceUploadForm()},
                 request=request,
             )
-            return HttpResponse(html)
+            response = HttpResponse(html)
+            import json
+            response['HX-Trigger'] = json.dumps({'toast': {'message': msg, 'type': 'success'}})
+            return response
         return redirect('compliance:task_detail', pk=pk)
 
 
@@ -719,13 +724,19 @@ class SECNewsMarkReadView(OrganizationViewMixin, View):
         )
         item.is_read = not item.is_read
         item.save(update_fields=['is_read'])
+        
+        msg = f"News item marked as {'read' if item.is_read else 'unread'}."
+        
         if request.htmx:
             html = render_to_string(
                 'compliance/partials/news_item.html',
                 {'item': item},
                 request=request,
             )
-            return HttpResponse(html)
+            response = HttpResponse(html)
+            import json
+            response['HX-Trigger'] = json.dumps({'toast': {'message': msg, 'type': 'info'}})
+            return response
         return redirect('compliance:news_list')
 
 
