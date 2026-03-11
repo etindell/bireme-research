@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}SEC News - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">SEC News Feed</h1>
+            <p class="mt-1 text-sm text-gray-500">{{ unread_count }} unread item{{ unread_count|pluralize }}</p>
+        </div>
+        <div class="flex items-center gap-x-3">
+            <form method="post" action="{% url 'compliance:news_mark_all_read' %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Mark All Read</button>
+            </form>
+            <form method="post" action="{% url 'compliance:news_refresh' %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Refresh Feeds</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="flex gap-x-2">
+        <a href="{% url 'compliance:news_list' %}" class="rounded-md px-3 py-1.5 text-sm font-medium {% if not request.GET.unread %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-700{% endif %}">All</a>
+        <a href="?unread=1" class="rounded-md px-3 py-1.5 text-sm font-medium {% if request.GET.unread %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-700{% endif %}">Unread Only</a>
+    </div>
+
+    <!-- News Items -->
+    <div class="space-y-3">
+        {% for item in news_items %}
+        <div id="news-{{ item.pk }}" class="bg-white shadow rounded-lg p-4 {% if not item.is_read %}border-l-4 border-primary-500{% endif %}">
+            {% include "compliance/partials/news_item.html" %}
+        </div>
+        {% empty %}
+        <div class="bg-white shadow rounded-lg p-8 text-center">
+            <p class="text-sm text-gray-500">No news items. Click "Refresh Feeds" to fetch the latest SEC news.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="flex items-center justify-between">
+        <div class="flex flex-1 justify-between sm:justify-end gap-x-3">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Previous</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Next</a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Task Templates - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Task Templates</h1>
+            <p class="mt-1 text-sm text-gray-500">Blueprints for recurring compliance tasks</p>
+        </div>
+        <a href="{% url 'compliance:template_create' %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">New Template</a>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex gap-x-2">
+        <a href="{% url 'compliance:template_list' %}" class="rounded-md px-3 py-1.5 text-sm font-medium {% if not current_frequency %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">All</a>
+        {% for value, label in frequencies %}
+        <a href="?frequency={{ value }}" class="rounded-md px-3 py-1.5 text-sm font-medium {% if current_frequency == value %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">{{ label }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequency</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Owner</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conditional</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for tpl in templates %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-900">{{ tpl.title }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ tpl.get_frequency_display }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        {% if tpl.default_due_month %}{{ tpl.default_due_month }}/{% endif %}{{ tpl.default_due_day|default:"-" }}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ tpl.owner_role|default:"-" }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ tpl.conditional_flag|default:"-" }}</td>
+                    <td class="px-4 py-3 text-sm text-right">
+                        <a href="{% url 'compliance:template_update' tpl.pk %}" class="text-primary-600 hover:text-primary-500">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">No templates yet. Create one or run the seed command.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

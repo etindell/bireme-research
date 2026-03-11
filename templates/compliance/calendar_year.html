@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance Year View - {{ year }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">{{ year }} Year Overview</h1>
+        <div class="flex items-center gap-x-2">
+            <a href="{% url 'compliance:calendar_year' %}?year={{ year|add:"-1" }}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">&larr; {{ year|add:"-1" }}</a>
+            <a href="{% url 'compliance:calendar' %}?year={{ year }}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Month View</a>
+            <a href="{% url 'compliance:calendar_year' %}?year={{ year|add:"1" }}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">{{ year|add:"1" }} &rarr;</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {% for month in months %}
+        <div class="bg-white shadow rounded-lg p-4">
+            <div class="flex items-center justify-between mb-3">
+                <a href="{% url 'compliance:calendar' %}?year={{ year }}&month={{ month.number }}" class="text-sm font-semibold text-gray-900 hover:text-primary-600">{{ month.name }}</a>
+                <span class="text-xs text-gray-500">{{ month.completed }}/{{ month.total }}</span>
+            </div>
+            {% if month.total > 0 %}
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                <div class="bg-green-500 h-2 rounded-full" style="width: {% widthratio month.completed month.total 100 %}%"></div>
+            </div>
+            {% endif %}
+            <div class="space-y-1">
+                {% for task in month.tasks|slice:":5" %}
+                <a href="{% url 'compliance:task_detail' task.pk %}" class="block text-xs text-gray-600 truncate hover:text-primary-600">
+                    {% if task.status == 'COMPLETED' %}<span class="text-green-500">&#10003;</span>{% elif task.status == 'IN_PROGRESS' %}<span class="text-blue-500">&#9679;</span>{% else %}<span class="text-gray-300">&#9675;</span>{% endif %}
+                    {{ task.title|truncatechars:40 }}
+                </a>
+                {% endfor %}
+                {% if month.total > 5 %}
+                <a href="{% url 'compliance:calendar' %}?year={{ year }}&month={{ month.number }}" class="block text-xs text-primary-600">+{{ month.total|add:"-5" }} more</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

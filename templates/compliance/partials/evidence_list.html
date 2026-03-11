@@ -1,0 +1,67 @@
+<h2 class="text-lg font-semibold text-gray-900 mb-4">Evidence</h2>
+
+{% if evidence_items %}
+<div class="space-y-2 mb-4">
+    {% for ev in evidence_items %}
+    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div class="flex items-center gap-x-3">
+            {% if ev.external_link %}
+            <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.564a4.5 4.5 0 00-1.242-7.244l-4.5-4.5a4.5 4.5 0 00-6.364 6.364L4.343 8.53" />
+            </svg>
+            <div>
+                <a href="{{ ev.external_link }}" target="_blank" class="text-sm font-medium text-primary-600 hover:text-primary-500">{{ ev.external_link|truncatechars:60 }}</a>
+                {% if ev.description %}<p class="text-xs text-gray-500">{{ ev.description }}</p>{% endif %}
+            </div>
+            {% else %}
+            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+            </svg>
+            <div>
+                <a href="{% url 'compliance:evidence_download' task.pk ev.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ ev.original_filename }}</a>
+                <p class="text-xs text-gray-500">{{ ev.size_bytes|filesizeformat }} &middot; {{ ev.created_at|date:"M j, Y" }}{% if ev.uploaded_by %} by {{ ev.uploaded_by.email }}{% endif %}</p>
+                {% if ev.description %}<p class="text-xs text-gray-500">{{ ev.description }}</p>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <form method="post" action="{% url 'compliance:evidence_delete' task.pk ev.pk %}"
+              hx-post="{% url 'compliance:evidence_delete' task.pk ev.pk %}"
+              hx-target="#evidence-section"
+              hx-swap="innerHTML">
+            {% csrf_token %}
+            <button type="submit" class="text-sm text-red-600 hover:text-red-500" onclick="return confirm('Remove this evidence?')">Remove</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-sm text-gray-500 mb-4">No evidence attached yet.</p>
+{% endif %}
+
+<!-- Upload form -->
+<form method="post" action="{% url 'compliance:evidence_upload' task.pk %}" enctype="multipart/form-data"
+      hx-post="{% url 'compliance:evidence_upload' task.pk %}"
+      hx-target="#evidence-section"
+      hx-swap="innerHTML"
+      hx-encoding="multipart/form-data"
+      class="border-t border-gray-200 pt-4">
+    {% csrf_token %}
+    <h3 class="text-sm font-medium text-gray-700 mb-3">Add Evidence</h3>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">File</label>
+            {{ evidence_form.file }}
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Or External Link</label>
+            {{ evidence_form.external_link }}
+        </div>
+    </div>
+    <div class="mt-3">
+        <label class="block text-xs text-gray-500 mb-1">Description</label>
+        {{ evidence_form.description }}
+    </div>
+    <div class="mt-3">
+        <button type="submit" class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Upload</button>
+    </div>
+</form>

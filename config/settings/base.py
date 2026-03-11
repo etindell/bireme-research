@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'apps.pomodoros',
     'apps.events',
     'apps.research',
+    'apps.compliance',
     'core',
 ]
 

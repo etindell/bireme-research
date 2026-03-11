@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Template - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto space-y-6">
+    <h1 class="text-2xl font-bold text-gray-900">Delete Template</h1>
+    <div class="bg-white shadow rounded-lg p-6">
+        <p class="text-sm text-gray-700">Are you sure you want to delete <strong>{{ object.title }}</strong>?</p>
+        <form method="post" class="mt-4 flex gap-x-3">
+            {% csrf_token %}
+            <a href="{% url 'compliance:template_list' %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</a>
+            <button type="submit" class="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">Delete</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

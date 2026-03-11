@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance Documents - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Compliance Documents</h1>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Upload Document</h2>
+        <form method="post" action="{% url 'compliance:document_upload' %}" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <div class="mt-1">{{ form.name }}</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Category</label>
+                    <div class="mt-1">{{ form.category }}</div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Description</label>
+                <div class="mt-1">{{ form.description }}</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">File</label>
+                <div class="mt-1">{{ form.file }}</div>
+            </div>
+            <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Upload</button>
+        </form>
+    </div>
+
+    <!-- Document List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Uploaded</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for doc in documents %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <a href="{% url 'compliance:document_download' doc.pk %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">{{ doc.name }}</a>
+                        {% if doc.description %}<p class="text-xs text-gray-500">{{ doc.description|truncatechars:60 }}</p>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ doc.category|default:"-" }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ doc.file_size|filesizeformat }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">{{ doc.created_at|date:"M j, Y" }}</td>
+                    <td class="px-4 py-3 text-sm text-right">
+                        <form method="post" action="{% url 'compliance:document_delete' doc.pk %}"
+                              hx-post="{% url 'compliance:document_delete' doc.pk %}"
+                              hx-confirm="Delete this document?"
+                              class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-600 hover:text-red-500">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No documents uploaded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,4 @@
+{% load compliance_tags %}
+<span id="task-status-badge" class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ task.status|status_badge_class }}">
+    {{ task.status|status_label }}
+</span>

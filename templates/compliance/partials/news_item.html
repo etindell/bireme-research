@@ -1,0 +1,27 @@
+<div class="flex items-start justify-between">
+    <div class="flex-1">
+        <div class="flex items-center gap-x-2">
+            <a href="{{ item.link }}" target="_blank" class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ item.title }}</a>
+            {% if item.is_relevant %}
+            <span class="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">RIA</span>
+            {% endif %}
+        </div>
+        {% if item.description %}
+        <p class="mt-1 text-xs text-gray-500 line-clamp-2">{{ item.description|truncatechars:200 }}</p>
+        {% endif %}
+        <div class="mt-1 flex items-center gap-x-3 text-xs text-gray-400">
+            <span>{{ item.source }}</span>
+            {% if item.published_at %}<span>{{ item.published_at|date:"M j, Y" }}</span>{% endif %}
+        </div>
+    </div>
+    <form method="post" action="{% url 'compliance:news_toggle_read' item.pk %}"
+          hx-post="{% url 'compliance:news_toggle_read' item.pk %}"
+          hx-target="#news-{{ item.pk }}"
+          hx-swap="innerHTML"
+          class="ml-4 flex-shrink-0">
+        {% csrf_token %}
+        <button type="submit" class="text-xs {% if item.is_read %}text-gray-400 hover:text-gray-600{% else %}text-primary-600 hover:text-primary-500{% endif %}">
+            {% if item.is_read %}Mark unread{% else %}Mark read{% endif %}
+        </button>
+    </form>
+</div>

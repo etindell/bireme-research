@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load compliance_tags %}
+
+{% block title %}{{ task.title }} - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li><a href="{% url 'compliance:task_list' %}" class="text-sm font-medium text-gray-500 hover:text-gray-700">Tasks</a></li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500">{{ task.title|truncatechars:40 }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <h1 class="text-2xl font-bold {% if task.status == 'COMPLETED' %}text-gray-500 line-through{% else %}text-gray-900{% endif %}">
+                    {{ task.title }}
+                </h1>
+                <div class="mt-2 flex items-center gap-x-3 flex-wrap">
+                    <span id="task-status-badge" class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ task.status|status_badge_class }}">
+                        {{ task.status|status_label }}
+                    </span>
+                    {% if task.is_conditional %}
+                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                        Conditional: {{ task.conditional_flag }}
+                    </span>
+                    {% endif %}
+                    {% if task.is_overdue %}
+                    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">Overdue</span>
+                    {% endif %}
+                    {% if task.tags %}
+                    <span class="text-xs text-gray-500">{{ task.tags }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex items-center gap-x-2">
+                <a href="{% url 'compliance:task_update' task.pk %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Edit</a>
+            </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div><span class="text-gray-500">Due Date:</span> <span class="font-medium">{{ task.due_date|date:"M j, Y" }}</span></div>
+            <div><span class="text-gray-500">Year/Month:</span> <span class="font-medium">{{ task.year }} / {{ task.month }}</span></div>
+            {% if task.completed_at %}
+            <div><span class="text-gray-500">Completed:</span> <span class="font-medium text-green-600">{{ task.completed_at|date:"M j, Y g:i A" }}</span></div>
+            <div><span class="text-gray-500">Completed By:</span> <span class="font-medium">{{ task.completed_by.email|default:"-" }}</span></div>
+            {% endif %}
+        </div>
+
+        {% if task.description %}
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500">Description</h3>
+            <p class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ task.description }}</p>
+        </div>
+        {% endif %}
+
+        {% if task.notes %}
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500">Notes</h3>
+            <p class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ task.notes }}</p>
+        </div>
+        {% endif %}
+
+        {% if task.template and task.template.suggested_evidence %}
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500">Suggested Evidence</h3>
+            <p class="mt-1 text-sm text-gray-600 italic">{{ task.template.suggested_evidence }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Status Change -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Change Status</h3>
+            <form method="post" action="{% url 'compliance:task_status_update' task.pk %}" class="flex items-center gap-x-3"
+                  hx-post="{% url 'compliance:task_status_update' task.pk %}"
+                  hx-target="#task-status-badge"
+                  hx-swap="outerHTML">
+                {% csrf_token %}
+                <select name="status" class="rounded-md border-0 py-1.5 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600">
+                    {% for value, label in statuses %}
+                    <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Update</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Evidence Section -->
+    <div id="evidence-section" class="bg-white shadow rounded-lg p-6">
+        {% include "compliance/partials/evidence_list.html" with evidence_items=task.evidence_items.all evidence_form=evidence_form %}
+    </div>
+
+    <!-- Audit Trail -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Audit Trail</h2>
+        {% if task.audit_logs.all %}
+        <div class="space-y-3">
+            {% for log in task.audit_logs.all %}
+            <div class="flex items-start gap-x-3 text-sm">
+                <div class="flex-shrink-0 w-2 h-2 mt-1.5 rounded-full bg-gray-400"></div>
+                <div>
+                    <p class="text-gray-900">{{ log.description|default:log.get_action_type_display }}</p>
+                    <p class="text-xs text-gray-500">{{ log.created_at|date:"M j, Y g:i A" }} by {{ log.user.email|default:"System" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No audit entries yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
