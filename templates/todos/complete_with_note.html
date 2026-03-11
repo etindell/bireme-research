@@ -211,12 +211,12 @@
             </div>
 
             <!-- Cash Flow Assumptions (optional) -->
-            {% if cash_flow_form %}
-            <div class="border-t border-gray-200 pt-6" x-data="{ includeCashFlows: {% if cash_flow_form.include_cash_flows.value %}true{% else %}false{% endif %} }">
+            {% if cash_flow_form and todo.company %}
+            <div class="border-t border-gray-200 pt-6" x-data="{ includeCashFlows: {% if cash_flow_form.include_cash_flows.value or cash_flow_form.errors %}true{% else %}false{% endif %} }">
                 <div class="flex items-center gap-3 mb-4">
                     <input type="checkbox" name="include_cash_flows" id="id_include_cash_flows"
                            x-model="includeCashFlows"
-                           {% if cash_flow_form.include_cash_flows.value %}checked{% endif %}
+                           {% if cash_flow_form.include_cash_flows.value or cash_flow_form.errors %}checked{% endif %}
                            class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
                     <label for="id_include_cash_flows" class="text-sm font-medium text-gray-900">
                         Include IRR Cash Flow Assumptions

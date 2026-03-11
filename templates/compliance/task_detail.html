@@ -100,6 +100,42 @@
         {% include "compliance/partials/evidence_list.html" with evidence_items=task.evidence_items.all evidence_form=evidence_form %}
     </div>
 
+    <!-- Image Evidence (Paste or Drop) -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Image Evidence</h2>
+        <p class="text-sm text-gray-500 mb-4">Quickly add screenshots by pasting (Ctrl+V) or dragging them here.</p>
+
+        <div id="image-drop-zone"
+             class="relative border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-500 hover:bg-gray-50 transition-colors cursor-pointer group">
+            <div id="drop-zone-content" class="space-y-2">
+                <svg class="mx-auto h-12 w-12 text-gray-400 group-hover:text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div class="text-sm text-gray-600">
+                    <span class="font-semibold text-primary-600">Paste an image</span> or drag and drop
+                </div>
+                <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+            </div>
+
+            <!-- Loading indicator -->
+            <div id="upload-spinner" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                <div class="flex flex-col items-center gap-2 text-primary-600">
+                    <svg class="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Uploading image...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <label for="paste-description" class="block text-xs font-medium text-gray-500 mb-1">Image Description (Optional)</label>
+            <input type="text" id="paste-description" placeholder="e.g. Screenshot of approval"
+                   class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm">
+        </div>
+    </div>
+
     <!-- Audit Trail -->
     <div class="bg-white shadow rounded-lg p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Audit Trail</h2>
@@ -120,4 +156,107 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function initComplianceImageUpload() {
+    const dropZone = document.getElementById('image-drop-zone');
+    const spinner = document.getElementById('upload-spinner');
+    const descriptionInput = document.getElementById('paste-description');
+    const taskPk = "{{ task.pk }}";
+    const uploadUrl = "{% url 'compliance:evidence_paste' task.pk %}";
+
+    if (!dropZone) return;
+
+    // Handle Paste
+    window.addEventListener('paste', function(e) {
+        // Only handle paste if we're not in another input (except our description)
+        if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && e.target !== descriptionInput)) {
+            return;
+        }
+
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const blob = item.getAsFile();
+                uploadImage(blob);
+            }
+        }
+    });
+
+    // Handle Drag & Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('border-primary-500', 'bg-gray-50'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-primary-500', 'bg-gray-50'), false);
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0 && files[0].type.startsWith('image/')) {
+            uploadImage(files[0]);
+        }
+    });
+
+    // Click to upload (hidden file input fallback could be added but user asked for paste/drop)
+    dropZone.addEventListener('click', () => {
+        // We could trigger a hidden file input here if we wanted to
+    });
+
+    async function uploadImage(file) {
+        spinner.classList.remove('hidden');
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('description', descriptionInput.value || 'Pasted image evidence');
+
+        try {
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Trigger HTMX refresh of the evidence list
+                document.body.dispatchEvent(new CustomEvent('refreshEvidence'));
+
+                // Clear description
+                descriptionInput.value = '';
+
+                // Success notification
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: { message: 'Image uploaded successfully!', type: 'success' }
+                }));
+            } else {
+                throw new Error(result.error || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: { message: error.message || 'Failed to upload image', type: 'error' }
+            }));
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    }
+})();
+</script>
 {% endblock %}

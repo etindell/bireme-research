@@ -141,9 +141,26 @@ class SetNewsFeedbackView(OrganizationViewMixin, View):
         # Toggle: clicking the same feedback again clears it
         if news.feedback == value:
             news.feedback = None
+            news.feedback_reason = None
         else:
             news.feedback = value
-        news.save(update_fields=['feedback'])
+            if value == CompanyNews.Feedback.THUMBS_DOWN:
+                reason = request.POST.get('reason')
+                if reason in dict(CompanyNews.FeedbackReason.choices):
+                    news.feedback_reason = reason
+                else:
+                    news.feedback_reason = None
+                # Auto-blacklist domain if reason is bad_source
+                if reason == CompanyNews.FeedbackReason.BAD_SOURCE:
+                    domain = news.source_domain
+                    if domain:
+                        BlacklistedDomain.objects.get_or_create(
+                            organization=request.organization,
+                            domain=domain
+                        )
+            else:
+                news.feedback_reason = None
+        news.save(update_fields=['feedback', 'feedback_reason'])
 
         # Thumbs-down: remove the item from the list
         if news.feedback == CompanyNews.Feedback.THUMBS_DOWN:

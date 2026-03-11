@@ -104,8 +104,8 @@
             {% endif %}
         </div>
 
-        <!-- Complete with Note action (if pending and has company) -->
-        {% if not todo.is_completed and todo.company %}
+        <!-- Complete with Note action (if pending) -->
+        {% if not todo.is_completed %}
         <div class="mt-4 pt-4 border-t border-gray-200">
             <a href="{% url 'todos:complete_with_note' todo.pk %}"
                hx-boost="false"

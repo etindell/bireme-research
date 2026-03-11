@@ -565,7 +565,7 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
 
         # Handle cash flow form
         cash_flow_form = NoteCashFlowForm(self.request.POST)
-        if cash_flow_form.is_valid() and cash_flow_form.cleaned_data.get('include_cash_flows'):
+        if cash_flow_form.is_valid() and cash_flow_form.cleaned_data.get('include_cash_flows') and note.company:
             price = cash_flow_form.cleaned_data.get('current_price') or note.company.current_price
             cash_flow = NoteCashFlow(
                 note=note,

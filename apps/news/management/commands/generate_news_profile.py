@@ -74,7 +74,14 @@ class Command(BaseCommand):
         # Format feedback for the prompt
         lines = []
         for item in feedback_qs:
-            label = 'LIKED' if item.feedback == CompanyNews.Feedback.THUMBS_UP else 'DISLIKED'
+            if item.feedback == CompanyNews.Feedback.THUMBS_UP:
+                label = 'LIKED'
+            elif item.feedback_reason == CompanyNews.FeedbackReason.BAD_SOURCE:
+                label = 'DISLIKED - BAD SOURCE'
+            elif item.feedback_reason == CompanyNews.FeedbackReason.NOT_RELEVANT:
+                label = 'DISLIKED - NOT RELEVANT'
+            else:
+                label = 'DISLIKED'
             lines.append(
                 f"[{label}] {item.headline} | "
                 f"Summary: {item.summary[:200]} | "

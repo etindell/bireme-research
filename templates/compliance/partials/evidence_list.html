@@ -1,6 +1,11 @@
-<h2 class="text-lg font-semibold text-gray-900 mb-4">Evidence</h2>
+<div hx-get="{% url 'compliance:task_detail' task.pk %}"
+     hx-trigger="refreshEvidence from:body"
+     hx-select="#evidence-section"
+     hx-target="#evidence-section"
+     hx-swap="innerHTML">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Evidence</h2>
 
-{% if evidence_items %}
+    {% if evidence_items %}
 <div class="space-y-2 mb-4">
     {% for ev in evidence_items %}
     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -47,21 +52,40 @@
       class="border-t border-gray-200 pt-4">
     {% csrf_token %}
     <h3 class="text-sm font-medium text-gray-700 mb-3">Add Evidence</h3>
+
+    {% if evidence_form.non_field_errors %}
+    <div class="mb-4 rounded-md bg-red-50 p-2">
+        {% for error in evidence_form.non_field_errors %}
+        <p class="text-xs text-red-700">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
             <label class="block text-xs text-gray-500 mb-1">File</label>
             {{ evidence_form.file }}
+            {% if evidence_form.file.errors %}
+            <p class="mt-1 text-xs text-red-600">{{ evidence_form.file.errors.0 }}</p>
+            {% endif %}
         </div>
         <div>
             <label class="block text-xs text-gray-500 mb-1">Or External Link</label>
             {{ evidence_form.external_link }}
+            {% if evidence_form.external_link.errors %}
+            <p class="mt-1 text-xs text-red-600">{{ evidence_form.external_link.errors.0 }}</p>
+            {% endif %}
         </div>
     </div>
     <div class="mt-3">
         <label class="block text-xs text-gray-500 mb-1">Description</label>
         {{ evidence_form.description }}
+        {% if evidence_form.description.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ evidence_form.description.errors.0 }}</p>
+        {% endif %}
     </div>
     <div class="mt-3">
         <button type="submit" class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Upload</button>
     </div>
 </form>
+</div>

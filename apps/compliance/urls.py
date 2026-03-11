@@ -29,6 +29,7 @@ urlpatterns = [
 
     # Evidence
     path('tasks/<int:pk>/evidence/', views.EvidenceUploadView.as_view(), name='evidence_upload'),
+    path('tasks/<int:pk>/evidence/paste/', views.EvidencePasteUploadView.as_view(), name='evidence_paste'),
     path('tasks/<int:pk>/evidence/<int:evidence_pk>/delete/', views.EvidenceDeleteView.as_view(), name='evidence_delete'),
     path('tasks/<int:pk>/evidence/<int:evidence_pk>/download/', views.EvidenceDownloadView.as_view(), name='evidence_download'),
 

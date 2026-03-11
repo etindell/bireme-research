@@ -13,6 +13,10 @@ class CompanyNews(models.Model):
         THUMBS_UP = 1, 'Thumbs Up'
         THUMBS_DOWN = -1, 'Thumbs Down'
 
+    class FeedbackReason(models.TextChoices):
+        BAD_SOURCE = 'bad_source', 'This website is no good'
+        NOT_RELEVANT = 'not_relevant', 'Subject is not relevant'
+
     class Importance(models.TextChoices):
         HIGH = 'high', 'High'
         MEDIUM = 'medium', 'Medium'
@@ -65,6 +69,13 @@ class CompanyNews(models.Model):
     is_read = models.BooleanField(default=False)
     feedback = models.SmallIntegerField(
         choices=Feedback.choices,
+        null=True,
+        blank=True,
+        default=None,
+    )
+    feedback_reason = models.CharField(
+        max_length=20,
+        choices=FeedbackReason.choices,
         null=True,
         blank=True,
         default=None,

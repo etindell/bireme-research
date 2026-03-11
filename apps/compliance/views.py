@@ -2,8 +2,9 @@ import calendar as cal
 from datetime import date, timedelta
 
 from django.contrib import messages
+from django.core.files.base import ContentFile
 from django.db.models import Count, Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -361,6 +362,8 @@ class EvidenceUploadView(OrganizationViewMixin, View):
                 description=f'Evidence added: {evidence.original_filename or evidence.external_link}',
             )
             messages.success(request, 'Evidence uploaded.')
+            # Clear form on success
+            form = EvidenceUploadForm()
         else:
             messages.error(request, 'Upload failed. Provide a file or link.')
 
@@ -368,11 +371,51 @@ class EvidenceUploadView(OrganizationViewMixin, View):
             evidence_items = task.evidence_items.all()
             html = render_to_string(
                 'compliance/partials/evidence_list.html',
-                {'task': task, 'evidence_items': evidence_items, 'evidence_form': EvidenceUploadForm()},
+                {'task': task, 'evidence_items': evidence_items, 'evidence_form': form},
                 request=request,
             )
             return HttpResponse(html)
         return redirect('compliance:task_detail', pk=pk)
+
+
+class EvidencePasteUploadView(OrganizationViewMixin, View):
+    """Handle image blobs pasted from the clipboard."""
+
+    def post(self, request, pk):
+        task = get_object_or_404(
+            ComplianceTask.objects.filter(organization=request.organization), pk=pk
+        )
+
+        if 'image' not in request.FILES:
+            return JsonResponse({'success': False, 'error': 'No image provided'}, status=400)
+
+        image_file = request.FILES['image']
+        description = request.POST.get('description', 'Pasted image evidence')
+
+        # Create evidence record
+        evidence = ComplianceEvidence.objects.create(
+            task=task,
+            organization=request.organization,
+            file=image_file,
+            original_filename=f"pasted_image_{timezone.now().strftime('%Y%m%d_%H%M%S')}.png",
+            mime_type=image_file.content_type or 'image/png',
+            size_bytes=image_file.size,
+            description=description,
+            uploaded_by=request.user,
+            created_by=request.user,
+        )
+
+        log_action(
+            task, ComplianceAuditLog.ActionType.EVIDENCE_ADD,
+            request.user,
+            new_value={'filename': evidence.original_filename},
+            description=f'Evidence pasted: {evidence.original_filename}',
+        )
+
+        return JsonResponse({
+            'success': True,
+            'filename': evidence.original_filename,
+        })
 
 
 class EvidenceDeleteView(OrganizationViewMixin, View):
