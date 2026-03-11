@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Survey Templates - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Survey Templates</h1>
+            <p class="mt-1 text-sm text-gray-500">Manage compliance certification blueprints</p>
+        </div>
+        <a href="#" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">New Template</a>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template Name</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cadence</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Audience</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="relative px-4 py-3">
+                        <span class="sr-only">Actions</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for template in templates %}
+                <tr>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ template.name }}</div>
+                        <div class="text-xs text-gray-500">{{ template.slug }}</div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ template.get_cadence_display }}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ template.get_audience_type_display }}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        {% if template.is_active %}
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Active</span>
+                        {% else %}
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'compliance:survey_template_detail' template.pk %}" class="text-primary-600 hover:text-primary-900">Configure</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">
+                        No survey templates found. Use the seed command to create defaults.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

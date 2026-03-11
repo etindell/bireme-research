@@ -148,11 +148,20 @@
                 <ul role="list" class="-mx-2 mt-2 space-y-1">
                     <li>
                         <a href="{% url 'compliance:dashboard' %}"
-                           class="{% if 'compliance' in request.path and 'calendar' not in request.path and 'tasks' not in request.path and 'documents' not in request.path and 'news' not in request.path or request.resolver_match.url_name == 'dashboard' and 'compliance' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                           class="{% if 'compliance' in request.path and 'calendar' not in request.path and 'tasks' not in request.path and 'documents' not in request.path and 'news' not in request.path and 'surveys' not in request.path or request.resolver_match.url_name == 'dashboard' and 'compliance' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                             <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
                             </svg>
                             Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'compliance:survey_dashboard' %}"
+                           class="{% if 'compliance/surveys' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .415.162.791.425 1.066.262.275.612.446.996.446h.8c.384 0 .734-.171.996-.446.263-.275.425-.651.425-1.066 0-.231-.035-.454-.1-.664m-5.801 0A2.251 2.251 0 0113.5 2.25c.756 0 1.396.372 1.789.948m-5.801 0c-.166.457-.26 1.028-.26 1.591v13.013c0 .596.342 1.116.832 1.384m9.673-17.74c.062.21.092.433.092.664 0 .415-.162.791-.425 1.066-.262.275-.612.446-.996.446h-.8c-.384 0-.734-.171-.996-.446-.263-.275-.425-.651-.425-1.066 0-.231.035-.454.1-.664M11 4h4" />
+                            </svg>
+                            Certifications
                         </a>
                     </li>
                     <li>

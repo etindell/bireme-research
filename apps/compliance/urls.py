@@ -53,4 +53,22 @@ urlpatterns = [
     path('export/<int:year>/csv/', views.ExportCSVView.as_view(), name='export_csv'),
     path('export/<int:year>/zip/', views.ExportZIPView.as_view(), name='export_zip'),
     path('export/<int:year>/pdf/', views.ExportPDFView.as_view(), name='export_pdf'),
+
+    # --- Surveys & Certifications ---
+    # Templates & Versions
+    path('surveys/templates/', views.SurveyTemplateListView.as_view(), name='survey_template_list'),
+    path('surveys/templates/<int:pk>/', views.SurveyTemplateDetailView.as_view(), name='survey_template_detail'),
+    path('surveys/templates/<int:pk>/publish/', views.SurveyPublishVersionView.as_view(), name='survey_publish_version'),
+    
+    # Assignments & Dashboard
+    path('surveys/dashboard/', views.SurveyDashboardView.as_view(), name='survey_dashboard'),
+    path('surveys/my/', views.MySurveysListView.as_view(), name='my_surveys'),
+    path('surveys/assign/', views.SurveyAssignPeriodicView.as_view(), name='survey_assign_periodic'),
+    
+    # Completion & Review
+    path('surveys/assignments/<int:pk>/', views.SurveyCompleteView.as_view(), name='survey_complete'),
+    path('surveys/assignments/<int:pk>/review/', views.SurveyReviewView.as_view(), name='survey_review'),
+    
+    # Exceptions
+    path('surveys/exceptions/', views.SurveyExceptionListView.as_view(), name='survey_exception_list'),
 ]

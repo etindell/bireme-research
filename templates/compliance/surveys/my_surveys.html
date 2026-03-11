@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}My Certifications - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">My Compliance Certifications</h1>
+        <p class="mt-1 text-sm text-gray-500">View and complete your assigned attestations and surveys.</p>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Certification</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="relative px-4 py-3">
+                        <span class="sr-only">Action</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for assignment in assignments %}
+                <tr>
+                    <td class="px-4 py-4">
+                        <div class="text-sm font-medium text-gray-900">{{ assignment.version.template.name }}</div>
+                        <div class="text-xs text-gray-500">Version {{ assignment.version.version_number }}</div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if assignment.quarter %}Q{{ assignment.quarter }} {% endif %}{{ assignment.year|default:"" }}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm {% if assignment.status == 'NOT_STARTED' and assignment.due_date < today %}text-red-600 font-bold{% else %}text-gray-500{% endif %}">
+                        {{ assignment.due_date|date:"M j, Y" }}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                            {% if assignment.status == 'APPROVED' %}bg-green-100 text-green-800
+                            {% elif assignment.status == 'SUBMITTED' %}bg-blue-100 text-blue-800
+                            {% elif assignment.status == 'REJECTED' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ assignment.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {% if assignment.status == 'NOT_STARTED' or assignment.status == 'IN_PROGRESS' or assignment.status == 'REJECTED' %}
+                        <a href="{% url 'compliance:survey_complete' assignment.pk %}" class="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                            Start Survey
+                        </a>
+                        {% else %}
+                        <span class="text-gray-400">View Submission</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">
+                        No certifications assigned to you at this time.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

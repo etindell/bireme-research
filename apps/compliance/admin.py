@@ -1,8 +1,53 @@
 from django.contrib import admin
 from .models import (
     ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
-    ComplianceEvidence, ComplianceAuditLog, ComplianceDocument, SECNewsItem
+    ComplianceEvidence, ComplianceAuditLog, ComplianceDocument, SECNewsItem,
+    SurveyTemplate, SurveyVersion, SurveyQuestion, SurveyAssignment,
+    SurveyResponse, SurveyAnswer, SurveyException, EmployeeCertificationStatus
 )
+
+
+class QuestionInline(admin.TabularInline):
+    model = SurveyQuestion
+    extra = 1
+
+
+class VersionInline(admin.TabularInline):
+    model = SurveyVersion
+    extra = 0
+    show_change_link = True
+
+
+@admin.register(SurveyTemplate)
+class SurveyTemplateAdmin(admin.ModelAdmin):
+    list_display = ['name', 'cadence', 'audience_type', 'organization', 'is_active']
+    list_filter = ['cadence', 'audience_type', 'organization']
+    inlines = [VersionInline]
+
+
+@admin.register(SurveyVersion)
+class SurveyVersionAdmin(admin.ModelAdmin):
+    list_display = ['template', 'version_number', 'is_published', 'effective_date']
+    list_filter = ['is_published', 'template__organization']
+    inlines = [QuestionInline]
+
+
+@admin.register(SurveyAssignment)
+class SurveyAssignmentAdmin(admin.ModelAdmin):
+    list_display = ['user', 'version', 'status', 'due_date', 'year', 'quarter']
+    list_filter = ['status', 'year', 'quarter', 'version__template']
+    search_fields = ['user__email']
+
+
+@admin.register(SurveyException)
+class SurveyExceptionAdmin(admin.ModelAdmin):
+    list_display = ['summary', 'severity', 'category', 'status', 'assignment']
+    list_filter = ['severity', 'category', 'status']
+
+
+admin.site.register(SurveyResponse)
+admin.site.register(SurveyAnswer)
+admin.site.register(EmployeeCertificationStatus)
 
 
 @admin.register(ComplianceSettings)

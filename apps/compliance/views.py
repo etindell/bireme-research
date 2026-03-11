@@ -18,13 +18,16 @@ from core.mixins import OrganizationViewMixin
 from .models import (
     ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
     ComplianceEvidence, ComplianceAuditLog, ComplianceDocument, SECNewsItem,
+    SurveyTemplate, SurveyVersion, SurveyQuestion, SurveyAssignment,
+    SurveyResponse, SurveyAnswer, SurveyEvidenceUpload, SurveyException,
 )
 from .forms import (
     ComplianceSettingsForm, ComplianceTaskTemplateForm, ComplianceTaskForm,
-    EvidenceUploadForm, ComplianceDocumentForm,
+    EvidenceUploadForm, ComplianceDocumentForm, SurveyCompleteForm,
 )
 from .services.audit import log_action
 from .services.task_generation import generate_tasks
+from .services.surveys import assign_periodic_surveys, process_survey_submission
 
 
 # ============ Dashboard ============
@@ -776,3 +779,180 @@ class ExportPDFView(OrganizationViewMixin, View):
         response = HttpResponse(pdf_content, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename=compliance_audit_report_{year}.pdf'
         return response
+
+
+# ============ Surveys & Certifications ============
+
+class SurveyTemplateListView(OrganizationViewMixin, ListView):
+    model = SurveyTemplate
+    template_name = 'compliance/surveys/template_list.html'
+    context_object_name = 'templates'
+
+    def get_queryset(self):
+        return SurveyTemplate.objects.filter(organization=self.request.organization)
+
+
+class SurveyTemplateDetailView(OrganizationViewMixin, DetailView):
+    model = SurveyTemplate
+    template_name = 'compliance/surveys/template_detail.html'
+    context_object_name = 'template'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['versions'] = self.object.versions.all().prefetch_related('questions')
+        return ctx
+
+
+class SurveyPublishVersionView(OrganizationViewMixin, View):
+    def post(self, request, pk):
+        template = get_object_or_404(SurveyTemplate.objects.filter(organization=request.organization), pk=pk)
+        # In a real app, we'd take a draft and publish it. 
+        # For this prototype, we'll just mark the latest version as published.
+        version = template.versions.order_by('-version_number').first()
+        if version:
+            version.is_published = True
+            version.effective_date = timezone.now().date()
+            version.save()
+            messages.success(request, f"Published Version {version.version_number} of {template.name}")
+        return redirect('compliance:survey_template_detail', pk=pk)
+
+
+class SurveyDashboardView(OrganizationViewMixin, TemplateView):
+    template_name = 'compliance/surveys/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = self.request.organization
+        assignments = SurveyAssignment.objects.filter(organization=org)
+        
+        ctx.update({
+            'total_assignments': assignments.count(),
+            'pending_review': assignments.filter(status=SurveyAssignment.Status.SUBMITTED).count(),
+            'overdue_count': assignments.filter(status=SurveyAssignment.Status.OVERDUE).count(),
+            'recent_assignments': assignments.order_by('-assigned_at')[:10],
+            'active_templates': SurveyTemplate.objects.filter(organization=org, is_active=True).count(),
+            'open_exceptions': SurveyException.objects.filter(organization=org, status=SurveyException.Status.OPEN).count()
+        })
+        return ctx
+
+
+class MySurveysListView(OrganizationViewMixin, ListView):
+    model = SurveyAssignment
+    template_name = 'compliance/surveys/my_surveys.html'
+    context_object_name = 'assignments'
+
+    def get_queryset(self):
+        return SurveyAssignment.objects.filter(
+            user=self.request.user,
+            organization=self.request.organization
+        ).order_by('-due_date')
+
+
+class SurveyAssignPeriodicView(OrganizationViewMixin, View):
+    def post(self, request):
+        year = int(request.POST.get('year', timezone.now().year))
+        quarter = request.POST.get('quarter')
+        if quarter:
+            quarter = int(quarter)
+        else:
+            quarter = None
+            
+        created, skipped = assign_periodic_surveys(request.organization, year, quarter)
+        messages.success(request, f"Assigned {created} surveys. Skipped {skipped} duplicates.")
+        return redirect('compliance:survey_dashboard')
+
+
+class SurveyCompleteView(OrganizationViewMixin, View):
+    template_name = 'compliance/surveys/survey_form.html'
+
+    def get(self, request, pk):
+        assignment = get_object_or_404(
+            SurveyAssignment.objects.filter(user=request.user, organization=request.organization), 
+            pk=pk
+        )
+        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS]:
+            messages.warning(request, "This survey has already been submitted or is no longer editable.")
+            return redirect('compliance:my_surveys')
+            
+        form = SurveyCompleteForm(version=assignment.version)
+        return self._render(request, assignment, form)
+
+    def post(self, request, pk):
+        assignment = get_object_or_404(
+            SurveyAssignment.objects.filter(user=request.user, organization=request.organization), 
+            pk=pk
+        )
+        form = SurveyCompleteForm(request.POST, request.FILES, version=assignment.version)
+        if form.is_valid():
+            process_survey_submission(assignment, form.cleaned_data, request.user, request.FILES)
+            messages.success(request, "Certification submitted successfully.")
+            return redirect('compliance:my_surveys')
+            
+        return self._render(request, assignment, form)
+
+    def _render(self, request, assignment, form):
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, self.template_name, {
+            'assignment': assignment,
+            'form': form,
+            'version': assignment.version,
+            'template': assignment.version.template
+        })
+
+
+class SurveyReviewView(OrganizationViewMixin, View):
+    template_name = 'compliance/surveys/review_detail.html'
+
+    def get(self, request, pk):
+        # Only admins can review
+        if request.membership.role != 'admin':
+            return HttpResponse(status=403)
+            
+        assignment = get_object_or_404(
+            SurveyAssignment.objects.filter(organization=request.organization), 
+            pk=pk
+        )
+        response = getattr(assignment, 'response', None)
+        answers = response.answers.all().select_related('question') if response else []
+        
+        return self._render(request, assignment, response, answers)
+
+    def post(self, request, pk):
+        if request.membership.role != 'admin':
+            return HttpResponse(status=403)
+            
+        assignment = get_object_or_404(
+            SurveyAssignment.objects.filter(organization=request.organization), 
+            pk=pk
+        )
+        action = request.POST.get('action')
+        notes = request.POST.get('review_notes', '')
+
+        if action == 'approve':
+            assignment.status = SurveyAssignment.Status.APPROVED
+        elif action == 'reject':
+            assignment.status = SurveyAssignment.Status.REJECTED
+            
+        assignment.reviewed_at = timezone.now()
+        assignment.reviewed_by = request.user
+        assignment.save()
+        
+        messages.success(request, f"Survey {action}d.")
+        return redirect('compliance:survey_dashboard')
+
+    def _render(self, request, assignment, response, answers):
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, self.template_name, {
+            'assignment': assignment,
+            'response': response,
+            'answers': answers,
+        })
+
+
+class SurveyExceptionListView(OrganizationViewMixin, ListView):
+    model = SurveyException
+    template_name = 'compliance/surveys/exception_list.html'
+    context_object_name = 'exceptions'
+
+    def get_queryset(self):
+        return SurveyException.objects.filter(organization=self.request.organization).select_related('assignment', 'assignment__user')

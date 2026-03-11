@@ -38,6 +38,93 @@ class ComplianceSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
 
+class SurveyCompleteForm(forms.Form):
+    """Dynamic form for survey completion based on version questions."""
+    
+    attested_name = forms.CharField(
+        label="Digital Signature (Type Full Name)",
+        widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Full Name'})
+    )
+    attestation_consent = forms.BooleanField(
+        label="I certify that the information provided is true and correct.",
+        widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.version = kwargs.pop('version', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.version:
+            for question in self.version.questions.all():
+                field_key = f'q_{question.pk}'
+                field_type = question.field_type
+                label = question.prompt
+                required = question.is_required
+                help_text = question.help_text
+                
+                if field_type == 'YES_NO':
+                    # Use a radio select for yes/no instead of checkbox for better explicitness
+                    self.fields[field_key] = forms.TypedChoiceField(
+                        label=label,
+                        choices=[(True, 'Yes'), (False, 'No')],
+                        coerce=lambda x: str(x).lower() == 'true',
+                        widget=forms.RadioSelect(attrs={'class': 'flex gap-4'}),
+                        required=required,
+                        help_text=help_text
+                    )
+                elif field_type == 'TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.TextInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type == 'LONG_TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3})
+                    )
+                elif field_type == 'DATE':
+                    self.fields[field_key] = forms.DateField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'})
+                    )
+                elif field_type == 'DECIMAL':
+                    self.fields[field_key] = forms.DecimalField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.01'})
+                    )
+                elif field_type == 'FILE':
+                    self.fields[field_key] = forms.FileField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.ClearableFileInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type in ['SINGLE_SELECT', 'MULTI_SELECT']:
+                    choices = []
+                    if question.response_options:
+                        # Assume list of strings or list of pairs
+                        opts = question.response_options
+                        if isinstance(opts, list):
+                            for o in opts:
+                                if isinstance(o, list): choices.append(tuple(o))
+                                else: choices.append((o, o))
+                    
+                    if field_type == 'SINGLE_SELECT':
+                        self.fields[field_key] = forms.ChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.Select(attrs={'class': SELECT_CLASS})
+                        )
+                    else:
+                        self.fields[field_key] = forms.MultipleChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-1'})
+                        )
+                # Tables would need more complex JS handling, defaulting to text for now
+                else:
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2, 'placeholder': 'Table data (CSV/List)'})
+                    )
+
+
 class ComplianceTaskTemplateForm(forms.ModelForm):
     class Meta:
         model = ComplianceTaskTemplate
@@ -64,6 +151,93 @@ class ComplianceTaskTemplateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
 
+class SurveyCompleteForm(forms.Form):
+    """Dynamic form for survey completion based on version questions."""
+    
+    attested_name = forms.CharField(
+        label="Digital Signature (Type Full Name)",
+        widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Full Name'})
+    )
+    attestation_consent = forms.BooleanField(
+        label="I certify that the information provided is true and correct.",
+        widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.version = kwargs.pop('version', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.version:
+            for question in self.version.questions.all():
+                field_key = f'q_{question.pk}'
+                field_type = question.field_type
+                label = question.prompt
+                required = question.is_required
+                help_text = question.help_text
+                
+                if field_type == 'YES_NO':
+                    # Use a radio select for yes/no instead of checkbox for better explicitness
+                    self.fields[field_key] = forms.TypedChoiceField(
+                        label=label,
+                        choices=[(True, 'Yes'), (False, 'No')],
+                        coerce=lambda x: str(x).lower() == 'true',
+                        widget=forms.RadioSelect(attrs={'class': 'flex gap-4'}),
+                        required=required,
+                        help_text=help_text
+                    )
+                elif field_type == 'TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.TextInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type == 'LONG_TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3})
+                    )
+                elif field_type == 'DATE':
+                    self.fields[field_key] = forms.DateField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'})
+                    )
+                elif field_type == 'DECIMAL':
+                    self.fields[field_key] = forms.DecimalField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.01'})
+                    )
+                elif field_type == 'FILE':
+                    self.fields[field_key] = forms.FileField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.ClearableFileInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type in ['SINGLE_SELECT', 'MULTI_SELECT']:
+                    choices = []
+                    if question.response_options:
+                        # Assume list of strings or list of pairs
+                        opts = question.response_options
+                        if isinstance(opts, list):
+                            for o in opts:
+                                if isinstance(o, list): choices.append(tuple(o))
+                                else: choices.append((o, o))
+                    
+                    if field_type == 'SINGLE_SELECT':
+                        self.fields[field_key] = forms.ChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.Select(attrs={'class': SELECT_CLASS})
+                        )
+                    else:
+                        self.fields[field_key] = forms.MultipleChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-1'})
+                        )
+                # Tables would need more complex JS handling, defaulting to text for now
+                else:
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2, 'placeholder': 'Table data (CSV/List)'})
+                    )
+
+
 class ComplianceTaskForm(forms.ModelForm):
     class Meta:
         model = ComplianceTask
@@ -79,6 +253,93 @@ class ComplianceTaskForm(forms.ModelForm):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+class SurveyCompleteForm(forms.Form):
+    """Dynamic form for survey completion based on version questions."""
+    
+    attested_name = forms.CharField(
+        label="Digital Signature (Type Full Name)",
+        widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Full Name'})
+    )
+    attestation_consent = forms.BooleanField(
+        label="I certify that the information provided is true and correct.",
+        widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.version = kwargs.pop('version', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.version:
+            for question in self.version.questions.all():
+                field_key = f'q_{question.pk}'
+                field_type = question.field_type
+                label = question.prompt
+                required = question.is_required
+                help_text = question.help_text
+                
+                if field_type == 'YES_NO':
+                    # Use a radio select for yes/no instead of checkbox for better explicitness
+                    self.fields[field_key] = forms.TypedChoiceField(
+                        label=label,
+                        choices=[(True, 'Yes'), (False, 'No')],
+                        coerce=lambda x: str(x).lower() == 'true',
+                        widget=forms.RadioSelect(attrs={'class': 'flex gap-4'}),
+                        required=required,
+                        help_text=help_text
+                    )
+                elif field_type == 'TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.TextInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type == 'LONG_TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3})
+                    )
+                elif field_type == 'DATE':
+                    self.fields[field_key] = forms.DateField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'})
+                    )
+                elif field_type == 'DECIMAL':
+                    self.fields[field_key] = forms.DecimalField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.01'})
+                    )
+                elif field_type == 'FILE':
+                    self.fields[field_key] = forms.FileField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.ClearableFileInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type in ['SINGLE_SELECT', 'MULTI_SELECT']:
+                    choices = []
+                    if question.response_options:
+                        # Assume list of strings or list of pairs
+                        opts = question.response_options
+                        if isinstance(opts, list):
+                            for o in opts:
+                                if isinstance(o, list): choices.append(tuple(o))
+                                else: choices.append((o, o))
+                    
+                    if field_type == 'SINGLE_SELECT':
+                        self.fields[field_key] = forms.ChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.Select(attrs={'class': SELECT_CLASS})
+                        )
+                    else:
+                        self.fields[field_key] = forms.MultipleChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-1'})
+                        )
+                # Tables would need more complex JS handling, defaulting to text for now
+                else:
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2, 'placeholder': 'Table data (CSV/List)'})
+                    )
 
 
 class ComplianceTaskStatusForm(forms.Form):
@@ -101,6 +362,93 @@ class EvidenceUploadForm(forms.ModelForm):
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
 
+
+class SurveyCompleteForm(forms.Form):
+    """Dynamic form for survey completion based on version questions."""
+    
+    attested_name = forms.CharField(
+        label="Digital Signature (Type Full Name)",
+        widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Full Name'})
+    )
+    attestation_consent = forms.BooleanField(
+        label="I certify that the information provided is true and correct.",
+        widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.version = kwargs.pop('version', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.version:
+            for question in self.version.questions.all():
+                field_key = f'q_{question.pk}'
+                field_type = question.field_type
+                label = question.prompt
+                required = question.is_required
+                help_text = question.help_text
+                
+                if field_type == 'YES_NO':
+                    # Use a radio select for yes/no instead of checkbox for better explicitness
+                    self.fields[field_key] = forms.TypedChoiceField(
+                        label=label,
+                        choices=[(True, 'Yes'), (False, 'No')],
+                        coerce=lambda x: str(x).lower() == 'true',
+                        widget=forms.RadioSelect(attrs={'class': 'flex gap-4'}),
+                        required=required,
+                        help_text=help_text
+                    )
+                elif field_type == 'TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.TextInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type == 'LONG_TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3})
+                    )
+                elif field_type == 'DATE':
+                    self.fields[field_key] = forms.DateField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'})
+                    )
+                elif field_type == 'DECIMAL':
+                    self.fields[field_key] = forms.DecimalField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.01'})
+                    )
+                elif field_type == 'FILE':
+                    self.fields[field_key] = forms.FileField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.ClearableFileInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type in ['SINGLE_SELECT', 'MULTI_SELECT']:
+                    choices = []
+                    if question.response_options:
+                        # Assume list of strings or list of pairs
+                        opts = question.response_options
+                        if isinstance(opts, list):
+                            for o in opts:
+                                if isinstance(o, list): choices.append(tuple(o))
+                                else: choices.append((o, o))
+                    
+                    if field_type == 'SINGLE_SELECT':
+                        self.fields[field_key] = forms.ChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.Select(attrs={'class': SELECT_CLASS})
+                        )
+                    else:
+                        self.fields[field_key] = forms.MultipleChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-1'})
+                        )
+                # Tables would need more complex JS handling, defaulting to text for now
+                else:
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2, 'placeholder': 'Table data (CSV/List)'})
+                    )
+
     def clean(self):
         cleaned = super().clean()
         if not cleaned.get('file') and not cleaned.get('external_link') and not cleaned.get('text_content'):
@@ -121,3 +469,90 @@ class ComplianceDocumentForm(forms.ModelForm):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+class SurveyCompleteForm(forms.Form):
+    """Dynamic form for survey completion based on version questions."""
+    
+    attested_name = forms.CharField(
+        label="Digital Signature (Type Full Name)",
+        widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Full Name'})
+    )
+    attestation_consent = forms.BooleanField(
+        label="I certify that the information provided is true and correct.",
+        widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.version = kwargs.pop('version', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.version:
+            for question in self.version.questions.all():
+                field_key = f'q_{question.pk}'
+                field_type = question.field_type
+                label = question.prompt
+                required = question.is_required
+                help_text = question.help_text
+                
+                if field_type == 'YES_NO':
+                    # Use a radio select for yes/no instead of checkbox for better explicitness
+                    self.fields[field_key] = forms.TypedChoiceField(
+                        label=label,
+                        choices=[(True, 'Yes'), (False, 'No')],
+                        coerce=lambda x: str(x).lower() == 'true',
+                        widget=forms.RadioSelect(attrs={'class': 'flex gap-4'}),
+                        required=required,
+                        help_text=help_text
+                    )
+                elif field_type == 'TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.TextInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type == 'LONG_TEXT':
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3})
+                    )
+                elif field_type == 'DATE':
+                    self.fields[field_key] = forms.DateField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'})
+                    )
+                elif field_type == 'DECIMAL':
+                    self.fields[field_key] = forms.DecimalField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.01'})
+                    )
+                elif field_type == 'FILE':
+                    self.fields[field_key] = forms.FileField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.ClearableFileInput(attrs={'class': INPUT_CLASS})
+                    )
+                elif field_type in ['SINGLE_SELECT', 'MULTI_SELECT']:
+                    choices = []
+                    if question.response_options:
+                        # Assume list of strings or list of pairs
+                        opts = question.response_options
+                        if isinstance(opts, list):
+                            for o in opts:
+                                if isinstance(o, list): choices.append(tuple(o))
+                                else: choices.append((o, o))
+                    
+                    if field_type == 'SINGLE_SELECT':
+                        self.fields[field_key] = forms.ChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.Select(attrs={'class': SELECT_CLASS})
+                        )
+                    else:
+                        self.fields[field_key] = forms.MultipleChoiceField(
+                            label=label, choices=choices, required=required, help_text=help_text,
+                            widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-1'})
+                        )
+                # Tables would need more complex JS handling, defaulting to text for now
+                else:
+                    self.fields[field_key] = forms.CharField(
+                        label=label, required=required, help_text=help_text,
+                        widget=forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2, 'placeholder': 'Table data (CSV/List)'})
+                    )

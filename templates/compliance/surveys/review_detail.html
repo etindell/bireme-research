@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Review Submission - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-2">
+            <li>
+                <a href="{% url 'compliance:survey_dashboard' %}" class="text-sm text-gray-500 hover:text-gray-700">Cert Dashboard</a>
+            </li>
+            <li class="flex items-center">
+                <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                </svg>
+                <span class="ml-2 text-sm font-medium text-gray-900">Review Submission</span>
+            </li>
+        </ol>
+    </nav>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden border-t-4 border-amber-500">
+        <div class="px-4 py-5 sm:p-6">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ assignment.version.template.name }}</h1>
+                    <p class="text-sm text-gray-500">Submitted by <b>{{ assignment.user.get_full_name }}</b> on {{ assignment.submitted_at|date:"M j, Y at I:i A" }}</p>
+                </div>
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium 
+                    {% if assignment.status == 'APPROVED' %}bg-green-100 text-green-800
+                    {% elif assignment.status == 'REJECTED' %}bg-red-100 text-red-800
+                    {% else %}bg-amber-100 text-amber-800{% endif %}">
+                    {{ assignment.get_status_display }}
+                </span>
+            </div>
+
+            <!-- Answers -->
+            <div class="space-y-6">
+                <h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">User Responses</h2>
+                
+                {% for answer in answers %}
+                <div class="{% if answer.is_exception_flag %}bg-red-50 p-4 rounded-lg border border-red-100{% endif %}">
+                    <p class="text-sm font-bold text-gray-700 mb-1">{{ answer.question.prompt }}</p>
+                    
+                    <div class="text-sm text-gray-900">
+                        {% if answer.question.field_type == 'YES_NO' %}
+                            <span class="font-mono {% if answer.value_json %}text-red-600 font-bold{% else %}text-green-600{% endif %}">
+                                {{ answer.value_json|yesno:"Yes,No" }}
+                            </span>
+                        {% elif answer.question.field_type == 'FILE' %}
+                            <div class="mt-2 space-y-2">
+                                {% for ev in answer.evidence_files.all %}
+                                <a href="{% url 'compliance:evidence_download' assignment.pk ev.pk %}" class="inline-flex items-center text-primary-600 hover:underline">
+                                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2-0 01-2-2V5a2 2-0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2-0 01-2 2z"/></svg>
+                                    {{ ev.original_filename }}
+                                </a>
+                                {% empty %}
+                                <span class="text-gray-400 italic">No file uploaded</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ answer.value_json|default:"-"|linebreaks }}
+                        {% endif %}
+                    </div>
+
+                    {% if answer.is_exception_flag %}
+                    <div class="mt-2 flex items-center gap-1 text-xs font-bold text-red-700 uppercase tracking-wider">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.567 2.357-1.567 3.03 0l6.28 14.653c.673 1.567-.342 3.352-2.015 3.352H4.22c-1.673 0-2.688-1.785-2.015-3.352l6.28-14.653zM10 13a1 1 0 100 2 1 1 0 000-2zm.25-2a.75.75 0 00-1.5 0v-2.5a.75.75 0 001.5 0V11z" clip-rule="evenodd" /></svg>
+                        Flagged Exception
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Attestation Snapshot -->
+            <div class="mt-10 bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h3 class="text-sm font-bold text-gray-500 uppercase mb-3">Legal Signature & Snapshot</h3>
+                <p class="text-sm italic text-gray-600 mb-4 bg-white p-3 rounded">"{{ response.certification_text_snapshot }}"</p>
+                <div class="flex items-center gap-4 text-sm">
+                    <div><span class="text-gray-500">Signed By:</span> <span class="font-bold">{{ response.attested_name }}</span></div>
+                    <div><span class="text-gray-500">Timestamp:</span> <span>{{ response.attested_at }}</span></div>
+                </div>
+            </div>
+
+            <!-- Review Actions -->
+            <div class="mt-10 pt-6 border-t border-gray-200">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">CCO Review Action</h3>
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Review Notes (Internal only)</label>
+                        <textarea name="review_notes" rows="3" class="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm"></textarea>
+                    </div>
+                    <div class="flex gap-x-3">
+                        <button type="submit" name="action" value="approve" class="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500">Approve Submission</button>
+                        <button type="submit" name="action" value="reject" class="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">Reject & Reopen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
