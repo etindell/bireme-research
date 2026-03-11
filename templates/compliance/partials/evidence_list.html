@@ -19,6 +19,14 @@
                     <a href="{{ ev.external_link }}" target="_blank" class="text-sm font-medium text-primary-600 hover:text-primary-500">{{ ev.external_link|truncatechars:60 }}</a>
                     {% if ev.description %}<p class="text-xs text-gray-500">{{ ev.description }}</p>{% endif %}
                 </div>
+                {% elif ev.text_content %}
+                <svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-gray-900">{{ ev.text_content|truncatechars:100 }}</p>
+                    {% if ev.description %}<p class="text-xs text-gray-500">{{ ev.description }}</p>{% endif %}
+                </div>
                 {% else %}
                 <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
@@ -88,7 +96,14 @@
         </div>
     </div>
     <div class="mt-3">
-        <label class="block text-xs text-gray-500 mb-1">Description</label>
+        <label class="block text-xs text-gray-500 mb-1">Or Simple Text Evidence</label>
+        {{ evidence_form.text_content }}
+        {% if evidence_form.text_content.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ evidence_form.text_content.errors.0 }}</p>
+        {% endif %}
+    </div>
+    <div class="mt-3">
+        <label class="block text-xs text-gray-500 mb-1">Overall Description (Optional)</label>
         {{ evidence_form.description }}
         {% if evidence_form.description.errors %}
         <p class="mt-1 text-xs text-red-600">{{ evidence_form.description.errors.0 }}</p>

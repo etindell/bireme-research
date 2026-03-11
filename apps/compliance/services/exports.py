@@ -270,6 +270,8 @@ def generate_audit_pdf(organization, year, user):
                     
                     if ev.external_link:
                         task_elements.append(Paragraph(f"&bull; External Link: <a href='{ev.external_link}' color='blue'>{ev.external_link}</a>{desc}", small_style))
+                    elif ev.text_content:
+                        task_elements.append(Paragraph(f"&bull; Text Evidence: {ev.text_content}{desc}", small_style))
                     else:
                         size_kb = round(ev.size_bytes / 1024, 1) if ev.size_bytes else 0
                         task_elements.append(Paragraph(

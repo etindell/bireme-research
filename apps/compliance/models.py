@@ -145,6 +145,7 @@ class ComplianceEvidence(TimeStampedModel, OrganizationMixin):
     mime_type = models.CharField(max_length=255, blank=True, default='')
     size_bytes = models.PositiveBigIntegerField(default=0)
     external_link = models.URLField(max_length=2000, blank=True, default='')
+    text_content = models.TextField(blank=True, default='')
     description = models.TextField(blank=True, default='')
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

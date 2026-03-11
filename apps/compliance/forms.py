@@ -90,10 +90,11 @@ class ComplianceTaskStatusForm(forms.Form):
 class EvidenceUploadForm(forms.ModelForm):
     class Meta:
         model = ComplianceEvidence
-        fields = ['file', 'external_link', 'description']
+        fields = ['file', 'external_link', 'text_content', 'description']
         widgets = {
             'file': forms.ClearableFileInput(attrs={'class': INPUT_CLASS}),
             'external_link': forms.URLInput(attrs={'class': INPUT_CLASS, 'placeholder': 'https://...'}),
+            'text_content': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2, 'placeholder': 'Simple text evidence...'}),
             'description': forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Brief description'}),
         }
 
@@ -102,8 +103,8 @@ class EvidenceUploadForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if not cleaned.get('file') and not cleaned.get('external_link'):
-            raise forms.ValidationError('Provide either a file or an external link.')
+        if not cleaned.get('file') and not cleaned.get('external_link') and not cleaned.get('text_content'):
+            raise forms.ValidationError('Provide either a file, an external link, or text evidence.')
         return cleaned
 
 
