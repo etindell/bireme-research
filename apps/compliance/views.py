@@ -343,16 +343,26 @@ class EvidenceUploadView(OrganizationViewMixin, View):
             ComplianceTask.objects.filter(organization=request.organization), pk=pk
         )
         form = EvidenceUploadForm(request.POST, request.FILES, organization=request.organization)
+        
+        toast_message = None
+        toast_type = 'info'
+
         if form.is_valid():
             evidence = form.save(commit=False)
             evidence.task = task
             evidence.organization = request.organization
             evidence.uploaded_by = request.user
             evidence.created_by = request.user
-            if evidence.file:
-                evidence.original_filename = evidence.file.name
-                evidence.mime_type = evidence.file.content_type or ''
-                evidence.size_bytes = evidence.file.size
+            
+            # Get file details from cleaned_data
+            file_obj = form.cleaned_data.get('file')
+            if file_obj:
+                evidence.original_filename = file_obj.name
+                evidence.mime_type = getattr(file_obj, 'content_type', '')
+                evidence.size_bytes = file_obj.size
+            elif evidence.external_link:
+                evidence.original_filename = '' # Clear if link
+            
             evidence.save()
 
             log_action(
@@ -361,11 +371,24 @@ class EvidenceUploadView(OrganizationViewMixin, View):
                 new_value={'filename': evidence.original_filename, 'external_link': evidence.external_link},
                 description=f'Evidence added: {evidence.original_filename or evidence.external_link}',
             )
-            messages.success(request, 'Evidence uploaded.')
+            
+            toast_message = 'Evidence uploaded successfully.'
+            toast_type = 'success'
+            messages.success(request, toast_message)
             # Clear form on success
             form = EvidenceUploadForm()
         else:
-            messages.error(request, 'Upload failed. Provide a file or link.')
+            # Add field errors to message for better debugging
+            error_details = []
+            for field, errors in form.errors.items():
+                error_details.append(f"{field}: {', '.join(errors)}")
+            
+            toast_message = f"Upload failed. {'; '.join(error_details)}"
+            if not error_details:
+                toast_message = "Upload failed. Please provide a file or an external link."
+            
+            toast_type = 'error'
+            messages.error(request, toast_message)
 
         if request.htmx:
             evidence_items = task.evidence_items.all()
@@ -374,7 +397,21 @@ class EvidenceUploadView(OrganizationViewMixin, View):
                 {'task': task, 'evidence_items': evidence_items, 'evidence_form': form},
                 request=request,
             )
-            return HttpResponse(html)
+            response = HttpResponse(html)
+            
+            # Trigger toast via HTMX header
+            if toast_message:
+                import json
+                trigger_data = {
+                    'toast': {
+                        'message': toast_message,
+                        'type': toast_type
+                    }
+                }
+                response['HX-Trigger'] = json.dumps(trigger_data)
+            
+            return response
+            
         return redirect('compliance:task_detail', pk=pk)
 
 
