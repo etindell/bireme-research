@@ -166,19 +166,57 @@ def generate_note_pdf(note, user):
         # 1. Convert Markdown to HTML
         html_content = markdown.markdown(note.content)
         
-        # 2. Use bleach to strip tags ReportLab doesn't like, and clean up attributes
-        # We handle paragraphs and lists manually to keep the flow
-        allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike']
+        # 2. Use bleach to strip tags ReportLab doesn't like, but keep img for parsing
+        allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike', 'img']
         
         # Split by blocks (p, li, blockquote)
         import re
-        # This is a crude but effective way to split common MD blocks for ReportLab
         blocks = re.split(r'<(?:p|li|blockquote|h[1-6])>', html_content)
         
         for block in blocks:
             if not block.strip(): continue
             
-            # Clean the block of unsupported tags/attributes
+            # Extract image tags before cleaning the rest of the text
+            img_matches = re.findall(r'<img[^>]+src="([^">]+)"', block)
+            
+            if img_matches:
+                for img_src in img_matches:
+                    # 1. Resolve local path
+                    # img_src is usually something like "/media/note_images/..."
+                    # We need to map it to settings.MEDIA_ROOT
+                    local_path = ""
+                    if img_src.startswith(settings.MEDIA_URL):
+                        rel_path = img_src.replace(settings.MEDIA_URL, '', 1)
+                        local_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+                    
+                    if local_path and os.path.exists(local_path):
+                        try:
+                            rl_img = Image(local_path)
+                            
+                            # Scale image to fit page width (max 6 inches)
+                            max_w = 6 * inch
+                            max_h = 4 * inch
+                            w, h = rl_img.drawWidth, rl_img.drawHeight
+                            aspect = h / float(w)
+                            
+                            if w > max_w:
+                                rl_img.drawWidth = max_w
+                                rl_img.drawHeight = max_w * aspect
+                            if rl_img.drawHeight > max_h:
+                                rl_img.drawHeight = max_h
+                                rl_img.drawWidth = max_h / aspect
+                            
+                            rl_img.hAlign = 'LEFT'
+                            content.append(Spacer(1, 0.1 * inch))
+                            content.append(rl_img)
+                            content.append(Spacer(1, 0.1 * inch))
+                        except Exception as e:
+                            content.append(Paragraph(f"<i>(Image error: {str(e)})</i>", styles['MetaText']))
+                
+                # Remove the img tags from the text so we don't try to render them in Paragraph
+                block = re.sub(r'<img[^>]+>', '', block)
+
+            # Clean the remaining text in the block
             clean_text = bleach.clean(block, tags=allowed_tags, strip=True)
             
             # Map strong/em to b/i for ReportLab
@@ -186,7 +224,7 @@ def generate_note_pdf(note, user):
             clean_text = clean_text.replace('<em>', '<i>').replace('</em>', '</i>')
             
             # Remove closing tags that re.split left behind
-            clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6])>', '', clean_text).strip()
+            clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6]|img)>', '', clean_text).strip()
             
             if not clean_text: continue
             
@@ -321,7 +359,7 @@ def generate_company_pdf(company, notes, user):
                 html_content = markdown.markdown(note.content)
                 
                 # 2. Use bleach to strip tags ReportLab doesn't like
-                allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike']
+                allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike', 'img']
                 
                 # Split by blocks (p, li, blockquote)
                 import re
@@ -330,6 +368,39 @@ def generate_company_pdf(company, notes, user):
                 for block in blocks:
                     if not block.strip(): continue
                     
+                    # Extract image tags
+                    img_matches = re.findall(r'<img[^>]+src="([^">]+)"', block)
+                    if img_matches:
+                        for img_src in img_matches:
+                            local_path = ""
+                            if img_src.startswith(settings.MEDIA_URL):
+                                rel_path = img_src.replace(settings.MEDIA_URL, '', 1)
+                                local_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+                            
+                            if local_path and os.path.exists(local_path):
+                                try:
+                                    rl_img = Image(local_path)
+                                    # Scale
+                                    max_w, max_h = 6*inch, 4*inch
+                                    w, h = rl_img.drawWidth, rl_img.drawHeight
+                                    aspect = h / float(w)
+                                    if w > max_w:
+                                        rl_img.drawWidth = max_w
+                                        rl_img.drawHeight = max_w * aspect
+                                    if rl_img.drawHeight > max_h:
+                                        rl_img.drawHeight = max_h
+                                        rl_img.drawWidth = max_h / aspect
+                                    
+                                    rl_img.hAlign = 'LEFT'
+                                    note_elements.append(Spacer(1, 0.1*inch))
+                                    note_elements.append(rl_img)
+                                    note_elements.append(Spacer(1, 0.1*inch))
+                                except:
+                                    pass
+                        
+                        # Remove img tags from text
+                        block = re.sub(r'<img[^>]+>', '', block)
+
                     # Clean the block
                     clean_text = bleach.clean(block, tags=allowed_tags, strip=True)
                     
@@ -338,7 +409,7 @@ def generate_company_pdf(company, notes, user):
                     clean_text = clean_text.replace('<em>', '<i>').replace('</em>', '</i>')
                     
                     # Remove closing tags
-                    clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6])>', '', clean_text).strip()
+                    clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6]|img)>', '', clean_text).strip()
                     
                     if not clean_text: continue
                     
