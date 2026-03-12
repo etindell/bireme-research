@@ -104,6 +104,10 @@ class ComplianceTask(SoftDeleteModel, OrganizationMixin):
     )
     notes = models.TextField(blank=True, default='')
     tags = models.CharField(max_length=500, blank=True, default='')
+    migrated_to_survey = models.ForeignKey(
+        'SurveyAssignment', on_delete=models.SET_NULL, null=True, blank=True, 
+        related_name='migrated_from_tasks'
+    )
     conditional_flag = models.CharField(max_length=100, blank=True, default='')
     is_conditional = models.BooleanField(default=False)
 
@@ -395,6 +399,7 @@ class SurveyResponse(TimeStampedModel, OrganizationMixin):
     attested_at = models.DateTimeField(default=timezone.now)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default='', help_text="Internal notes or migration source info")
     certification_text_snapshot = models.TextField(help_text="Snapshot of legal text at time of signing")
 
     def __str__(self):
