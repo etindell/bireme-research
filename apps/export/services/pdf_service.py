@@ -112,7 +112,7 @@ def generate_note_pdf(note, user):
     content = []
 
     # --- 1. HEADER WITH LOGO ---
-    logo_path = os.path.join(settings.BASE_DIR, 'apps', 'export', 'logos', 'Bireme-Logo-Color.png')
+    logo_path = os.path.join(settings.BASE_DIR, 'apps', 'export', 'Logos', 'Bireme-Logo-Color.png')
     
     header_data = []
     if os.path.exists(logo_path):
@@ -252,7 +252,7 @@ def generate_company_pdf(company, notes, user):
     content = []
 
     # --- 1. HEADER ---
-    logo_path = os.path.join(settings.BASE_DIR, 'apps', 'export', 'logos', 'Bireme-Logo-Color.png')
+    logo_path = os.path.join(settings.BASE_DIR, 'apps', 'export', 'Logos', 'Bireme-Logo-Color.png')
     if os.path.exists(logo_path):
         img = Image(logo_path, width=1.8*inch, height=0.45*inch)
         img.hAlign = 'LEFT'
