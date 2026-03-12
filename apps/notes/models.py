@@ -129,6 +129,10 @@ class Note(SoftDeleteModel, OrganizationMixin):
     # State
     is_collapsed = models.BooleanField(default=True)
     is_pinned = models.BooleanField(default=False)
+    is_draft = models.BooleanField(
+        default=False,
+        help_text='Whether this note is currently a draft'
+    )
     is_imported = models.BooleanField(
         default=False,
         help_text='Whether this note was imported from external source'

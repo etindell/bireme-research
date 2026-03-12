@@ -342,6 +342,7 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                 context = self.get_context_data(form=form, cash_flow_form=cash_flow_form)
                 return self.render_to_response(context)
 
+        form.instance.is_draft = False
         form.instance.updated_by = self.request.user
         response = super().form_valid(form)
 
@@ -460,6 +461,49 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
             )
             valuation.calculate_irr()
             valuation.save(history_user=self.request.user)
+
+
+class NoteAutoSaveView(OrganizationViewMixin, View):
+    """HTMX view to handle auto-saves for notes (drafts and edits)."""
+
+    def post(self, request, pk=None):
+        organization = request.organization
+        
+        if pk and pk != 0:
+            # Updating existing note
+            note = get_object_or_404(
+                Note.objects.filter(organization=organization),
+                pk=pk
+            )
+            form = NoteForm(request.POST, instance=note, organization=organization)
+        else:
+            # Creating new draft
+            note = Note(organization=organization, created_by=request.user, is_draft=True)
+            form = NoteForm(request.POST, instance=note, organization=organization)
+
+        # We force title to be optional for auto-save if it's a draft
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.organization = organization
+            note.created_by = request.user
+            note.save()
+            form.save_m2m() # Save referenced companies
+            
+            from django.utils import timezone
+            now = timezone.now().strftime("%H:%M:%S")
+            
+            response = HttpResponse(f'<span class="text-xs text-gray-500 italic">Auto-saved at {now}</span>')
+            
+            # If this was a new note, provide the new URL for the frontend to update itself
+            if pk == 0:
+                response['HX-Trigger'] = json.dumps({
+                    "noteSaved": {"pk": note.pk, "url": reverse('notes:autosave', kwargs={'pk': note.pk})}
+                })
+            
+            return response
+        else:
+            # If invalid (e.g. some other required field), just return error quietly
+            return HttpResponse('<span class="text-xs text-red-500 italic">Auto-save failed</span>', status=200)
 
 
 class NoteDeleteView(OrganizationViewMixin, DeleteView):

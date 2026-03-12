@@ -64,6 +64,12 @@ class NoteForm(forms.ModelForm):
         self.fields['company'].required = False
         self.fields['company'].empty_label = 'General (no company)'
 
+        # Make title optional for auto-save drafts
+        if self.instance and self.instance.is_draft:
+            self.fields['title'].required = False
+        elif 'is_draft' in self.data and self.data.get('is_draft') == 'true':
+            self.fields['title'].required = False
+
         if organization:
             # Filter companies and note types by organization
             self.fields['company'].queryset = Company.objects.filter(

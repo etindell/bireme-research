@@ -10,10 +10,19 @@
                 {% if object %}Edit Note{% else %}Add Note{% endif %}
             </h1>
         </div>
+        <div id="autosave-indicator" class="flex items-center gap-2">
+            <!-- HTMX will inject the status message here -->
+        </div>
     </div>
 
-    <form method="post" class="space-y-8">
+    <form method="post" id="note-form" class="space-y-8"
+          hx-post="{% if object %}{% url 'notes:autosave' object.pk %}{% else %}{% url 'notes:autosave_new' %}{% endif %}"
+          hx-trigger="change delay:10s, autosave from:body"
+          hx-target="#autosave-indicator"
+          hx-swap="innerHTML"
+          hx-include="[name='is_draft']">
         {% csrf_token %}
+        <input type="hidden" name="is_draft" value="true">
 
         <!-- General form errors -->
         {% if form.non_field_errors %}
@@ -790,6 +799,23 @@ function refreshImagePreviews() {
         ).join('') +
         '</div>';
 }
+
+// Handle auto-save URL updates for new notes
+document.body.addEventListener('noteSaved', function(evt) {
+    const data = evt.detail;
+    const form = document.getElementById('note-form');
+    if (form && data.url) {
+        // Update both the standard action and the HTMX post URL
+        form.setAttribute('hx-post', data.url);
+        form.setAttribute('action', data.url.replace('/autosave/', '/edit/'));
+        
+        // Process the element again to update HTMX internal state
+        htmx.process(form);
+        
+        // Also update the browser URL to the edit page without reloading
+        window.history.replaceState({}, '', data.url.replace('/autosave/', '/edit/'));
+    }
+});
 
 (function initImagePreviews() {
     const textarea = document.getElementById('id_content');
