@@ -14,6 +14,7 @@ from reportlab.pdfgen import canvas
 from django.conf import settings
 from django.utils.html import strip_tags
 import markdown
+import bleach
 
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -158,28 +159,43 @@ def generate_note_pdf(note, user):
 
     # --- 3. NOTE CONTENT (Markdown) ---
     if note.content:
-        # Simple markdown to HTML conversion for Paragraph
-        # ReportLab Paragraph supports a subset of HTML
+        # ReportLab Paragraph supports a very limited subset of HTML tags: 
+        # <b>, <i>, <u>, <font>, <link>, <br/>, etc.
+        # It DOES NOT support <img>, <a> (use <link>), <ul>, <li>, <p>, etc.
+        
+        # 1. Convert Markdown to HTML
         html_content = markdown.markdown(note.content)
         
-        # Clean up some common MD patterns that don't translate directly to RL Paragraph
-        # Paragraph tags are handled by RL, but we need to split by them
-        parts = html_content.split('</p>')
-        for part in parts:
-            if not part.strip(): continue
-            text = part.replace('<p>', '').strip()
-            # Handle bullet lists (very basic)
-            if '<ul>' in text:
-                items = text.split('<li>')
-                for item in items:
-                    if not item.strip(): continue
-                    clean_item = item.replace('</li>', '').replace('</ul>', '').strip()
-                    content.append(Paragraph(f"&bull; {clean_item}", styles['NoteContent']))
-            else:
-                # Basic cleaning of other tags
-                clean_text = text.replace('<strong>', '<b>').replace('</strong>', '</b>')
-                clean_text = clean_text.replace('<em>', '<i>').replace('</em>', '</i>')
+        # 2. Use bleach to strip tags ReportLab doesn't like, and clean up attributes
+        # We handle paragraphs and lists manually to keep the flow
+        allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike']
+        
+        # Split by blocks (p, li, blockquote)
+        import re
+        # This is a crude but effective way to split common MD blocks for ReportLab
+        blocks = re.split(r'<(?:p|li|blockquote|h[1-6])>', html_content)
+        
+        for block in blocks:
+            if not block.strip(): continue
+            
+            # Clean the block of unsupported tags/attributes
+            clean_text = bleach.clean(block, tags=allowed_tags, strip=True)
+            
+            # Map strong/em to b/i for ReportLab
+            clean_text = clean_text.replace('<strong>', '<b>').replace('</strong>', '</b>')
+            clean_text = clean_text.replace('<em>', '<i>').replace('</em>', '</i>')
+            
+            # Remove closing tags that re.split left behind
+            clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6])>', '', clean_text).strip()
+            
+            if not clean_text: continue
+            
+            try:
                 content.append(Paragraph(clean_text, styles['NoteContent']))
+            except Exception as e:
+                # Fallback to plain text if ReportLab still complains
+                plain_text = strip_tags(clean_text)
+                content.append(Paragraph(plain_text, styles['NoteContent']))
 
     # --- 4. CASH FLOWS ---
     try:
@@ -301,20 +317,36 @@ def generate_company_pdf(company, notes, user):
             note_elements.append(Paragraph(" | ".join(meta), meta_text_style))
 
             if note.content:
-                # Reuse simplified MD logic
-                html = markdown.markdown(note.content)
-                parts = html.split('</p>')
-                for part in parts:
-                    if not part.strip(): continue
-                    text = part.replace('<p>', '').strip()
-                    if '<ul>' in text:
-                        for li in text.split('<li>'):
-                            if not li.strip(): continue
-                            clean_li = li.replace('</li>', '').replace('</ul>', '').strip()
-                            note_elements.append(Paragraph(f"&bull; {clean_li}", content_style))
-                    else:
-                        clean_text = text.replace('<strong>', '<b>').replace('</strong>', '</b>').replace('<em>', '<i>').replace('</em>', '</i>')
+                # 1. Convert Markdown to HTML
+                html_content = markdown.markdown(note.content)
+                
+                # 2. Use bleach to strip tags ReportLab doesn't like
+                allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike']
+                
+                # Split by blocks (p, li, blockquote)
+                import re
+                blocks = re.split(r'<(?:p|li|blockquote|h[1-6])>', html_content)
+                
+                for block in blocks:
+                    if not block.strip(): continue
+                    
+                    # Clean the block
+                    clean_text = bleach.clean(block, tags=allowed_tags, strip=True)
+                    
+                    # Map tags for ReportLab
+                    clean_text = clean_text.replace('<strong>', '<b>').replace('</strong>', '</b>')
+                    clean_text = clean_text.replace('<em>', '<i>').replace('</em>', '</i>')
+                    
+                    # Remove closing tags
+                    clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6])>', '', clean_text).strip()
+                    
+                    if not clean_text: continue
+                    
+                    try:
                         note_elements.append(Paragraph(clean_text, content_style))
+                    except:
+                        plain_text = strip_tags(clean_text)
+                        note_elements.append(Paragraph(plain_text, content_style))
 
             note_elements.append(Spacer(1, 0.2*inch))
             content.append(KeepTogether(note_elements))
