@@ -16,19 +16,12 @@ from django.template.loader import render_to_string
 from apps.companies.models import Company
 from apps.notes.models import Note
 
-# Try to import WeasyPrint, but make it optional
-try:
-    from django_weasyprint import WeasyTemplateResponseMixin
-    WEASYPRINT_AVAILABLE = True
-except (ImportError, OSError):
-    WEASYPRINT_AVAILABLE = False
-    WeasyTemplateResponseMixin = object  # Dummy class
+from .services.pdf_service import generate_note_pdf, generate_company_pdf
 
 
-class BaseNotePDFView(LoginRequiredMixin, DetailView):
-    """Base view for individual note PDF export."""
+class NotePDFView(LoginRequiredMixin, DetailView):
+    """Export individual note as a professional PDF."""
     model = Note
-    template_name = 'export/note_pdf.html'
 
     def get_queryset(self):
         if hasattr(self.request, 'organization') and self.request.organization:
@@ -38,47 +31,29 @@ class BaseNotePDFView(LoginRequiredMixin, DetailView):
             ).select_related('company', 'note_type', 'created_by')
         return Note.objects.none()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['note'] = self.object
-        context['export_date'] = timezone.now()
-        return context
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        pdf_content = generate_note_pdf(self.object, request.user)
+        
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        slug = self.object.company.slug if self.object.company else 'note'
+        filename = f'{slug}-{self.object.pk}-{timezone.now().strftime("%Y%m%d")}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
 
-if WEASYPRINT_AVAILABLE:
-    class NotePDFView(WeasyTemplateResponseMixin, BaseNotePDFView):
-        """Export individual note as PDF using WeasyPrint."""
-        pdf_stylesheets = []
-
-        def get_pdf_filename(self):
-            note = self.object
-            slug = note.company.slug if note.company else 'note'
-            return f'{slug}-{note.pk}-{timezone.now().strftime("%Y%m%d")}.pdf'
-else:
-    class NotePDFView(BaseNotePDFView):
-        """Fallback: Export note as HTML when WeasyPrint is unavailable."""
-        def render_to_response(self, context, **response_kwargs):
-            html = render_to_string(self.template_name, context, request=self.request)
-            response = HttpResponse(html, content_type='text/html')
-            note = self.object
-            slug = note.company.slug if note.company else 'note'
-            response['Content-Disposition'] = f'inline; filename="{slug}-{note.pk}.html"'
-            return response
-
-
-class BaseCompanyPDFView(LoginRequiredMixin, DetailView):
-    """Base view for company PDF export."""
+class CompanyPDFView(LoginRequiredMixin, DetailView):
+    """Export all company notes as a professional PDF compilation."""
     model = Company
-    template_name = 'export/company_pdf.html'
 
     def get_queryset(self):
         if hasattr(self.request, 'organization') and self.request.organization:
             return Company.objects.filter(organization=self.request.organization)
         return Company.objects.none()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        
         # Get all notes for this company (primary + mentioned)
         notes = Note.objects.filter(
             organization=self.request.organization,
@@ -90,27 +65,9 @@ class BaseCompanyPDFView(LoginRequiredMixin, DetailView):
             'note_type', 'created_by'
         ).order_by('-created_at').distinct()
 
-        context['notes'] = notes
-        context['export_date'] = timezone.now()
-        return context
-
-
-if WEASYPRINT_AVAILABLE:
-    class CompanyPDFView(WeasyTemplateResponseMixin, BaseCompanyPDFView):
-        """Export company notes as PDF using WeasyPrint."""
-        pdf_stylesheets = []
-
-        def get_pdf_filename(self):
-            return f'{self.object.slug}-notes-{timezone.now().strftime("%Y%m%d")}.pdf'
-else:
-    class CompanyPDFView(BaseCompanyPDFView):
-        """
-        Fallback: Export company notes as HTML when WeasyPrint is unavailable.
-        The HTML is styled for printing.
-        """
-        def render_to_response(self, context, **response_kwargs):
-            # Return printable HTML since WeasyPrint isn't available
-            html = render_to_string(self.template_name, context, request=self.request)
-            response = HttpResponse(html, content_type='text/html')
-            response['Content-Disposition'] = f'inline; filename="{self.object.slug}-notes.html"'
-            return response
+        pdf_content = generate_company_pdf(self.object, notes, request.user)
+        
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        filename = f'{self.object.slug}-notes-{timezone.now().strftime("%Y%m%d")}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
