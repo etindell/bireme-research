@@ -14,12 +14,16 @@ class Command(BaseCommand):
         MAPPING = {
             'Personal Securities Transactions': 'quarterly-access-person-certification',
             'Quarterly Access Person': 'quarterly-access-person-certification',
+            'Trading': 'quarterly-access-person-certification',
             'Code of Ethics': 'annual-code-of-ethics-and-compliance-manual-attestation',
             'Compliance Manual': 'annual-code-of-ethics-and-compliance-manual-attestation',
+            'Ethics': 'annual-code-of-ethics-and-compliance-manual-attestation',
             'Holdings': 'annual-holdings-and-accounts-report',
             'Outside Business': 'annual-oba-conflicts-political-contributions-survey',
             'Political Contributions': 'annual-oba-conflicts-political-contributions-survey',
+            'OBA': 'annual-oba-conflicts-political-contributions-survey',
             'Cybersecurity': 'annual-cybersecurity-communications-attestation',
+            'Cyber': 'annual-cybersecurity-communications-attestation',
         }
 
         tasks = ComplianceTask.objects.filter(
