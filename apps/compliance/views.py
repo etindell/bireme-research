@@ -956,3 +956,12 @@ class SurveyExceptionListView(OrganizationViewMixin, ListView):
 
     def get_queryset(self):
         return SurveyException.objects.filter(organization=self.request.organization).select_related('assignment', 'assignment__user')
+
+
+class ExportSurveyCSVView(OrganizationViewMixin, View):
+    def get(self, request, year):
+        from .services.exports import export_surveys_csv
+        csv_content = export_surveys_csv(request.organization, year)
+        response = HttpResponse(csv_content, content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename=compliance_surveys_{year}.csv'
+        return response

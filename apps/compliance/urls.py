@@ -71,4 +71,7 @@ urlpatterns = [
     
     # Exceptions
     path('surveys/exceptions/', views.SurveyExceptionListView.as_view(), name='survey_exception_list'),
+    
+    # Survey Exports
+    path('surveys/export/<int:year>/csv/', views.ExportSurveyCSVView.as_view(), name='survey_export_csv'),
 ]

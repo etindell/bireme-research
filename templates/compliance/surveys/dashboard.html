@@ -11,6 +11,7 @@
             <p class="mt-1 text-sm text-gray-500">Employee attestations and periodic surveys</p>
         </div>
         <div class="flex items-center gap-x-3">
+            <a href="{% url 'compliance:survey_export_csv' 2026 %}" hx-boost="false" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Export CSV</a>
             <a href="{% url 'compliance:survey_template_list' %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Manage Templates</a>
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">

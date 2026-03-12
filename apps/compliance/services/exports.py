@@ -101,6 +101,53 @@ def export_zip(organization, year):
     return zip_buffer.getvalue()
 
 
+def export_surveys_csv(organization, year):
+    """Export survey assignments and their answers to CSV."""
+    import csv
+    import io
+    import json
+    from apps.compliance.models import SurveyAssignment, SurveyAnswer
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    
+    # Header
+    header = [
+        'Employee', 'Survey', 'Version', 'Status', 'Due Date', 
+        'Submitted At', 'Reviewed At', 'Question Key', 'Prompt', 'Answer'
+    ]
+    writer.writerow(header)
+
+    assignments = SurveyAssignment.objects.filter(
+        organization=organization, year=year
+    ).select_related('user', 'version__template', 'response').prefetch_related('response__answers__question')
+
+    for ass in assignments:
+        base_row = [
+            ass.user.email,
+            ass.version.template.name,
+            ass.version.version_number,
+            ass.status,
+            ass.due_date,
+            ass.submitted_at,
+            ass.reviewed_at,
+        ]
+        
+        if hasattr(ass, 'response'):
+            for answer in ass.response.answers.all():
+                row = base_row + [
+                    answer.question.question_key,
+                    answer.question.prompt,
+                    answer.value_json
+                ]
+                writer.writerow(row)
+        else:
+            # Row for unsubmitted assignment
+            writer.writerow(base_row + ['', '', 'PENDING'])
+
+    return buf.getvalue()
+
+
 def generate_audit_pdf(organization, year, user):
     """Generate professional PDF audit report for all compliance tasks in a year."""
     import io
