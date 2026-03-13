@@ -177,13 +177,23 @@ def generate_note_pdf(note, user):
             if not block.strip(): continue
             
             # Extract image tags before cleaning the rest of the text
-            img_matches = re.findall(r'<img[^>]+src="([^">]+)"', block)
+            # Now we need to look for style="width: ..." or other ways width is passed
+            # Our frontend sync uses style="width: 300px" or similar
+            img_tags = re.findall(r'<img[^>]+>', block)
             
-            if img_matches:
-                for img_src in img_matches:
-                    # 1. Resolve local path
-                    # img_src is usually something like "/media/note_images/..."
-                    # We need to map it to settings.MEDIA_ROOT
+            if img_tags:
+                for img_tag in img_tags:
+                    src_match = re.search(r'src="([^">]+)"', img_tag)
+                    if not src_match: continue
+                    img_src = src_match.group(1)
+                    
+                    # Try to extract width
+                    width_px = None
+                    style_match = re.search(r'style="width:\s*(\d+)px"', img_tag)
+                    if style_match:
+                        width_px = int(style_match.group(1))
+                    
+                    # Resolve local path
                     local_path = ""
                     if img_src.startswith(settings.MEDIA_URL):
                         rel_path = img_src.replace(settings.MEDIA_URL, '', 1)
@@ -193,18 +203,28 @@ def generate_note_pdf(note, user):
                         try:
                             rl_img = Image(local_path)
                             
-                            # Scale image to fit page width (max 6 inches)
+                            # Standard scale limits
                             max_w = 6 * inch
-                            max_h = 4 * inch
+                            max_h = 6 * inch
+                            
                             w, h = rl_img.drawWidth, rl_img.drawHeight
                             aspect = h / float(w)
                             
-                            if w > max_w:
-                                rl_img.drawWidth = max_w
-                                rl_img.drawHeight = max_w * aspect
-                            if rl_img.drawHeight > max_h:
-                                rl_img.drawHeight = max_h
-                                rl_img.drawWidth = max_h / aspect
+                            # If we have a custom width from the editor, use it (convert px to points roughly)
+                            # 1 inch = 72 points. Standard browser DPI is ~96. 
+                            # So points = pixels * 72 / 96 = pixels * 0.75
+                            if width_px:
+                                target_w = width_px * 0.75
+                                rl_img.drawWidth = min(target_w, max_w)
+                                rl_img.drawHeight = rl_img.drawWidth * aspect
+                            else:
+                                # Default scaling
+                                if w > max_w:
+                                    rl_img.drawWidth = max_w
+                                    rl_img.drawHeight = max_w * aspect
+                                if rl_img.drawHeight > max_h:
+                                    rl_img.drawHeight = max_h
+                                    rl_img.drawWidth = max_h / aspect
                             
                             rl_img.hAlign = 'LEFT'
                             content.append(Spacer(1, 0.1 * inch))
