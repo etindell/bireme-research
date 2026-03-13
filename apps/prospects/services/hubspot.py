@@ -64,7 +64,7 @@ def sync_prospect_to_hubspot(prospect):
                 if e.status == 404:
                     # Create new
                     create_res = client.crm.contacts.basic_api.create(
-                        simple_public_object_input=SimplePublicObjectInputForCreate(properties=properties)
+                        simple_public_object_input_for_create=SimplePublicObjectInputForCreate(properties=properties)
                     )
                     hs_id = create_res.id
                 else:
