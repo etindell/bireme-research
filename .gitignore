@@ -40,6 +40,11 @@ staticfiles/
 .env.local
 .env.*.local
 
+# HubSpot
+hubspot.config.yml
+.hs-deploy-v2/
+.hsproject/
+
 # IDE
 .idea/
 .vscode/

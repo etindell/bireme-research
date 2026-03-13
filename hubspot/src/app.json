@@ -1,0 +1,16 @@
+{
+  "name": "Bireme Research CRM",
+  "scopes": [
+    "crm.objects.contacts.read",
+    "crm.objects.contacts.write",
+    "crm.objects.marketing_events.read",
+    "crm.objects.marketing_events.write",
+    "crm.schemas.contacts.read",
+    "crm.schemas.contacts.write"
+  ],
+  "extensions": {
+    "crm": {
+      "cards": []
+    }
+  }
+}
