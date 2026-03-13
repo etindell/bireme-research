@@ -66,7 +66,6 @@ INSTALLED_APPS = [
     'apps.events',
     'apps.research',
     'apps.compliance',
-    'apps.prospects',
     'core',
 ]
 
