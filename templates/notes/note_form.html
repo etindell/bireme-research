@@ -476,8 +476,11 @@
         if (!md) return '';
         
         let html = md
-            // Images with attributes: ![alt](url){: width="300px" }
-            .replace(/!\[([^\]]*)\]\(([^)]+)\)\{:?\s*width="([^"]+)"\s*\}/g, '<img src="$2" alt="$1" style="width: $3" class="max-h-64 rounded my-2 border shadow-sm">')
+            // Images with attributes: ![alt](url){: width="300px" } or ![alt](url){width="300px"}
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)\{[:\s]*(?:width|style)="([^"]+)"\s*\}/g, (match, alt, url, width) => {
+                const w = width.includes('px') ? width : width + 'px';
+                return `<img src="${url}" alt="${alt}" style="width: ${w}" class="max-h-64 rounded my-2 border shadow-sm">`;
+            })
             // Standard Images: ![alt](url)
             .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-h-64 rounded my-2 border shadow-sm">')
             // Bold
@@ -522,7 +525,9 @@
             
             let mdImg = `![${alt}](${src})`;
             if (width) {
-                mdImg += `{ : width="${width}" }`;
+                // Use standard attr_list syntax: {: width="300px" }
+                // CRITICAL: Ensure no space before the colon
+                mdImg += `{: width="${width}" }`;
             }
             
             const textNode = document.createTextNode(mdImg);
