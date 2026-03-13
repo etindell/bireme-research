@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 
 from core.mixins import OrganizationViewMixin
 from .models import Prospect, ProspectNote
+from .forms import ProspectForm
 from .services.hubspot import sync_prospect_to_hubspot, sync_note_to_hubspot
 
 class ProspectListView(OrganizationViewMixin, ListView):
@@ -29,8 +30,8 @@ class ProspectDetailView(OrganizationViewMixin, DetailView):
 
 class ProspectCreateView(OrganizationViewMixin, CreateView):
     model = Prospect
+    form_class = ProspectForm
     template_name = 'prospects/prospect_form.html'
-    fields = ['first_name', 'last_name', 'company_name', 'email', 'phone', 'status']
     success_url = reverse_lazy('prospects:list')
 
     def form_valid(self, form):
@@ -43,8 +44,8 @@ class ProspectCreateView(OrganizationViewMixin, CreateView):
 
 class ProspectUpdateView(OrganizationViewMixin, UpdateView):
     model = Prospect
+    form_class = ProspectForm
     template_name = 'prospects/prospect_form.html'
-    fields = ['first_name', 'last_name', 'company_name', 'email', 'phone', 'status']
 
     def get_success_url(self):
         return reverse('prospects:detail', kwargs={'pk': self.object.pk})
