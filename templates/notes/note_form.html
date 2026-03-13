@@ -513,15 +513,28 @@
             });
         });
 
+        // Pre-process images in clone to convert them to Markdown syntax manually
+        // to avoid complex regex issues with multiple style attributes.
+        clone.querySelectorAll('img').forEach(img => {
+            const src = img.getAttribute('src');
+            const alt = img.getAttribute('alt') || 'image';
+            const width = img.style.width;
+            
+            let mdImg = `![${alt}](${src})`;
+            if (width) {
+                mdImg += `{ : width="${width}" }`;
+            }
+            
+            const textNode = document.createTextNode(mdImg);
+            img.parentNode.replaceChild(textNode, img);
+        });
+
         let html = clone.innerHTML;
         
         // Basic HTML to MD conversion
         let md = html
             .replace(/<div>/g, '\n').replace(/<\/div>/g, '')
             .replace(/<br\s*\/?>/g, '\n')
-            // Images: handle style width
-            .replace(/<img[^>]+src="([^">]+)"[^>]*alt="([^">]*)"[^>]*style="width:\s*([^;"]+)"[^>]*>/g, '![$2]($1){: width="$3" }')
-            .replace(/<img[^>]+src="([^">]+)"[^>]*alt="([^">]*)"[^>]*>/g, '![$2]($1)')
             .replace(/<(?:b|strong)>(.*?)<\/(?:b|strong)>/g, '**$1**')
             .replace(/<(?:i|em)>(.*?)<\/(?:i|em)>/g, '*$1*')
             .replace(/<li>(.*?)<\/li>/g, '$1\n')
