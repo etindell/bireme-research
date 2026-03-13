@@ -19,6 +19,30 @@
     #rich-editor li {
         display: list-item !important;
         margin-bottom: 0.25rem !important;
+        list-style-position: outside !important;
+    }
+    /* Image Resizing Styles */
+    #rich-editor img {
+        cursor: pointer;
+        display: inline-block;
+        vertical-align: middle;
+        position: relative;
+    }
+    #rich-editor img.selected-img {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+    }
+    #image-resizer-handle {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: #2563eb;
+        border: 2px solid white;
+        border-radius: 2px;
+        cursor: nwse-resize;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     /* Placeholder for contenteditable */
     #rich-editor:empty:before {
@@ -27,6 +51,7 @@
         pointer-events: none;
     }
 </style>
+<div id="image-resizer-handle"></div>
 <div class="mx-auto max-w-3xl">
     <div class="md:flex md:items-center md:justify-between mb-8">
         <div class="min-w-0 flex-1">
@@ -431,15 +456,18 @@
 /**
  * RICH EDITOR ENGINE
  * Handles ContentEditable sync with Markdown textarea, 
- * in-line image previews, and formatting.
+ * in-line image previews, formatting, and image resizing.
  */
 (function initRichEditor() {
     const textarea = document.getElementById('id_content');
     const editor = document.getElementById('rich-editor');
     const form = document.getElementById('note-form');
     const uploadIndicator = document.getElementById('upload-indicator');
+    const resizer = document.getElementById('image-resizer-handle');
 
     if (!textarea || !editor) return;
+
+    let currentResizingImg = null;
 
     // --- 1. INITIALIZATION ---
     
@@ -448,7 +476,9 @@
         if (!md) return '';
         
         let html = md
-            // Images: ![alt](url) -> <img src="url" alt="alt">
+            // Images with attributes: ![alt](url){: width="300px" }
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)\{:?\s*width="([^"]+)"\s*\}/g, '<img src="$2" alt="$1" style="width: $3" class="max-h-64 rounded my-2 border shadow-sm">')
+            // Standard Images: ![alt](url)
             .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-h-64 rounded my-2 border shadow-sm">')
             // Bold
             .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
@@ -470,15 +500,11 @@
     // --- 2. SYNC LOGIC ---
 
     function syncHtmlToMarkdown() {
-        // Clone editor to manipulate it without affecting user's view
         const clone = editor.cloneNode(true);
         
-        // Convert internal list structures to simple bullets
-        const lists = clone.querySelectorAll('ul, ol');
-        lists.forEach(list => {
-            const items = list.querySelectorAll('li');
-            items.forEach(li => {
-                // Ensure content within LI doesn't have extra newlines or divs
+        // Handle lists in clone
+        clone.querySelectorAll('ul, ol').forEach(list => {
+            list.querySelectorAll('li').forEach(li => {
                 let content = li.innerHTML
                     .replace(/<div>/g, '').replace(/<\/div>/g, '')
                     .replace(/<p>/g, '').replace(/<\/p>/g, '')
@@ -491,38 +517,81 @@
         
         // Basic HTML to MD conversion
         let md = html
-            // Remove DIV wraps (Chrome/Safari)
             .replace(/<div>/g, '\n').replace(/<\/div>/g, '')
-            // Handle BRs
             .replace(/<br\s*\/?>/g, '\n')
-            // Images: <img src="url" alt="alt"> -> ![alt](url)
+            // Images: handle style width
+            .replace(/<img[^>]+src="([^">]+)"[^>]*alt="([^">]*)"[^>]*style="width:\s*([^;"]+)"[^>]*>/g, '![$2]($1){: width="$3" }')
             .replace(/<img[^>]+src="([^">]+)"[^>]*alt="([^">]*)"[^>]*>/g, '![$2]($1)')
-            .replace(/<img[^>]*alt="([^">]*)"[^>]+src="([^">]+)"[^>]*>/g, '![$1]($2)')
-            // Bold/Italic
             .replace(/<(?:b|strong)>(.*?)<\/(?:b|strong)>/g, '**$1**')
             .replace(/<(?:i|em)>(.*?)<\/(?:i|em)>/g, '*$1*')
-            // Cleanup remaining list tags
             .replace(/<li>(.*?)<\/li>/g, '$1\n')
             .replace(/<\/?(?:ul|ol)>/g, '');
 
-        // Clean up entities
         md = md.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-        
         textarea.value = md.trim();
-        
-        // Trigger auto-save if using htmx change trigger
         textarea.dispatchEvent(new Event('change'));
     }
 
     editor.addEventListener('input', syncHtmlToMarkdown);
     
-    // --- 3. FORMATTING ---
+    // --- 3. IMAGE RESIZING ENGINE ---
+
+    function updateResizerPosition() {
+        if (!currentResizingImg || !resizer) return;
+        const rect = currentResizingImg.getBoundingClientRect();
+        resizer.style.display = 'block';
+        resizer.style.left = (window.scrollX + rect.right - 6) + 'px';
+        resizer.style.top = (window.scrollY + rect.bottom - 6) + 'px';
+    }
+
+    editor.addEventListener('click', function(e) {
+        if (e.target.tagName === 'IMG') {
+            if (currentResizingImg) currentResizingImg.classList.remove('selected-img');
+            currentResizingImg = e.target;
+            currentResizingImg.classList.add('selected-img');
+            updateResizerPosition();
+        } else {
+            if (currentResizingImg) {
+                currentResizingImg.classList.remove('selected-img');
+                currentResizingImg = null;
+                resizer.style.display = 'none';
+            }
+        }
+    });
+
+    window.addEventListener('resize', updateResizerPosition);
+    editor.addEventListener('scroll', updateResizerPosition);
+
+    resizer.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        if (!currentResizingImg) return;
+
+        const startX = e.clientX;
+        const startWidth = currentResizingImg.offsetWidth;
+
+        function onMouseMove(e) {
+            const newWidth = startWidth + (e.clientX - startX);
+            currentResizingImg.style.width = newWidth + 'px';
+            currentResizingImg.style.height = 'auto'; // Maintain aspect ratio
+            updateResizerPosition();
+        }
+
+        function onMouseUp() {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            syncHtmlToMarkdown();
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    });
+
+    // --- 4. FORMATTING & SHORTCUTS ---
 
     window.formatText = function(type) {
         editor.focus();
         let command = '';
         let value = null;
-
         switch(type) {
             case 'bold': command = 'bold'; break;
             case 'italic': command = 'italic'; break;
@@ -532,21 +601,16 @@
             case 'number': command = 'insertOrderedList'; break;
             case 'link': 
                 const url = prompt('Enter URL:');
-                if (url) {
-                    command = 'createLink';
-                    value = url;
-                }
+                if (url) { command = 'createLink'; value = url; }
                 break;
             case 'quote': command = 'formatBlock'; value = 'blockquote'; break;
         }
-
         if (command) {
             document.execCommand(command, false, value);
             syncHtmlToMarkdown();
         }
     };
 
-    // Keyboard Shortcuts
     editor.addEventListener('keydown', function(e) {
         if (e.ctrlKey || e.metaKey) {
             if (e.key === 'b') { e.preventDefault(); formatText('bold'); }
@@ -555,50 +619,34 @@
         }
     });
 
-    // --- 4. IMAGE HANDLING (PASTE & DROP) ---
+    // --- 5. IMAGE UPLOADS ---
 
     async function uploadImage(file) {
         uploadIndicator.classList.remove('hidden');
-
         try {
             const formData = new FormData();
             formData.append('image', file);
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-
             const response = await fetch('{% url "notes:upload_image" %}', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrfToken },
                 body: formData
             });
-
             const data = await response.json();
-
             if (data.success) {
-                // Insert image into editor at current selection
-                const imgHtml = `<img src="${data.url}" alt="image" class="max-h-64 rounded my-2 border shadow-sm">`;
+                const imgHtml = `<img src="${data.url}" alt="image" class="max-h-64 rounded my-2 border shadow-sm" style="width: 300px">`;
                 document.execCommand('insertHTML', false, imgHtml + '<br>');
                 syncHtmlToMarkdown();
-                
-                window.dispatchEvent(new CustomEvent('toast', {
-                    detail: { message: 'Image uploaded!', type: 'success' }
-                }));
-            } else {
-                throw new Error(data.error || 'Upload failed');
-            }
+                window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Image uploaded!', type: 'success' } }));
+            } else { throw new Error(data.error || 'Upload failed'); }
         } catch (error) {
-            console.error('Upload error:', error);
-            window.dispatchEvent(new CustomEvent('toast', {
-                detail: { message: error.message || 'Failed to upload image', type: 'error' }
-            }));
-        } finally {
-            uploadIndicator.classList.add('hidden');
-        }
+            window.dispatchEvent(new CustomEvent('toast', { detail: { message: error.message || 'Failed to upload image', type: 'error' } }));
+        } finally { uploadIndicator.classList.add('hidden'); }
     }
 
     editor.addEventListener('paste', async function(e) {
         const items = e.clipboardData?.items;
         if (!items) return;
-
         for (const item of items) {
             if (item.type.startsWith('image/')) {
                 e.preventDefault();
@@ -616,14 +664,11 @@
         editor.classList.remove('ring-2', 'ring-primary-500');
         const files = e.dataTransfer?.files;
         if (files) {
-            for (const file of files) {
-                if (file.type.startsWith('image/')) await uploadImage(file);
-            }
+            for (const file of files) { if (file.type.startsWith('image/')) await uploadImage(file); }
         }
     });
 
-    // --- 5. AUTO-SAVE URL SYNC ---
-    
+    // --- 6. AUTO-SAVE ---
     document.body.addEventListener('noteSaved', function(evt) {
         const data = evt.detail;
         if (form && data.url) {
@@ -633,27 +678,15 @@
             window.history.replaceState({}, '', data.url.replace('/autosave/', '/edit/'));
         }
     });
-
 })();
 
-/**
- * CONTENT EXPANDER
- */
 function contentExpander() {
     return {
         expanded: false,
-        init() {
-            // ContentEditable auto-grows naturally, 
-            // but we can enforce a minimum height or layout shifts here
-        },
         toggle() {
             this.expanded = !this.expanded;
             const editor = document.getElementById('rich-editor');
-            if (this.expanded) {
-                editor.style.minHeight = '600px';
-            } else {
-                editor.style.minHeight = '400px';
-            }
+            editor.style.minHeight = this.expanded ? '600px' : '400px';
         }
     };
 }

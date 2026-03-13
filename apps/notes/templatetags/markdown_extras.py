@@ -22,7 +22,7 @@ ALLOWED_TAGS = [
 
 ALLOWED_ATTRIBUTES = {
     'a': ['href', 'title', 'target'],
-    'img': ['src', 'alt', 'title'],
+    'img': ['src', 'alt', 'title', 'width', 'height', 'style'],
     '*': ['class'],
 }
 
@@ -134,6 +134,7 @@ def render_markdown(value):
             'markdown.extensions.fenced_code',
             'markdown.extensions.tables',
             'markdown.extensions.nl2br',  # Convert newlines to <br>
+            'attr_list',
         ]
     )
 
