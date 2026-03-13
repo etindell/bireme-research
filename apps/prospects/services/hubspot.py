@@ -36,7 +36,7 @@ def sync_prospect_to_hubspot(prospect):
         "lastname": prospect.last_name,
         "company": prospect.company_name,
         "phone": prospect.phone,
-        "hs_lead_status": prospect.status # Using internal choice value
+        "hs_lead_status": prospect.status.lower() # HubSpot expects lowercase internal values
     }
 
     try:

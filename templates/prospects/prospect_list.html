@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-gray-900">Sales Prospects</h1>
             <p class="mt-1 text-sm text-gray-500">Manage leads and sync with HubSpot CRM</p>
         </div>
-        <a href="{% url 'prospects:create' %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Prospect</a>
+        <a href="{% url 'prospects:create' %}" hx-boost="false" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Prospect</a>
     </div>
 
     <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -52,7 +52,7 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'prospects:detail' prospect.pk %}" class="text-primary-600 hover:text-primary-900">View Details</a>
+                        <a href="{% url 'prospects:detail' prospect.pk %}" hx-boost="false" class="text-primary-600 hover:text-primary-900">View Details</a>
                     </td>
                 </tr>
                 {% empty %}

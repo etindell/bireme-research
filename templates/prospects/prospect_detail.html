@@ -38,7 +38,7 @@
                 {% csrf_token %}
                 <button type="submit" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Sync to HubSpot</button>
             </form>
-            <a href="{% url 'prospects:edit' prospect.pk %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Edit</a>
+            <a href="{% url 'prospects:edit' prospect.pk %}" hx-boost="false" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Edit</a>
         </div>
     </div>
 
