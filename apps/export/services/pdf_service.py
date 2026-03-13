@@ -15,6 +15,7 @@ from django.conf import settings
 from django.utils.html import strip_tags
 import markdown
 import bleach
+import re
 
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
