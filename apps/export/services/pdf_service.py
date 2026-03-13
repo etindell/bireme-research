@@ -169,9 +169,7 @@ def generate_note_pdf(note, user):
         
         # 2. Use bleach to strip tags ReportLab doesn't like, but keep img for parsing
         allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike', 'img']
-        
         # Split by blocks (p, li, blockquote)
-        import re
         blocks = re.split(r'<(?:p|li|blockquote|h[1-6])>', html_content)
         
         for block in blocks:
@@ -384,9 +382,7 @@ def generate_company_pdf(company, notes, user):
                 
                 # 2. Use bleach to strip tags ReportLab doesn't like
                 allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike', 'img']
-                
                 # Split by blocks (p, li, blockquote)
-                import re
                 blocks = re.split(r'<(?:p|li|blockquote|h[1-6])>', html_content)
                 
                 for block in blocks:
