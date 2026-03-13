@@ -21,6 +21,12 @@
         margin-bottom: 0.25rem !important;
         list-style-position: outside !important;
     }
+    /* Link Styling in Editor */
+    #rich-editor a {
+        color: #2563eb !important;
+        text-decoration: underline !important;
+        cursor: pointer !important;
+    }
     /* Image Resizing Styles */
     #rich-editor img {
         cursor: pointer;
@@ -218,8 +224,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Removed the old image preview strip as it's now in-line -->
             </div>
 
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -476,22 +480,24 @@
         if (!md) return '';
         
         let html = md
-            // Images with attributes: ![alt](url){: width="300px" } or ![alt](url){width="300px"}
-            .replace(/!\[([^\]]*)\]\(([^)]+)\)\{[:\s]*(?:width|style)="([^"]+)"\s*\}/g, (match, alt, url, width) => {
-                const w = width.includes('px') ? width : width + 'px';
+            // 1. Handle Images with attributes: ![alt](url){: width="300px" } 
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)\s*\{[:\s]*(?:width|style)[:\s]*=?\s*["']?([^"'}\s]+)["']?\s*\}/g, (match, alt, url, width) => {
+                const w = width.includes('px') || width.includes('%') ? width : width + 'px';
                 return `<img src="${url}" alt="${alt}" style="width: ${w}" class="max-h-64 rounded my-2 border shadow-sm">`;
             })
-            // Standard Images: ![alt](url)
+            // 2. Standard Images: ![alt](url)
             .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-h-64 rounded my-2 border shadow-sm">')
-            // Bold
+            // 3. Links: [text](url)
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary-600 underline">$1</a>')
+            // 4. Bold
             .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
-            // Italic
+            // 5. Italic
             .replace(/\*([^*]+)\*/g, '<i>$1</i>')
-            // Lists (support •, *, -, + at line starts)
+            // 6. Lists (support •, *, -, + at line starts)
             .replace(/^[•*\-+] (.*)$/gm, '<li>$1</li>')
             .replace(/<li>(.*)<\/li>/g, '<ul><li>$1</li></ul>')
             .replace(/<\/ul>\s*<ul>/g, '')
-            // Newlines
+            // 7. Newlines
             .replace(/\n/g, '<br>');
             
         return html;
@@ -517,21 +523,27 @@
         });
 
         // Pre-process images in clone to convert them to Markdown syntax manually
-        // to avoid complex regex issues with multiple style attributes.
         clone.querySelectorAll('img').forEach(img => {
             const src = img.getAttribute('src');
             const alt = img.getAttribute('alt') || 'image';
             const width = img.style.width;
             
             let mdImg = `![${alt}](${src})`;
-            if (width) {
-                // Use standard attr_list syntax: {: width="300px" }
-                // CRITICAL: Ensure no space before the colon
+            if (width && width !== 'initial' && width !== 'auto') {
                 mdImg += `{: width="${width}" }`;
             }
             
             const textNode = document.createTextNode(mdImg);
             img.parentNode.replaceChild(textNode, img);
+        });
+
+        // Pre-process links in clone
+        clone.querySelectorAll('a').forEach(a => {
+            const href = a.getAttribute('href');
+            const text = a.innerText;
+            const mdLink = `[${text}](${href})`;
+            const textNode = document.createTextNode(mdLink);
+            a.parentNode.replaceChild(textNode, a);
         });
 
         let html = clone.innerHTML;
@@ -544,6 +556,12 @@
             .replace(/<(?:i|em)>(.*?)<\/(?:i|em)>/g, '*$1*')
             .replace(/<li>(.*?)<\/li>/g, '$1\n')
             .replace(/<\/?(?:ul|ol)>/g, '');
+
+        // Final cleanup of any lingering HTML tags we don't want in MD
+        md = md.replace(/<[^>]+>/g, (tag) => {
+            if (tag.startsWith('![') || tag.startsWith('{:') || tag.startsWith('[')) return tag;
+            return '';
+        });
 
         md = md.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
         textarea.value = md.trim();
