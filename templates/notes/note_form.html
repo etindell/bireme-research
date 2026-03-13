@@ -150,9 +150,16 @@
                     <span class="ml-auto text-xs text-gray-400">Formatting supported</span>
                 </div>
 
-                <div class="relative">
-                    {{ form.content }}
-                    <div id="upload-indicator" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-md">
+                <div class="relative min-h-[400px] border border-gray-300 rounded-b-md">
+                    <!-- Hidden textarea for Django compatibility -->
+                    <textarea name="content" id="id_content" class="hidden">{{ form.content.value|default:'' }}</textarea>
+                    
+                    <!-- ContentEditable Editor -->
+                    <div id="rich-editor" contenteditable="true" 
+                         class="block w-full min-h-[400px] px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm sm:leading-6 overflow-y-auto prose max-w-none"
+                         data-placeholder="Start typing your research note..."></div>
+
+                    <div id="upload-indicator" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-md z-10">
                         <div class="flex items-center gap-2 text-gray-600">
                             <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -163,8 +170,7 @@
                     </div>
                 </div>
 
-                <!-- Live image previews -->
-                <div id="image-preview-strip" class="hidden mt-2 space-y-2"></div>
+                <!-- Removed the old image preview strip as it's now in-line -->
             </div>
 
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -398,307 +404,117 @@
 
 {% block extra_js %}
 <script>
-// Content expander - auto-grows textarea to fit content
-function contentExpander() {
-    return {
-        expanded: false,
-        textarea: null,
-
-        init() {
-            this.textarea = document.getElementById('id_content');
-            if (!this.textarea) return;
-
-            // Set initial collapsed height
-            this.textarea.style.height = '120px';
-            this.textarea.style.overflow = 'hidden';
-
-            // Listen for input to auto-grow when expanded
-            this.textarea.addEventListener('input', () => {
-                if (this.expanded) {
-                    this.autoGrow();
-                }
-            });
-        },
-
-        toggle() {
-            this.expanded = !this.expanded;
-            if (!this.textarea) return;
-
-            if (this.expanded) {
-                // Expand to fit all content
-                const scrollY = window.scrollY;
-                this.textarea.style.height = 'auto';
-                const scrollHeight = this.textarea.scrollHeight;
-                this.textarea.style.height = Math.max(scrollHeight, 400) + 'px';
-                this.textarea.style.overflow = 'auto';
-                window.scrollTo(0, scrollY);
-            } else {
-                // Collapse back
-                this.textarea.style.height = '120px';
-                this.textarea.style.overflow = 'hidden';
-            }
-        },
-
-        autoGrow() {
-            if (!this.textarea) return;
-            // Save scroll position so the viewport doesn't jump
-            const scrollY = window.scrollY;
-            // Temporarily shrink to get true scrollHeight
-            this.textarea.style.height = 'auto';
-            const scrollHeight = this.textarea.scrollHeight;
-            this.textarea.style.height = Math.max(scrollHeight, 400) + 'px';
-            // Restore scroll position to keep cursor in same visual spot
-            window.scrollTo(0, scrollY);
-        }
-    };
-}
-
-// Store selection when textarea loses focus (before button click takes effect)
-let savedSelection = { start: 0, end: 0 };
-
-(function initFormatToolbar() {
+/**
+ * RICH EDITOR ENGINE
+ * Handles ContentEditable sync with Markdown textarea, 
+ * in-line image previews, and formatting.
+ */
+(function initRichEditor() {
     const textarea = document.getElementById('id_content');
-    if (!textarea) return;
-
-    // Save selection whenever it changes or textarea loses focus
-    textarea.addEventListener('blur', function() {
-        savedSelection = {
-            start: textarea.selectionStart,
-            end: textarea.selectionEnd
-        };
-    });
-
-    textarea.addEventListener('select', function() {
-        savedSelection = {
-            start: textarea.selectionStart,
-            end: textarea.selectionEnd
-        };
-    });
-
-    textarea.addEventListener('keyup', function() {
-        savedSelection = {
-            start: textarea.selectionStart,
-            end: textarea.selectionEnd
-        };
-    });
-
-    textarea.addEventListener('mouseup', function() {
-        savedSelection = {
-            start: textarea.selectionStart,
-            end: textarea.selectionEnd
-        };
-    });
-})();
-
-// Formatting toolbar functionality
-function formatText(type) {
-    const textarea = document.getElementById('id_content');
-    if (!textarea) return;
-
-    // Use saved selection since clicking button clears textarea selection
-    const start = savedSelection.start;
-    const end = savedSelection.end;
-    const text = textarea.value;
-    const selectedText = text.substring(start, end);
-
-    let before = '';
-    let after = '';
-    let insert = '';
-
-    switch (type) {
-        case 'bold':
-            before = '**';
-            after = '**';
-            insert = selectedText || 'bold text';
-            break;
-        case 'italic':
-            before = '*';
-            after = '*';
-            insert = selectedText || 'italic text';
-            break;
-        case 'underline':
-            before = '__';
-            after = '__';
-            insert = selectedText || 'underlined text';
-            break;
-        case 'strikethrough':
-            before = '~~';
-            after = '~~';
-            insert = selectedText || 'strikethrough text';
-            break;
-        case 'bullet':
-            // Add bullet at line start
-            const lineStart = text.lastIndexOf('\n', start - 1) + 1;
-            const prefix = text.substring(0, lineStart);
-            const suffix = text.substring(lineStart);
-            textarea.value = prefix + '• ' + suffix;
-            textarea.setSelectionRange(lineStart + 2, lineStart + 2);
-            textarea.focus();
-            savedSelection = { start: lineStart + 2, end: lineStart + 2 };
-            return;
-        case 'number':
-            // Add number at line start
-            const nLineStart = text.lastIndexOf('\n', start - 1) + 1;
-            const nPrefix = text.substring(0, nLineStart);
-            const nSuffix = text.substring(nLineStart);
-            textarea.value = nPrefix + '1. ' + nSuffix;
-            textarea.setSelectionRange(nLineStart + 3, nLineStart + 3);
-            textarea.focus();
-            savedSelection = { start: nLineStart + 3, end: nLineStart + 3 };
-            return;
-        case 'link':
-            const url = prompt('Enter URL:');
-            if (!url) return;
-            before = '[';
-            after = '](' + url + ')';
-            insert = selectedText || 'link text';
-            break;
-        case 'quote':
-            // Add > at line start for blockquote
-            const qLineStart = text.lastIndexOf('\n', start - 1) + 1;
-            const qPrefix = text.substring(0, qLineStart);
-            const qSuffix = text.substring(qLineStart);
-            textarea.value = qPrefix + '> ' + qSuffix;
-            textarea.setSelectionRange(qLineStart + 2, qLineStart + 2);
-            textarea.focus();
-            savedSelection = { start: qLineStart + 2, end: qLineStart + 2 };
-            return;
-        default:
-            return;
-    }
-
-    const newText = text.substring(0, start) + before + insert + after + text.substring(end);
-    textarea.value = newText;
-
-    // Set cursor position - select the inserted/wrapped text
-    const newStart = start + before.length;
-    const newEnd = newStart + insert.length;
-    textarea.setSelectionRange(newStart, newEnd);
-    textarea.focus();
-
-    // Update saved selection
-    savedSelection = { start: newStart, end: newEnd };
-}
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    const textarea = document.getElementById('id_content');
-    if (!textarea || document.activeElement !== textarea) return;
-
-    // Handle Enter for list continuation
-    if (e.key === 'Enter' && !e.shiftKey) {
-        const text = textarea.value;
-        const cursorPos = textarea.selectionStart;
-
-        // Find the start of the current line
-        const lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1;
-        const currentLine = text.substring(lineStart, cursorPos);
-
-        // Check for bullet list (• )
-        const bulletMatch = currentLine.match(/^(• )(.*)$/);
-        if (bulletMatch) {
-            e.preventDefault();
-            // If line only has bullet (empty item), remove the bullet
-            if (bulletMatch[2].trim() === '') {
-                textarea.value = text.substring(0, lineStart) + text.substring(cursorPos);
-                textarea.setSelectionRange(lineStart, lineStart);
-            } else {
-                // Continue the list
-                const newText = text.substring(0, cursorPos) + '\n• ' + text.substring(cursorPos);
-                textarea.value = newText;
-                textarea.setSelectionRange(cursorPos + 3, cursorPos + 3);
-            }
-            return;
-        }
-
-        // Check for numbered list (1. , 2. , etc.)
-        const numberMatch = currentLine.match(/^(\d+)\. (.*)$/);
-        if (numberMatch) {
-            e.preventDefault();
-            const nextNum = parseInt(numberMatch[1]) + 1;
-            // If line only has number (empty item), remove the number
-            if (numberMatch[2].trim() === '') {
-                textarea.value = text.substring(0, lineStart) + text.substring(cursorPos);
-                textarea.setSelectionRange(lineStart, lineStart);
-            } else {
-                // Continue the list with incremented number
-                const prefix = nextNum + '. ';
-                const newText = text.substring(0, cursorPos) + '\n' + prefix + text.substring(cursorPos);
-                textarea.value = newText;
-                textarea.setSelectionRange(cursorPos + 1 + prefix.length, cursorPos + 1 + prefix.length);
-            }
-            return;
-        }
-    }
-
-    if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-            case 'b':
-                e.preventDefault();
-                formatText('bold');
-                break;
-            case 'i':
-                e.preventDefault();
-                formatText('italic');
-                break;
-            case 'u':
-                e.preventDefault();
-                formatText('underline');
-                break;
-        }
-    }
-});
-
-(function initImageUpload() {
-    const contentTextarea = document.getElementById('id_content');
+    const editor = document.getElementById('rich-editor');
+    const form = document.getElementById('note-form');
     const uploadIndicator = document.getElementById('upload-indicator');
 
-    if (!contentTextarea || contentTextarea.dataset.imageUploadInit) return;
+    if (!textarea || !editor) return;
 
-    // Mark as initialized to prevent duplicate listeners
-    contentTextarea.dataset.imageUploadInit = 'true';
+    // --- 1. INITIALIZATION ---
+    
+    // Convert initial Markdown to HTML for the editor
+    function mdToHtml(md) {
+        if (!md) return '';
+        
+        let html = md
+            // Images: ![alt](url) -> <img src="url" alt="alt">
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-h-64 rounded my-2 border">')
+            // Bold
+            .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+            // Italic
+            .replace(/\*([^*]+)\*/g, '<i>$1</i>')
+            // Lists (crude)
+            .replace(/^• (.*)$/gm, '<li>$1</li>')
+            .replace(/<li>(.*)<\/li>/g, '<ul><li>$1</li></ul>')
+            .replace(/<\/ul>\s*<ul>/g, '')
+            // Newlines
+            .replace(/\n/g, '<br>');
+            
+        return html;
+    }
 
-    // Handle paste events
-    contentTextarea.addEventListener('paste', async function(e) {
-        const items = e.clipboardData?.items;
-        if (!items) return;
+    // Initialize editor content
+    editor.innerHTML = mdToHtml(textarea.value);
 
-        for (const item of items) {
-            if (item.type.startsWith('image/')) {
-                e.preventDefault();
+    // --- 2. SYNC LOGIC ---
 
-                const file = item.getAsFile();
-                if (!file) continue;
+    function syncHtmlToMarkdown() {
+        let html = editor.innerHTML;
+        
+        // Basic HTML to MD conversion
+        let md = html
+            // Remove DIV wraps (Chrome/Safari)
+            .replace(/<div>/g, '\n').replace(/<\/div>/g, '')
+            // Handle BRs
+            .replace(/<br\s*\/?>/g, '\n')
+            // Images: <img src="url" alt="alt"> -> ![alt](url)
+            .replace(/<img[^>]+src="([^">]+)"[^>]*alt="([^">]*)"[^>]*>/g, '![$2]($1)')
+            .replace(/<img[^>]*alt="([^">]*)"[^>]+src="([^">]+)"[^>]*>/g, '![$1]($2)')
+            // Bold/Italic
+            .replace(/<(?:b|strong)>(.*?)<\/(?:b|strong)>/g, '**$1**')
+            .replace(/<(?:i|em)>(.*?)<\/(?:i|em)>/g, '*$1*')
+            // Lists
+            .replace(/<li>(.*?)<\/li>/g, '• $1\n')
+            .replace(/<\/?(?:ul|ol)>/g, '');
 
-                await uploadImage(file);
+        // Clean up entities
+        md = md.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        
+        textarea.value = md.trim();
+        
+        // Trigger auto-save if using htmx change trigger
+        textarea.dispatchEvent(new Event('change'));
+    }
+
+    editor.addEventListener('input', syncHtmlToMarkdown);
+    
+    // --- 3. FORMATTING ---
+
+    window.formatText = function(type) {
+        editor.focus();
+        let command = '';
+        let value = null;
+
+        switch(type) {
+            case 'bold': command = 'bold'; break;
+            case 'italic': command = 'italic'; break;
+            case 'underline': command = 'underline'; break;
+            case 'strikethrough': command = 'strikeThrough'; break;
+            case 'bullet': command = 'insertUnorderedList'; break;
+            case 'number': command = 'insertOrderedList'; break;
+            case 'link': 
+                const url = prompt('Enter URL:');
+                if (url) {
+                    command = 'createLink';
+                    value = url;
+                }
                 break;
-            }
+            case 'quote': command = 'formatBlock'; value = 'blockquote'; break;
+        }
+
+        if (command) {
+            document.execCommand(command, false, value);
+            syncHtmlToMarkdown();
+        }
+    };
+
+    // Keyboard Shortcuts
+    editor.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 'b') { e.preventDefault(); formatText('bold'); }
+            if (e.key === 'i') { e.preventDefault(); formatText('italic'); }
+            if (e.key === 'u') { e.preventDefault(); formatText('underline'); }
         }
     });
 
-    // Handle drag and drop
-    contentTextarea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        contentTextarea.classList.add('ring-2', 'ring-primary-500');
-    });
-
-    contentTextarea.addEventListener('dragleave', function(e) {
-        contentTextarea.classList.remove('ring-2', 'ring-primary-500');
-    });
-
-    contentTextarea.addEventListener('drop', async function(e) {
-        e.preventDefault();
-        contentTextarea.classList.remove('ring-2', 'ring-primary-500');
-
-        const files = e.dataTransfer?.files;
-        if (!files) return;
-
-        for (const file of files) {
-            if (file.type.startsWith('image/')) {
-                await uploadImage(file);
-            }
-        }
-    });
+    // --- 4. IMAGE HANDLING (PASTE & DROP) ---
 
     async function uploadImage(file) {
         uploadIndicator.classList.remove('hidden');
@@ -706,42 +522,22 @@ document.addEventListener('keydown', function(e) {
         try {
             const formData = new FormData();
             formData.append('image', file);
-
-            // Get fresh CSRF token from cookie
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
-                || '{{ csrf_token }}';
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
             const response = await fetch('{% url "notes:upload_image" %}', {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken
-                },
+                headers: { 'X-CSRFToken': csrfToken },
                 body: formData
             });
 
             const data = await response.json();
 
             if (data.success) {
-                // Insert markdown at cursor position
-                const cursorPos = contentTextarea.selectionStart;
-                const textBefore = contentTextarea.value.substring(0, cursorPos);
-                const textAfter = contentTextarea.value.substring(cursorPos);
-
-                // Add newlines if needed
-                const prefix = textBefore.length > 0 && !textBefore.endsWith('\n') ? '\n' : '';
-                const suffix = textAfter.length > 0 && !textAfter.startsWith('\n') ? '\n' : '';
-
-                contentTextarea.value = textBefore + prefix + data.markdown + suffix + textAfter;
-
-                // Move cursor after the inserted text
-                const newPos = cursorPos + prefix.length + data.markdown.length + suffix.length;
-                contentTextarea.setSelectionRange(newPos, newPos);
-                contentTextarea.focus();
-
-                // Refresh image previews
-                refreshImagePreviews();
-
-                // Show success toast
+                // Insert image into editor at current selection
+                const imgHtml = `<img src="${data.url}" alt="image" class="max-h-64 rounded my-2 border shadow-sm">`;
+                document.execCommand('insertHTML', false, imgHtml + '<br>');
+                syncHtmlToMarkdown();
+                
                 window.dispatchEvent(new CustomEvent('toast', {
                     detail: { message: 'Image uploaded!', type: 'success' }
                 }));
@@ -757,79 +553,68 @@ document.addEventListener('keydown', function(e) {
             uploadIndicator.classList.add('hidden');
         }
     }
-})();
 
-// Live image preview strip
-function refreshImagePreviews() {
-    const textarea = document.getElementById('id_content');
-    const strip = document.getElementById('image-preview-strip');
-    if (!textarea || !strip) return;
+    editor.addEventListener('paste', async function(e) {
+        const items = e.clipboardData?.items;
+        if (!items) return;
 
-    const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-    const images = [];
-    let match;
-    while ((match = regex.exec(textarea.value)) !== null) {
-        images.push({ alt: match[1], url: match[2] });
-    }
-
-    if (images.length === 0) {
-        strip.classList.add('hidden');
-        strip.innerHTML = '';
-        return;
-    }
-
-    strip.classList.remove('hidden');
-
-    // Build preview HTML - only update if images changed
-    const key = images.map(i => i.url).join('|');
-    if (strip.dataset.key === key) return;
-    strip.dataset.key = key;
-
-    strip.innerHTML = '<p class="text-xs font-medium text-gray-500">Image previews</p>' +
-        '<div class="flex flex-wrap gap-3">' +
-        images.map(img =>
-            '<div class="relative group">' +
-                '<img src="' + img.url.replace(/"/g, '&quot;') + '" ' +
-                     'alt="' + img.alt.replace(/"/g, '&quot;') + '" ' +
-                     'class="max-h-40 rounded border border-gray-200 shadow-sm">' +
-                '<span class="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity truncate max-w-[200px]">' +
-                    img.alt.replace(/</g, '&lt;') +
-                '</span>' +
-            '</div>'
-        ).join('') +
-        '</div>';
-}
-
-// Handle auto-save URL updates for new notes
-document.body.addEventListener('noteSaved', function(evt) {
-    const data = evt.detail;
-    const form = document.getElementById('note-form');
-    if (form && data.url) {
-        // Update both the standard action and the HTMX post URL
-        form.setAttribute('hx-post', data.url);
-        form.setAttribute('action', data.url.replace('/autosave/', '/edit/'));
-        
-        // Process the element again to update HTMX internal state
-        htmx.process(form);
-        
-        // Also update the browser URL to the edit page without reloading
-        window.history.replaceState({}, '', data.url.replace('/autosave/', '/edit/'));
-    }
-});
-
-(function initImagePreviews() {
-    const textarea = document.getElementById('id_content');
-    if (!textarea) return;
-
-    // Render on page load (for existing notes with images)
-    refreshImagePreviews();
-
-    // Refresh on input, debounced
-    let previewTimer;
-    textarea.addEventListener('input', function() {
-        clearTimeout(previewTimer);
-        previewTimer = setTimeout(refreshImagePreviews, 500);
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (file) await uploadImage(file);
+                return;
+            }
+        }
     });
+
+    editor.addEventListener('dragover', (e) => { e.preventDefault(); editor.classList.add('ring-2', 'ring-primary-500'); });
+    editor.addEventListener('dragleave', () => editor.classList.remove('ring-2', 'ring-primary-500'));
+    editor.addEventListener('drop', async function(e) {
+        e.preventDefault();
+        editor.classList.remove('ring-2', 'ring-primary-500');
+        const files = e.dataTransfer?.files;
+        if (files) {
+            for (const file of files) {
+                if (file.type.startsWith('image/')) await uploadImage(file);
+            }
+        }
+    });
+
+    // --- 5. AUTO-SAVE URL SYNC ---
+    
+    document.body.addEventListener('noteSaved', function(evt) {
+        const data = evt.detail;
+        if (form && data.url) {
+            form.setAttribute('hx-post', data.url);
+            form.setAttribute('action', data.url.replace('/autosave/', '/edit/'));
+            htmx.process(form);
+            window.history.replaceState({}, '', data.url.replace('/autosave/', '/edit/'));
+        }
+    });
+
 })();
+
+/**
+ * CONTENT EXPANDER
+ */
+function contentExpander() {
+    return {
+        expanded: false,
+        init() {
+            // ContentEditable auto-grows naturally, 
+            // but we can enforce a minimum height or layout shifts here
+        },
+        toggle() {
+            this.expanded = !this.expanded;
+            const editor = document.getElementById('rich-editor');
+            if (this.expanded) {
+                editor.style.minHeight = '600px';
+            } else {
+                editor.style.minHeight = '400px';
+            }
+        }
+    };
+}
 </script>
 {% endblock %}
