@@ -1,0 +1,15 @@
+<div class="border-l-4 border-gray-200 bg-gray-50 p-4 rounded-r-lg">
+    <div class="flex justify-between items-start mb-1">
+        <span class="text-xs font-semibold text-gray-900">{{ note.user.get_full_name|default:note.user.email }}</span>
+        <span class="text-xs text-gray-500">{{ note.created_at|date:"M j, Y H:i" }}</span>
+    </div>
+    <div class="text-sm text-gray-700 whitespace-pre-line">
+        {{ note.content }}
+    </div>
+    {% if note.hubspot_note_id %}
+    <div class="mt-2 flex items-center gap-1 text-[10px] text-green-600 font-medium uppercase tracking-wider">
+        <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        Synced to HubSpot
+    </div>
+    {% endif %}
+</div>

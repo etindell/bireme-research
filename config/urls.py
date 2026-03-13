@@ -51,6 +51,9 @@ urlpatterns = [
     # Compliance
     path('compliance/', include('apps.compliance.urls', namespace='compliance')),
 
+    # Prospects (Sales/CRM)
+    path('prospects/', include('apps.prospects.urls', namespace='prospects')),
+
     # Share (public, no auth required)
     path('share/', include('apps.share.urls', namespace='share')),
 ]
