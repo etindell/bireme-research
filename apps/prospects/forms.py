@@ -17,6 +17,22 @@ class ProspectForm(forms.ModelForm):
         }
 
     def __init__(self, *args, organization=None, **kwargs):
+        self.organization = organization
         super().__init__(*args, **kwargs)
         # We don't strictly need organization for filtering here yet, 
         # but the Mixin expects the form to accept it.
+
+    def clean(self):
+        cleaned_data = super().clean()
+        email = cleaned_data.get('email')
+        
+        if email and self.organization:
+            # Check for existing prospect with same email in this org
+            qs = Prospect.objects.filter(organization=self.organization, email=email)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            
+            if qs.exists():
+                self.add_error('email', 'A prospect with this email already exists in your organization.')
+        
+        return cleaned_data
