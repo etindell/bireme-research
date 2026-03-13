@@ -3,6 +3,30 @@
 {% block title %}{% if object %}Edit Note{% else %}Add Note{% endif %} - Bireme Research{% endblock %}
 
 {% block content %}
+<style>
+    #rich-editor ul {
+        list-style-type: disc !important;
+        padding-left: 1.5rem !important;
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    #rich-editor ol {
+        list-style-type: decimal !important;
+        padding-left: 1.5rem !important;
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    #rich-editor li {
+        display: list-item !important;
+        margin-bottom: 0.25rem !important;
+    }
+    /* Placeholder for contenteditable */
+    #rich-editor:empty:before {
+        content: attr(data-placeholder);
+        color: #9ca3af;
+        pointer-events: none;
+    }
+</style>
 <div class="mx-auto max-w-3xl">
     <div class="md:flex md:items-center md:justify-between mb-8">
         <div class="min-w-0 flex-1">
@@ -425,13 +449,13 @@
         
         let html = md
             // Images: ![alt](url) -> <img src="url" alt="alt">
-            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-h-64 rounded my-2 border">')
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-h-64 rounded my-2 border shadow-sm">')
             // Bold
             .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
             // Italic
             .replace(/\*([^*]+)\*/g, '<i>$1</i>')
-            // Lists (crude)
-            .replace(/^• (.*)$/gm, '<li>$1</li>')
+            // Lists (support •, *, -, + at line starts)
+            .replace(/^[•*\-+] (.*)$/gm, '<li>$1</li>')
             .replace(/<li>(.*)<\/li>/g, '<ul><li>$1</li></ul>')
             .replace(/<\/ul>\s*<ul>/g, '')
             // Newlines
@@ -446,7 +470,24 @@
     // --- 2. SYNC LOGIC ---
 
     function syncHtmlToMarkdown() {
-        let html = editor.innerHTML;
+        // Clone editor to manipulate it without affecting user's view
+        const clone = editor.cloneNode(true);
+        
+        // Convert internal list structures to simple bullets
+        const lists = clone.querySelectorAll('ul, ol');
+        lists.forEach(list => {
+            const items = list.querySelectorAll('li');
+            items.forEach(li => {
+                // Ensure content within LI doesn't have extra newlines or divs
+                let content = li.innerHTML
+                    .replace(/<div>/g, '').replace(/<\/div>/g, '')
+                    .replace(/<p>/g, '').replace(/<\/p>/g, '')
+                    .replace(/<br\s*\/?>/g, ' ').trim();
+                li.innerHTML = `• ${content}`;
+            });
+        });
+
+        let html = clone.innerHTML;
         
         // Basic HTML to MD conversion
         let md = html
@@ -460,8 +501,8 @@
             // Bold/Italic
             .replace(/<(?:b|strong)>(.*?)<\/(?:b|strong)>/g, '**$1**')
             .replace(/<(?:i|em)>(.*?)<\/(?:i|em)>/g, '*$1*')
-            // Lists
-            .replace(/<li>(.*?)<\/li>/g, '• $1\n')
+            // Cleanup remaining list tags
+            .replace(/<li>(.*?)<\/li>/g, '$1\n')
             .replace(/<\/?(?:ul|ol)>/g, '');
 
         // Clean up entities
