@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}History: {{ note.title|truncatewords:5 }} - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-2">
+            <li>
+                <a href="{% url 'notes:list' %}" class="text-sm text-gray-500 hover:text-gray-700">Notes</a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                    </svg>
+                    <a href="{{ note.get_absolute_url }}" class="ml-2 text-sm text-gray-500 hover:text-gray-700">{{ note.title|truncatewords:5 }}</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                    </svg>
+                    <span class="ml-2 text-sm font-medium text-gray-900">Version History</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
+            <h3 class="text-lg font-bold leading-6 text-gray-900">Version History</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">Historical snapshots of this research note.</p>
+        </div>
+        
+        <ul role="list" class="divide-y divide-gray-200">
+            <!-- Current Version -->
+            <li class="px-4 py-4 sm:px-6 bg-blue-50/30">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-gray-900">Current Live Version</span>
+                        <span class="text-xs text-gray-500">Last updated {{ note.updated_at|date:"M j, Y H:i" }}</span>
+                    </div>
+                    <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                        Active
+                    </span>
+                </div>
+            </li>
+
+            {% for entry in history_entries %}
+            <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col space-y-1">
+                        <span class="text-sm font-medium text-gray-900">{{ entry.title }}</span>
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <span>Saved on {{ entry.created_at|date:"M j, Y H:i" }}</span>
+                            <span>&bull;</span>
+                            <span>By {{ entry.changed_by.get_full_name|default:entry.changed_by.email }}</span>
+                            {% if entry.change_reason %}
+                            <span>&bull;</span>
+                            <span class="italic text-gray-400">{{ entry.change_reason }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <!-- Preview logic could go here -->
+                        <form method="post" action="{% url 'notes:revert' note.pk entry.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    onclick="return confirm('Are you sure you want to revert the live note to this version? A backup of the current version will be saved.')"
+                                    class="rounded bg-white px-2 py-1 text-xs font-semibold text-primary-600 shadow-sm ring-1 ring-inset ring-primary-300 hover:bg-primary-50">
+                                Revert to this
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Simple expander for content preview -->
+                <div x-data="{ open: false }" class="mt-2">
+                    <button @click="open = !open" class="text-[10px] uppercase font-bold text-gray-400 hover:text-gray-600">
+                        <span x-show="!open">Show Content Snapshot</span>
+                        <span x-show="open">Hide Snapshot</span>
+                    </button>
+                    <div x-show="open" x-cloak class="mt-2 p-3 bg-gray-50 border border-gray-100 rounded text-sm text-gray-600 prose prose-sm max-w-none">
+                        {{ entry.content|linebreaks }}
+                    </div>
+                </div>
+            </li>
+            {% empty %}
+            <li class="px-4 py-12 text-center">
+                <p class="text-sm text-gray-500 italic">No historical versions found for this note yet.</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

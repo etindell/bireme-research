@@ -217,6 +217,39 @@ class Note(SoftDeleteModel, OrganizationMixin):
         return companies
 
 
+class NoteHistory(models.Model):
+    """
+    Snapshots of note content over time.
+    Created automatically when a note is updated or auto-saved.
+    """
+    note = models.ForeignKey(
+        Note,
+        on_delete=models.CASCADE,
+        related_name='history'
+    )
+    title = models.CharField(max_length=500)
+    content = models.TextField(blank=True)
+    
+    # Metadata at time of snapshot
+    changed_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='note_history_entries'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Reason for change (e.g., 'auto-save', 'manual-save', 'revert')
+    change_reason = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        db_table = 'note_history'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"History for {self.note_id} at {self.created_at}"
+
+
 def note_image_path(instance, filename):
     """Generate upload path for note images."""
     import uuid

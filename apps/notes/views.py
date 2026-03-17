@@ -14,7 +14,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 
 from core.mixins import OrganizationViewMixin
 from apps.companies.models import Company
-from .models import Note, NoteType, NoteImage, NoteCashFlow
+from .models import Note, NoteType, NoteImage, NoteCashFlow, NoteHistory
 from .forms import NoteForm, QuickNoteForm, ImportNotesForm, NoteCashFlowForm
 
 
@@ -416,7 +416,26 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                     if self.object.company:
                         self._update_company_valuation(cash_flow_form.cleaned_data)
 
+        # Create history record
+        NoteHistory.objects.create(
+            note=self.object,
+            title=self.object.title,
+            content=self.object.content,
+            changed_by=self.request.user,
+            change_reason='Manual Save'
+        )
+
         messages.success(self.request, 'Note updated.')
+
+        # Create history record
+        NoteHistory.objects.create(
+            note=self.object,
+            title=self.object.title,
+            content=self.object.content,
+            changed_by=self.request.user,
+            change_reason='Manual Save'
+        )
+
         return response
 
     def _update_company_valuation(self, cleaned_data):
@@ -490,9 +509,22 @@ class NoteAutoSaveView(OrganizationViewMixin, View):
             form.save_m2m() # Save referenced companies
             
             from django.utils import timezone
-            now = timezone.now().strftime("%H:%M:%S")
+            now = timezone.now()
+            now_str = now.strftime("%H:%M:%S")
             
-            response = HttpResponse(f'<span class="text-xs text-gray-500 italic">Auto-saved at {now}</span>')
+            # Create history record on auto-save, but only if last one was > 5 mins ago
+            # to avoid database bloat from frequent auto-saves.
+            last_history = NoteHistory.objects.filter(note=note, change_reason='Auto-save').first()
+            if not last_history or (now - last_history.created_at).total_seconds() > 300:
+                NoteHistory.objects.create(
+                    note=note,
+                    title=note.title,
+                    content=note.content,
+                    changed_by=request.user,
+                    change_reason='Auto-save'
+                )
+
+            response = HttpResponse(f'<span class="text-xs text-gray-500 italic">Auto-saved at {now_str}</span>')
             
             # If this was a new note, provide the new URL for the frontend to update itself
             if pk == 0:
@@ -1201,4 +1233,53 @@ class NoteShareDeleteView(OrganizationViewMixin, View):
             )
             return HttpResponse(html)
 
+        return redirect(note.get_absolute_url())
+
+
+# ============ Note History ============
+
+class NoteHistoryListView(OrganizationViewMixin, ListView):
+    """List version history for a note."""
+    model = NoteHistory
+    template_name = 'notes/history_list.html'
+    context_object_name = 'history_entries'
+
+    def get_queryset(self):
+        self.note = get_object_or_404(
+            Note.objects.filter(organization=self.request.organization),
+            pk=self.kwargs['pk']
+        )
+        return self.note.history.all().select_related('changed_by')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['note'] = self.note
+        return ctx
+
+
+class NoteRevertView(OrganizationViewMixin, View):
+    """Revert a note to a previous version from history."""
+
+    def post(self, request, pk, history_pk):
+        note = get_object_or_404(
+            Note.objects.filter(organization=request.organization),
+            pk=pk
+        )
+        history_entry = get_object_or_404(note.history, pk=history_pk)
+
+        # Record current state before reverting
+        NoteHistory.objects.create(
+            note=note,
+            title=note.title,
+            content=note.content,
+            changed_by=request.user,
+            change_reason=f'Pre-revert snapshot (reverting to {history_entry.created_at})'
+        )
+
+        # Perform revert
+        note.title = history_entry.title
+        note.content = history_entry.content
+        note.save()
+
+        messages.success(request, f'Note reverted to version from {history_entry.created_at.strftime("%b %d, %Y %H:%M")}.')
         return redirect(note.get_absolute_url())
