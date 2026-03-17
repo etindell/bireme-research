@@ -483,10 +483,10 @@
             // 1. Handle Images with attributes: ![alt](url){: width="300px" } 
             .replace(/!\[([^\]]*)\]\(([^)]+)\)\s*\{[:\s]*(?:width|style)[:\s]*=?\s*["']?([^"'}\s]+)["']?\s*\}/g, (match, alt, url, width) => {
                 const w = width.includes('px') || width.includes('%') ? width : width + 'px';
-                return `<img src="${url}" alt="${alt}" style="width: ${w}" class="max-h-64 rounded my-2 border shadow-sm">`;
+                return `<img src="${url}" alt="${alt}" style="width: ${w}" class="rounded my-2 border shadow-sm">`;
             })
             // 2. Standard Images: ![alt](url)
-            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-h-64 rounded my-2 border shadow-sm">')
+            .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="rounded my-2 border shadow-sm">')
             // 3. Links: [text](url)
             .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary-600 underline">$1</a>')
             // 4. Bold
@@ -603,12 +603,30 @@
         if (!currentResizingImg) return;
 
         const startX = e.clientX;
+        const startY = e.clientY;
         const startWidth = currentResizingImg.offsetWidth;
+        const startHeight = currentResizingImg.offsetHeight;
+        const aspectRatio = startWidth / startHeight;
 
         function onMouseMove(e) {
-            const newWidth = startWidth + (e.clientX - startX);
+            // Calculate movement in both directions
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            
+            // Use the movement that is further from the start to determine new size
+            // This allows the user to drag either right or down to expand
+            let newWidth;
+            if (Math.abs(dx) > Math.abs(dy)) {
+                newWidth = startWidth + dx;
+            } else {
+                newWidth = (startHeight + dy) * aspectRatio;
+            }
+            
+            // Ensure a minimum size
+            newWidth = Math.max(newWidth, 50);
+            
             currentResizingImg.style.width = newWidth + 'px';
-            currentResizingImg.style.height = 'auto'; // Maintain aspect ratio
+            currentResizingImg.style.height = 'auto'; // Browser handles aspect ratio
             updateResizerPosition();
         }
 
@@ -670,7 +688,7 @@
             });
             const data = await response.json();
             if (data.success) {
-                const imgHtml = `<img src="${data.url}" alt="image" class="max-h-64 rounded my-2 border shadow-sm" style="width: 300px">`;
+                const imgHtml = `<img src="${data.url}" alt="image" class="rounded my-2 border shadow-sm" style="width: 300px">`;
                 document.execCommand('insertHTML', false, imgHtml + '<br>');
                 syncHtmlToMarkdown();
                 window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Image uploaded!', type: 'success' } }));
