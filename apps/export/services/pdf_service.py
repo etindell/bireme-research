@@ -101,6 +101,16 @@ def generate_note_pdf(note, user):
         spaceAfter=6
     ))
     styles.add(ParagraphStyle(
+        name='BulletContent',
+        fontSize=10,
+        leading=14,
+        fontName='Helvetica',
+        leftIndent=20,
+        firstLineIndent=-12,
+        spaceBefore=3,
+        spaceAfter=3
+    ))
+    styles.add(ParagraphStyle(
         name='SectionHeader',
         fontSize=12,
         leading=14,
