@@ -55,6 +55,30 @@ class ComplianceDashboardView(OrganizationViewMixin, TemplateView):
             status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE]
         ).count()
 
+        # Setup checklist for first-run experience
+        has_settings = ComplianceSettings.objects.filter(organization=org).exists()
+        has_funds = Fund.objects.filter(organization=org).exists()
+        has_jurisdictions = InvestorJurisdiction.objects.filter(organization=org).exists()
+        has_tasks = total > 0
+        setup_complete = has_settings and has_funds and has_jurisdictions and has_tasks
+        setup_steps = [
+            {'label': 'Configure ERA Settings', 'done': has_settings, 'url': 'compliance:settings'},
+            {'label': 'Add Your Funds', 'done': has_funds, 'url': 'compliance:fund_create'},
+            {'label': 'Add Investor Jurisdictions', 'done': has_jurisdictions, 'url': 'compliance:fund_list'},
+            {'label': 'Generate Tasks', 'done': has_tasks, 'url': 'compliance:generate_tasks'},
+        ]
+        setup_progress = sum(1 for s in setup_steps if s['done'])
+
+        # Jurisdiction tracker
+        jurisdictions = InvestorJurisdiction.objects.filter(
+            organization=org
+        ).select_related('fund').order_by('jurisdiction_code')
+
+        # Placeholder obligations (Alberta etc.)
+        placeholder_obligations = ComplianceObligation.objects.filter(
+            organization=org, is_placeholder=True, is_active=True
+        )
+
         ctx.update({
             'year': year,
             'total': total,
@@ -66,12 +90,17 @@ class ComplianceDashboardView(OrganizationViewMixin, TemplateView):
                 due_date__gte=now, due_date__lte=now + timedelta(days=14)
             ).exclude(
                 status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE]
-            ).order_by('due_date')[:10],
+            ).order_by('due_date').select_related('fund', 'obligation')[:10],
             'overdue_tasks': tasks.filter(
                 due_date__lt=now
             ).exclude(
-                status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE]
-            ).order_by('due_date')[:10],
+                status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE, ComplianceTask.Status.DEFERRED]
+            ).order_by('due_date').select_related('fund', 'obligation')[:10],
+            'jurisdictions': jurisdictions,
+            'placeholder_obligations': placeholder_obligations,
+            'setup_complete': setup_complete,
+            'setup_steps': setup_steps,
+            'setup_progress': setup_progress,
         })
         return ctx
 
