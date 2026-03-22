@@ -16,15 +16,19 @@ from django.views.generic import (
 
 from core.mixins import OrganizationViewMixin
 from .models import (
-    ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
+    ComplianceSettings, ComplianceObligation, ComplianceTask,
     ComplianceEvidence, ComplianceAuditLog, ComplianceDocument, SECNewsItem,
+    Fund, FundPrincipal, InvestorJurisdiction,
     SurveyTemplate, SurveyVersion, SurveyQuestion, SurveyAssignment,
     SurveyResponse, SurveyAnswer, SurveyEvidenceUpload, SurveyException,
 )
+# Backwards compat alias used in existing views
+ComplianceTaskTemplate = ComplianceObligation
 from .forms import (
-    ComplianceSettingsForm, ComplianceTaskTemplateForm, ComplianceTaskForm,
+    ComplianceSettingsForm, ComplianceObligationForm, ComplianceTaskForm,
     EvidenceUploadForm, ComplianceDocumentForm, SurveyCompleteForm,
 )
+ComplianceTaskTemplateForm = ComplianceObligationForm
 from .services.audit import log_action
 from .services.task_generation import generate_tasks
 from .services.surveys import assign_periodic_surveys, process_survey_submission

@@ -9,21 +9,35 @@ from core.mixins import OrganizationMixin
 class ComplianceSettings(TimeStampedModel, OrganizationMixin):
     """Firm-level compliance configuration."""
 
+    class RegistrationType(models.TextChoices):
+        ERA_VENTURE_CAPITAL = 'ERA_VENTURE_CAPITAL', 'ERA Venture Capital'
+        ERA_PRIVATE_FUND = 'ERA_PRIVATE_FUND', 'ERA Private Fund'
+        STATE_EXEMPT = 'STATE_EXEMPT', 'State Exempt'
+        REGISTERED_RIA = 'REGISTERED_RIA', 'Registered RIA'
+
     firm_name = models.CharField(max_length=255, default='Bireme Capital')
     fiscal_year_end_month = models.PositiveSmallIntegerField(default=12)
     fiscal_year_end_day = models.PositiveSmallIntegerField(default=31)
 
-    # Conditional flags for task generation
-    is_form_13f_applicable = models.BooleanField(default=False)
-    is_form_crs_applicable = models.BooleanField(default=True)
-    is_privacy_notice_annual_required = models.BooleanField(default=False)
-    is_form_pf_applicable = models.BooleanField(default=False)
-    has_material_brochure_changes = models.BooleanField(default=False)
-    require_evidence_for_completion = models.BooleanField(default=False)
+    # Registration & jurisdiction
+    registration_type = models.CharField(
+        max_length=30,
+        choices=RegistrationType.choices,
+        default=RegistrationType.ERA_PRIVATE_FUND,
+    )
+    domicile_state = models.CharField(max_length=10, default='US-CA')
+    entity_jurisdiction = models.CharField(max_length=10, default='US-DE')
+    firm_crd_number = models.CharField(max_length=20, blank=True, default='')
 
-    # IARD renewal
-    iard_renewal_window_start = models.DateField(null=True, blank=True)
-    iard_renewal_window_end = models.DateField(null=True, blank=True)
+    # AML/CFT
+    aml_cft_target_date = models.DateField(null=True, blank=True)
+
+    # Contacts & delegation
+    primary_compliance_counsel = models.CharField(max_length=255, blank=True, default='')
+    fund_admin_compliance_contact = models.CharField(max_length=255, blank=True, default='')
+    fund_admin_compliance_rate = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
 
     # Evidence settings
     upload_max_mb = models.PositiveIntegerField(default=25)
@@ -38,7 +52,54 @@ class ComplianceSettings(TimeStampedModel, OrganizationMixin):
         return f"Compliance Settings ({self.organization})"
 
 
-class ComplianceTaskTemplate(SoftDeleteModel, OrganizationMixin):
+class Fund(SoftDeleteModel, OrganizationMixin):
+    """A fund entity tracked for compliance obligations."""
+
+    class EntityType(models.TextChoices):
+        LP = 'LP', 'Limited Partnership'
+        LLC = 'LLC', 'Limited Liability Company'
+        LTD = 'LTD', 'Limited Company'
+        GP = 'GP', 'General Partner'
+        OTHER = 'OTHER', 'Other'
+
+    name = models.CharField(max_length=255)
+    entity_type = models.CharField(
+        max_length=20,
+        choices=EntityType.choices,
+        default=EntityType.LP,
+    )
+    entity_jurisdiction = models.CharField(max_length=10, default='US-DE')
+    sec_file_number = models.CharField(max_length=50, blank=True, default='')
+    edgar_cik = models.CharField(max_length=20, blank=True, default='')
+    inception_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class FundPrincipal(TimeStampedModel, OrganizationMixin):
+    """A principal or control person associated with a fund."""
+
+    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, related_name='principals')
+    name = models.CharField(max_length=255)
+    crd_number = models.CharField(max_length=20, blank=True, default='')
+    title = models.CharField(max_length=100, default='')
+    residency_jurisdiction = models.CharField(max_length=10, default='')
+    is_us_resident = models.BooleanField(default=True)
+    requires_adv_nr = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.title})"
+
+
+class ComplianceObligation(SoftDeleteModel, OrganizationMixin):
     """Blueprint for recurring compliance tasks."""
 
     class Frequency(models.TextChoices):
@@ -46,6 +107,22 @@ class ComplianceTaskTemplate(SoftDeleteModel, OrganizationMixin):
         MONTHLY = 'MONTHLY', 'Monthly'
         QUARTERLY = 'QUARTERLY', 'Quarterly'
         ANNUAL = 'ANNUAL', 'Annual'
+        EVENT_DRIVEN = 'EVENT_DRIVEN', 'Event Driven'
+
+    class Category(models.TextChoices):
+        FORM_ADV = 'FORM_ADV', 'Form ADV'
+        BLUE_SKY = 'BLUE_SKY', 'Blue Sky'
+        FORM_D = 'FORM_D', 'Form D'
+        FORM_PF = 'FORM_PF', 'Form PF'
+        AML_CFT = 'AML_CFT', 'AML/CFT'
+        STATE_NOTICE = 'STATE_NOTICE', 'State Notice'
+        INTERNATIONAL = 'INTERNATIONAL', 'International'
+        MONTHLY_CLOSE = 'MONTHLY_CLOSE', 'Monthly Close'
+        OTHER = 'OTHER', 'Other'
+
+    class DueDateReference(models.TextChoices):
+        AFTER_EVENT = 'AFTER_EVENT', 'After Event'
+        BEFORE_EVENT = 'BEFORE_EVENT', 'Before Event'
 
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True, default='')
@@ -59,11 +136,32 @@ class ComplianceTaskTemplate(SoftDeleteModel, OrganizationMixin):
     suggested_evidence = models.TextField(blank=True, default='')
     is_active = models.BooleanField(default=True)
 
+    # ERA calendar fields
+    category = models.CharField(
+        max_length=30,
+        choices=Category.choices,
+        default=Category.OTHER,
+    )
+    jurisdiction = models.CharField(max_length=10, blank=True, default='')
+    advance_notice_days = models.PositiveIntegerField(default=30)
+    due_date_reference = models.CharField(
+        max_length=20,
+        choices=DueDateReference.choices,
+        default=DueDateReference.AFTER_EVENT,
+    )
+    regulatory_reference = models.TextField(blank=True, default='')
+    filing_url = models.URLField(max_length=2000, blank=True, default='')
+    is_placeholder = models.BooleanField(default=False)
+
     class Meta:
         ordering = ['default_due_month', 'default_due_day', 'title']
 
     def __str__(self):
         return self.title
+
+
+# Backwards compatibility alias
+ComplianceTaskTemplate = ComplianceObligation
 
 
 class ComplianceTask(SoftDeleteModel, OrganizationMixin):
@@ -76,12 +174,31 @@ class ComplianceTask(SoftDeleteModel, OrganizationMixin):
         DEFERRED = 'DEFERRED', 'Deferred'
         NOT_APPLICABLE = 'NOT_APPLICABLE', 'Not Applicable'
 
+    class DelegatedTo(models.TextChoices):
+        INTERNAL = 'INTERNAL', 'Internal'
+        COMPLIANCE_COUNSEL = 'COMPLIANCE_COUNSEL', 'Compliance Counsel'
+        FUND_ADMIN = 'FUND_ADMIN', 'Fund Admin'
+
     template = models.ForeignKey(
-        ComplianceTaskTemplate,
+        ComplianceObligation,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='instances'
+    )
+    obligation = models.ForeignKey(
+        ComplianceObligation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tasks'
+    )
+    fund = models.ForeignKey(
+        Fund,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='compliance_tasks'
     )
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True, default='')
@@ -105,11 +222,25 @@ class ComplianceTask(SoftDeleteModel, OrganizationMixin):
     notes = models.TextField(blank=True, default='')
     tags = models.CharField(max_length=500, blank=True, default='')
     migrated_to_survey = models.ForeignKey(
-        'SurveyAssignment', on_delete=models.SET_NULL, null=True, blank=True, 
+        'SurveyAssignment', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='migrated_from_tasks'
     )
     conditional_flag = models.CharField(max_length=100, blank=True, default='')
     is_conditional = models.BooleanField(default=False)
+
+    # ERA calendar fields
+    delegated_to = models.CharField(
+        max_length=20,
+        choices=DelegatedTo.choices,
+        default=DelegatedTo.INTERNAL,
+    )
+    delegated_to_name = models.CharField(max_length=255, blank=True, default='')
+    estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    actual_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    period_label = models.CharField(max_length=50, blank=True, default='')
+    reminder_sent_90 = models.BooleanField(default=False)
+    reminder_sent_30 = models.BooleanField(default=False)
+    reminder_sent_7 = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['due_date', 'title']
@@ -119,7 +250,7 @@ class ComplianceTask(SoftDeleteModel, OrganizationMixin):
 
     @property
     def is_overdue(self):
-        if self.status in (self.Status.COMPLETED, self.Status.NOT_APPLICABLE):
+        if self.status in (self.Status.COMPLETED, self.Status.NOT_APPLICABLE, self.Status.DEFERRED):
             return False
         return self.due_date < timezone.now().date()
 
@@ -134,6 +265,26 @@ class ComplianceTask(SoftDeleteModel, OrganizationMixin):
         self.completed_at = None
         self.completed_by = None
         self.save(update_fields=['status', 'completed_at', 'completed_by', 'updated_at'])
+
+
+class InvestorJurisdiction(TimeStampedModel, OrganizationMixin):
+    """Tracks investor jurisdictions per fund for blue sky / notice filing obligations."""
+
+    fund = models.ForeignKey(Fund, on_delete=models.CASCADE, related_name='investor_jurisdictions')
+    jurisdiction_code = models.CharField(max_length=10)
+    jurisdiction_name = models.CharField(max_length=100)
+    country = models.CharField(max_length=5, blank=True, default='')
+    first_sale_date = models.DateField(null=True, blank=True)
+    blue_sky_filed = models.BooleanField(default=False)
+    blue_sky_filing_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        unique_together = ['fund', 'jurisdiction_code']
+        ordering = ['jurisdiction_code']
+
+    def __str__(self):
+        return f"{self.jurisdiction_name} ({self.jurisdiction_code})"
 
 
 class ComplianceEvidence(TimeStampedModel, OrganizationMixin):
@@ -178,6 +329,10 @@ class ComplianceAuditLog(models.Model):
         TASK_EDIT = 'TASK_EDIT', 'Task Edit'
         TASK_CREATED = 'TASK_CREATED', 'Task Created'
         TEMPLATE_TOGGLE = 'TEMPLATE_TOGGLE', 'Template Toggle'
+        OBLIGATION_CHANGE = 'OBLIGATION_CHANGE', 'Obligation Change'
+        JURISDICTION_ADD = 'JURISDICTION_ADD', 'Jurisdiction Added'
+        TASK_DELEGATED = 'TASK_DELEGATED', 'Task Delegated'
+        TASKS_GENERATED = 'TASKS_GENERATED', 'Tasks Generated'
 
     task = models.ForeignKey(
         ComplianceTask,
@@ -331,7 +486,7 @@ class SurveyQuestion(models.Model):
     help_text = models.TextField(blank=True, default='')
     field_type = models.CharField(max_length=30, choices=FieldType.choices, default=FieldType.YES_NO)
     is_required = models.BooleanField(default=True)
-    
+
     # JSON Configs
     conditional_logic = models.JSONField(
         null=True, blank=True, help_text="Rules for when to show this question"
@@ -366,7 +521,7 @@ class SurveyAssignment(TimeStampedModel, OrganizationMixin):
     version = models.ForeignKey(SurveyVersion, on_delete=models.PROTECT, related_name='assignments')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='survey_assignments')
     due_date = models.DateField(db_index=True)
-    
+
     # Period scoping
     period_start = models.DateField(null=True, blank=True)
     period_end = models.DateField(null=True, blank=True)
