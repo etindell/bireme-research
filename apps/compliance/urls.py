@@ -54,6 +54,28 @@ urlpatterns = [
     path('export/<int:year>/zip/', views.ExportZIPView.as_view(), name='export_zip'),
     path('export/<int:year>/pdf/', views.ExportPDFView.as_view(), name='export_pdf'),
 
+    # Funds
+    path('funds/', views.FundListView.as_view(), name='fund_list'),
+    path('funds/create/', views.FundCreateView.as_view(), name='fund_create'),
+    path('funds/<int:pk>/', views.FundDetailView.as_view(), name='fund_detail'),
+    path('funds/<int:pk>/edit/', views.FundUpdateView.as_view(), name='fund_update'),
+
+    # Fund Principals
+    path('funds/<int:fund_pk>/principals/create/', views.FundPrincipalCreateView.as_view(), name='principal_create'),
+    path('funds/<int:fund_pk>/principals/<int:pk>/edit/', views.FundPrincipalUpdateView.as_view(), name='principal_update'),
+    path('funds/<int:fund_pk>/principals/<int:pk>/delete/', views.FundPrincipalDeleteView.as_view(), name='principal_delete'),
+
+    # Investor Jurisdictions
+    path('funds/<int:fund_pk>/jurisdictions/create/', views.InvestorJurisdictionCreateView.as_view(), name='jurisdiction_create'),
+    path('funds/<int:fund_pk>/jurisdictions/<int:pk>/edit/', views.InvestorJurisdictionUpdateView.as_view(), name='jurisdiction_update'),
+    path('funds/<int:fund_pk>/jurisdictions/<int:pk>/delete/', views.InvestorJurisdictionDeleteView.as_view(), name='jurisdiction_delete'),
+
+    # Obligations (renamed from templates)
+    path('obligations/', views.TemplateListView.as_view(), name='obligation_list'),
+    path('obligations/create/', views.TemplateCreateView.as_view(), name='obligation_create'),
+    path('obligations/<int:pk>/edit/', views.TemplateUpdateView.as_view(), name='obligation_update'),
+    path('obligations/<int:pk>/delete/', views.TemplateDeleteView.as_view(), name='obligation_delete'),
+
     # --- Surveys & Certifications ---
     # Templates & Versions
     path('surveys/templates/', views.SurveyTemplateListView.as_view(), name='survey_template_list'),
