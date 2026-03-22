@@ -110,6 +110,25 @@
                 <a href="{% url 'compliance:jurisdiction_create' fund.pk %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Jurisdiction</a>
             </div>
         </div>
+        <!-- Quick Add -->
+        {% if not jurisdictions %}
+        <div class="mb-4 bg-blue-50 rounded-lg p-4">
+            <p class="text-sm font-medium text-blue-900 mb-3">Quick Add — select your investor states:</p>
+            <form method="post" action="{% url 'compliance:quick_add_jurisdictions' fund.pk %}">
+                {% csrf_token %}
+                <div class="flex flex-wrap gap-3 mb-3">
+                    {% for code, name in quick_add_options %}
+                    <label class="inline-flex items-center gap-2 bg-white rounded-md px-3 py-2 shadow-sm ring-1 ring-inset ring-gray-300 cursor-pointer hover:bg-gray-50">
+                        <input type="checkbox" name="jurisdictions" value="{{ code }}" checked class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                        <span class="text-sm text-gray-900">{{ name }} ({{ code }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Selected</button>
+            </form>
+        </div>
+        {% endif %}
+
         {% if jurisdictions %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">

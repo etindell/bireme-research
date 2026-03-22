@@ -1047,6 +1047,13 @@ class FundDetailView(OrganizationViewMixin, DetailView):
         ctx['tasks'] = ComplianceTask.objects.filter(
             organization=self.request.organization, fund=fund
         ).select_related('obligation')[:20]
+        ctx['quick_add_options'] = [
+            ('US-NY', 'New York'),
+            ('US-CA', 'California'),
+            ('US-CT', 'Connecticut'),
+            ('US-TX', 'Texas'),
+            ('CA-AB', 'Alberta'),
+        ]
         return ctx
 
 
@@ -1215,6 +1222,58 @@ class ImportJurisdictionsFromSECView(OrganizationViewMixin, View):
             if existing:
                 messages.info(request, f'{len(existing)} jurisdictions already existed: {", ".join(existing)}')
             if not created and not existing:
-                messages.warning(request, 'No jurisdictions found in SEC EDGAR Form D filings for this fund.')
+                messages.warning(
+                    request,
+                    'No state-level data found in SEC Form D filings (states of solicitation was not reported). '
+                    'Use "Quick Add" below to add your known investor states, or add them manually.'
+                )
+
+        return redirect('compliance:fund_detail', pk=fund_pk)
+
+
+class QuickAddJurisdictionsView(OrganizationViewMixin, View):
+    """Bulk-add common investor jurisdictions for a fund."""
+
+    # Known investor states from the design doc
+    COMMON_JURISDICTIONS = [
+        ('US-NY', 'New York'),
+        ('US-CA', 'California'),
+        ('US-CT', 'Connecticut'),
+        ('US-TX', 'Texas'),
+        ('CA-AB', 'Alberta'),
+    ]
+
+    def post(self, request, fund_pk):
+        fund = get_object_or_404(Fund, pk=fund_pk, organization=request.organization)
+        selected = request.POST.getlist('jurisdictions')
+
+        created = []
+        existing = []
+        for code in selected:
+            name = dict(self.COMMON_JURISDICTIONS).get(code, code)
+            country = code.split('-')[0] if '-' in code else ''
+            _, was_created = InvestorJurisdiction.objects.get_or_create(
+                fund=fund,
+                jurisdiction_code=code,
+                defaults={
+                    'organization': request.organization,
+                    'jurisdiction_name': name,
+                    'country': country,
+                    'notes': 'Added via Quick Add',
+                }
+            )
+            if was_created:
+                created.append(code)
+                # Generate blue sky task
+                from .services.blue_sky import generate_blue_sky_task
+                jur = InvestorJurisdiction.objects.get(fund=fund, jurisdiction_code=code)
+                generate_blue_sky_task(jur)
+            else:
+                existing.append(code)
+
+        if created:
+            messages.success(request, f'Added {len(created)} jurisdictions: {", ".join(created)}')
+        if existing:
+            messages.info(request, f'{len(existing)} already existed: {", ".join(existing)}')
 
         return redirect('compliance:fund_detail', pk=fund_pk)

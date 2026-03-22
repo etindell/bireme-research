@@ -70,8 +70,9 @@ urlpatterns = [
     path('funds/<int:fund_pk>/jurisdictions/<int:pk>/edit/', views.InvestorJurisdictionUpdateView.as_view(), name='jurisdiction_update'),
     path('funds/<int:fund_pk>/jurisdictions/<int:pk>/delete/', views.InvestorJurisdictionDeleteView.as_view(), name='jurisdiction_delete'),
 
-    # SEC Import
+    # SEC Import & Quick Add
     path('funds/<int:fund_pk>/import-sec/', views.ImportJurisdictionsFromSECView.as_view(), name='import_sec_jurisdictions'),
+    path('funds/<int:fund_pk>/quick-add-jurisdictions/', views.QuickAddJurisdictionsView.as_view(), name='quick_add_jurisdictions'),
 
     # Obligations (renamed from templates)
     path('obligations/', views.TemplateListView.as_view(), name='obligation_list'),
