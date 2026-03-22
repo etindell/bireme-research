@@ -1,19 +1,23 @@
 """
-Service for importing Form D filing data from SEC EDGAR.
+Service for importing blue sky filing data from NASAA EFD and SEC EDGAR.
 
-Fetches states of solicitation from Form D filings and auto-creates
-InvestorJurisdiction records for a fund.
+NASAA EFD (Electronic Filing Depository) tracks actual state notice filings
+per fund entity. This is the authoritative source for which states a fund
+has filed blue sky notices in.
+
+SEC EDGAR is used to find the CIK and accession numbers needed to look up
+filings on NASAA EFD.
 """
 
+import re
 import time
-import xml.etree.ElementTree as ET
 
 import requests
 
 from apps.compliance.models import InvestorJurisdiction
 
 SEC_USER_AGENT = "Keelhaul Compliance/1.0 (admin@keelhaul.io)"
-SEC_REQUEST_DELAY = 0.2  # seconds between requests (10 req/s rate limit)
+SEC_REQUEST_DELAY = 0.2
 
 US_STATE_NAMES = {
     'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
@@ -32,281 +36,176 @@ US_STATE_NAMES = {
 }
 
 
-def _sec_get(url, headers=None):
-    """Make a GET request to SEC EDGAR with proper headers and rate limiting."""
-    hdrs = {"User-Agent": SEC_USER_AGENT, "Accept-Encoding": "gzip, deflate"}
-    if headers:
-        hdrs.update(headers)
-    time.sleep(SEC_REQUEST_DELAY)
-    resp = requests.get(url, headers=hdrs, timeout=30)
-    resp.raise_for_status()
-    return resp
+def find_cik_from_edgar(entity_name):
+    """Search EDGAR for a fund's CIK by name."""
+    headers = {'User-Agent': SEC_USER_AGENT}
+    try:
+        url = 'https://efts.sec.gov/LATEST/search-index'
+        params = {
+            'q': f'"{entity_name}"',
+            'forms': 'D',
+            'dateRange': 'custom',
+            'startdt': '2015-01-01',
+            'enddt': '2030-12-31',
+        }
+        resp = requests.get(url, params=params, headers=headers, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
 
-
-def _find_form_d_filing_via_search(entity_name):
-    """Search EDGAR full-text search for Form D filings by entity name."""
-    url = "https://efts.sec.gov/LATEST/search-index"
-    params = {
-        "q": f'"{entity_name}"',
-        "forms": "D",
-        "dateRange": "custom",
-        "startdt": "2015-01-01",
-        "enddt": "2030-12-31",
-    }
-    print(f"[SEC Import] Searching EDGAR for Form D filings: {entity_name}")
-    resp = _sec_get(url + "?" + "&".join(f"{k}={v}" for k, v in params.items()))
-    data = resp.json()
-
-    hits = data.get("hits", {}).get("hits", [])
-    if not hits:
-        return None, None
-
-    # Return the most recent hit — hits are typically sorted by date descending
-    hit = hits[0]
-    source = hit.get("_source", {})
-    cik = source.get("entity_id") or source.get("ciks", [None])[0]
-    # Extract accession number from the filing URL or _id
-    file_id = hit.get("_id", "")
-    return cik, source
-
-
-def _find_form_d_filings_via_submissions(cik):
-    """Use the EDGAR submissions API to find Form D filings for a known CIK."""
-    padded_cik = str(cik).zfill(10)
-    url = f"https://data.sec.gov/submissions/CIK{padded_cik}.json"
-    print(f"[SEC Import] Fetching submissions for CIK {padded_cik}")
-    resp = _sec_get(url)
-    data = resp.json()
-
-    entity_name = data.get("name", "")
-    recent = data.get("filings", {}).get("recent", {})
-    forms = recent.get("form", [])
-    accession_numbers = recent.get("accessionNumber", [])
-    primary_docs = recent.get("primaryDocument", [])
-    filing_dates = recent.get("filingDate", [])
-
-    # Find the most recent Form D or D/A filing
-    for i, form in enumerate(forms):
-        if form in ("D", "D/A"):
-            return {
-                "cik": str(cik),
-                "entity_name": entity_name,
-                "accession_number": accession_numbers[i],
-                "primary_document": primary_docs[i],
-                "filing_date": filing_dates[i],
-            }
-
+        hits = data.get('hits', {}).get('hits', [])
+        if hits:
+            source = hits[0].get('_source', {})
+            cik = source.get('entity_id', '')
+            return cik
+    except Exception as e:
+        print(f'[SEC Import] EDGAR search error: {e}')
     return None
 
 
-def _fetch_form_d_xml(cik, accession_number, primary_document):
-    """Fetch and parse the Form D XML filing."""
-    # Accession number with dashes removed for the URL path
-    accession_path = accession_number.replace("-", "")
-    url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_path}/{primary_document}"
-    print(f"[SEC Import] Fetching Form D XML: {url}")
-    resp = _sec_get(url)
-    return resp.text
+def fetch_nasaa_efd_filings(cik):
+    """
+    Search NASAA EFD for a fund's state notice filings by CIK.
 
-
-def _parse_form_d_xml(xml_text):
-    """Parse Form D XML and extract states, first sale date, and offering amount."""
-    states = []
-    first_sale_date = None
-    total_offering_amount = None
+    Returns a list of dicts, one per filing found:
+    [{'efd_id': '507159', 'accession': '0001554856-25-000002', 'states': ['CA', 'CT', 'NY', 'TX']}, ...]
+    """
+    headers = {'User-Agent': SEC_USER_AGENT}
+    results = []
 
     try:
-        root = ET.fromstring(xml_text)
-    except ET.ParseError as e:
-        print(f"[SEC Import] XML parse error: {e}")
-        return states, first_sale_date, total_offering_amount
+        # Search NASAA EFD by CIK
+        search_url = f'https://nasaaefd.org/Search?search={cik}'
+        resp = requests.get(search_url, headers=headers, timeout=15)
+        resp.raise_for_status()
+        html = resp.text
 
-    # The XML may have namespaces; strip them for easier parsing
-    # Common namespace: http://www.sec.gov/edgar/document/formd
-    ns = ""
-    if root.tag.startswith("{"):
-        ns = root.tag.split("}")[0] + "}"
+        # Extract filing links: /FORMD/ViewFiling?EFDID=507159&Accession=0001554856-25-000002
+        filing_pattern = r"FORMD/ViewFiling\?EFDID=(\d+)&(?:amp;)?Accession=([\d-]+)"
+        filings = re.findall(filing_pattern, html)
 
-    # Find states of solicitation
-    for elem in root.iter(f"{ns}stateOrCountryDescription"):
-        code = elem.text
-        if code and len(code) == 2 and code.upper() in US_STATE_NAMES:
-            states.append(code.upper())
+        for efd_id, accession in filings:
+            time.sleep(SEC_REQUEST_DELAY)
+            filing_result = {'efd_id': efd_id, 'accession': accession, 'states': []}
 
-    # Also check the more common tag structure
-    for elem in root.iter(f"{ns}value"):
-        parent = None
-        # Walk the tree to find value elements under statesOfSolOfferingType
-        code = elem.text
-        if code and len(code) == 2 and code.upper() in US_STATE_NAMES:
-            if code.upper() not in states:
-                states.append(code.upper())
+            try:
+                # Fetch the filing detail page to get state notices
+                detail_url = f'https://nasaaefd.org/FORMD/ViewFiling?EFDID={efd_id}&Accession={accession}'
+                detail_resp = requests.get(detail_url, headers=headers, timeout=15)
+                detail_resp.raise_for_status()
+                detail_html = detail_resp.text
 
-    # Broader search: find any element containing state codes under solicitation sections
-    for tag_name in ("statesOfSolOfferingType", "stateOrCountry"):
-        for parent_elem in root.iter(f"{ns}{tag_name}"):
-            for child in parent_elem:
-                code = child.text
-                if code and len(code) == 2 and code.upper() in US_STATE_NAMES:
-                    if code.upper() not in states:
-                        states.append(code.upper())
+                # Parse "Filed: CA, CT, NY, TX" pattern
+                filed_match = re.search(r"Filed:</td><td>([A-Z, ]+)</td>", detail_html)
+                if filed_match:
+                    states_str = filed_match.group(1)
+                    states = [s.strip() for s in states_str.split(',') if s.strip()]
+                    filing_result['states'] = states
 
-    # Extract first sale date
-    for elem in root.iter(f"{ns}dateOfFirstSale"):
-        for child in elem:
-            if child.text and child.text.strip():
-                first_sale_date = child.text.strip()
-                break
-        if not first_sale_date and elem.text and elem.text.strip():
-            first_sale_date = elem.text.strip()
+                # Try to extract entity name
+                name_match = re.search(r'lblEntityName["\']?>([^<]+)<', detail_html)
+                if name_match:
+                    filing_result['entity_name'] = name_match.group(1).strip()
 
-    # Extract total offering amount
-    for elem in root.iter(f"{ns}totalOfferingAmount"):
-        if elem.text and elem.text.strip():
-            total_offering_amount = elem.text.strip()
-            break
+            except Exception as e:
+                print(f'[NASAA EFD] Error fetching filing {efd_id}: {e}')
 
-    return states, first_sale_date, total_offering_amount
+            results.append(filing_result)
+
+    except Exception as e:
+        print(f'[NASAA EFD] Search error: {e}')
+
+    return results
 
 
-def fetch_form_d_states(entity_name, cik=None):
+def fetch_fund_states(fund_name, cik=None):
     """
-    Fetch Form D filing data from SEC EDGAR and extract states of solicitation.
-
-    Args:
-        entity_name: Name of the entity to search for.
-        cik: Optional CIK number. If provided, uses the submissions API directly.
+    Get the states where a fund has blue sky notice filings from NASAA EFD.
 
     Returns:
-        Dict with keys: states, first_sale_date, entity_name, cik, offering_amount.
-        On failure, returns dict with 'error' key and empty states list.
+    {
+        'states': ['CA', 'CT', 'NY', 'TX'],
+        'cik': '0001554856',
+        'source': 'NASAA EFD',
+        'filings': [...],
+        'error': None,
+    }
     """
-    try:
-        filing_info = None
+    # Find CIK if not provided
+    if not cik:
+        cik = find_cik_from_edgar(fund_name)
+        if not cik:
+            return {'states': [], 'cik': None, 'source': None, 'filings': [], 'error': f'Could not find CIK for "{fund_name}" on EDGAR'}
 
-        if cik:
-            filing_info = _find_form_d_filings_via_submissions(cik)
-            if not filing_info:
-                return {
-                    "error": f"No Form D filing found for CIK {cik}",
-                    "states": [],
-                }
-        else:
-            search_cik, source = _find_form_d_filing_via_search(entity_name)
-            if not search_cik:
-                return {
-                    "error": f"No Form D filing found for '{entity_name}'",
-                    "states": [],
-                }
-            # Now use the CIK from search to get filing details via submissions API
-            filing_info = _find_form_d_filings_via_submissions(search_cik)
-            if not filing_info:
-                return {
-                    "error": f"No Form D filing found in submissions for CIK {search_cik}",
-                    "states": [],
-                }
+    # Pad CIK for NASAA EFD search
+    cik_padded = cik.zfill(10) if not cik.startswith('0') else cik
 
-        # Fetch and parse the XML
-        xml_text = _fetch_form_d_xml(
-            filing_info["cik"],
-            filing_info["accession_number"],
-            filing_info["primary_document"],
-        )
-        states, first_sale_date, offering_amount = _parse_form_d_xml(xml_text)
+    print(f'[SEC Import] Searching NASAA EFD for CIK {cik_padded}')
+    filings = fetch_nasaa_efd_filings(cik_padded)
 
-        print(f"[SEC Import] Found {len(states)} states of solicitation: {states}")
+    if not filings:
+        return {'states': [], 'cik': cik_padded, 'source': 'NASAA EFD', 'filings': [], 'error': 'No filings found on NASAA EFD'}
 
-        return {
-            "states": sorted(states),
-            "first_sale_date": first_sale_date,
-            "entity_name": filing_info.get("entity_name", entity_name),
-            "cik": filing_info.get("cik", str(cik) if cik else ""),
-            "offering_amount": offering_amount,
-        }
+    # Use the most recent filing's states (first in list)
+    # Also collect all unique states across all filings
+    all_states = set()
+    for f in filings:
+        all_states.update(f.get('states', []))
 
-    except requests.RequestException as e:
-        print(f"[SEC Import] Network error: {e}")
-        return {"error": f"Network error fetching SEC data: {e}", "states": []}
-    except Exception as e:
-        print(f"[SEC Import] Unexpected error: {e}")
-        return {"error": f"Unexpected error: {e}", "states": []}
+    return {
+        'states': sorted(all_states),
+        'cik': cik_padded,
+        'source': 'NASAA EFD',
+        'filings': filings,
+        'error': None,
+    }
 
 
 def import_jurisdictions_from_sec(fund):
     """
-    Import investor jurisdictions from SEC EDGAR Form D filings for a fund.
+    Import investor jurisdictions for a fund from NASAA EFD state notice filings.
 
-    Takes a Fund instance, fetches Form D data, and creates InvestorJurisdiction
-    records for each state of solicitation listed in the filing.
-
-    Args:
-        fund: A Fund model instance.
-
-    Returns:
-        Dict with keys: created (list), existing (list), error (str or None).
+    Takes a Fund instance, fetches its blue sky filing data, and creates
+    InvestorJurisdiction records for each state found.
     """
-    from apps.compliance.services.blue_sky import generate_blue_sky_task
+    result = fetch_fund_states(fund.name, cik=fund.edgar_cik or None)
 
-    result = {"created": [], "existing": [], "error": None}
+    if result.get('error'):
+        return {'created': [], 'existing': [], 'error': result['error']}
 
-    # Use edgar_cik if available, otherwise search by fund name
-    cik = fund.edgar_cik if fund.edgar_cik else None
-    sec_data = fetch_form_d_states(entity_name=fund.name, cik=cik)
+    states = result.get('states', [])
+    if not states:
+        return {'created': [], 'existing': [], 'error': 'No state notices found in NASAA EFD filings'}
 
-    if sec_data.get("error"):
-        result["error"] = sec_data["error"]
-        return result
-
-    states = sec_data.get("states", [])
-    first_sale_date = sec_data.get("first_sale_date")
-
-    # Parse first_sale_date if it's a string
-    parsed_sale_date = None
-    if first_sale_date:
-        try:
-            from datetime import date as date_type
-
-            # Handle various date formats from SEC
-            for fmt in ("%Y-%m-%d", "%m-%d-%Y", "%m/%d/%Y"):
-                try:
-                    parsed_sale_date = date_type(
-                        *map(int, first_sale_date.replace("/", "-").split("-")[:3])
-                    )
-                    break
-                except (ValueError, TypeError):
-                    continue
-            if not parsed_sale_date:
-                from datetime import datetime
-                parsed_sale_date = datetime.strptime(first_sale_date, "%Y-%m-%d").date()
-        except (ValueError, TypeError):
-            print(f"[SEC Import] Could not parse first_sale_date: {first_sale_date}")
+    created = []
+    existing = []
 
     for state_code in states:
-        jurisdiction_code = f"US-{state_code}"
-        jurisdiction_name = US_STATE_NAMES.get(state_code, state_code)
+        iso_code = f'US-{state_code}'
+        state_name = US_STATE_NAMES.get(state_code, state_code)
 
-        ij, created = InvestorJurisdiction.objects.get_or_create(
+        jur, was_created = InvestorJurisdiction.objects.get_or_create(
             fund=fund,
-            jurisdiction_code=jurisdiction_code,
-            organization=fund.organization,
+            jurisdiction_code=iso_code,
             defaults={
-                "jurisdiction_name": jurisdiction_name,
-                "country": "US",
-                "first_sale_date": parsed_sale_date,
-                "notes": "Auto-imported from SEC EDGAR Form D filing",
-            },
+                'organization': fund.organization,
+                'jurisdiction_name': state_name,
+                'country': 'US',
+                'blue_sky_filed': True,  # We know it's filed because NASAA EFD shows it
+                'notes': f'Auto-imported from NASAA EFD (CIK: {result["cik"]})',
+            }
         )
 
-        if created:
-            print(f"[SEC Import] Created jurisdiction: {jurisdiction_name} ({jurisdiction_code})")
-            result["created"].append(jurisdiction_code)
-            generate_blue_sky_task(ij)
+        if was_created:
+            created.append(iso_code)
+            # Generate blue sky task for ongoing tracking
+            from .blue_sky import generate_blue_sky_task
+            generate_blue_sky_task(jur)
         else:
-            print(f"[SEC Import] Jurisdiction already exists: {jurisdiction_name} ({jurisdiction_code})")
-            result["existing"].append(jurisdiction_code)
+            existing.append(iso_code)
 
-    print(
-        f"[SEC Import] Done. Created {len(result['created'])}, "
-        f"existing {len(result['existing'])}."
-    )
-    return result
+    # Update the fund's CIK if we found it and it wasn't set
+    if result.get('cik') and not fund.edgar_cik:
+        fund.edgar_cik = result['cik']
+        fund.save(update_fields=['edgar_cik', 'updated_at'])
+
+    return {'created': created, 'existing': existing, 'error': None}
