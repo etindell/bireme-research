@@ -1,5 +1,12 @@
+import logging
 from datetime import date
-from apps.compliance.models import ComplianceTaskTemplate, ComplianceTask, ComplianceSettings
+
+from django.conf import settings
+from django.core.mail import send_mail
+
+from apps.compliance.models import ComplianceObligation, ComplianceTask, ComplianceSettings
+
+logger = logging.getLogger(__name__)
 
 
 def _max_day(month):
@@ -11,26 +18,50 @@ def _max_day(month):
     return 31
 
 
+def _period_label(frequency, month=None, quarter=None, year=None):
+    """Build a human-readable period label for a task instance."""
+    if frequency == ComplianceObligation.Frequency.MONTHLY and month and year:
+        return date(year, month, 1).strftime('%B %Y')
+    if frequency == ComplianceObligation.Frequency.QUARTERLY and quarter:
+        return f"Q{quarter} {year}" if year else f"Q{quarter}"
+    if frequency == ComplianceObligation.Frequency.ANNUAL and year:
+        return str(year)
+    if frequency == ComplianceObligation.Frequency.ONE_TIME and year:
+        return str(year)
+    return ''
+
+
 def generate_tasks(organization, year, regenerate=False, dry_run=False):
     """
-    Generate ComplianceTask instances from active templates for a given year.
+    Generate ComplianceTask instances from active ComplianceObligation records
+    for a given year.
+
+    EVENT_DRIVEN obligations are skipped -- those tasks are created by explicit
+    user actions (e.g. adding an InvestorJurisdiction).
+
+    Deduplication key: year + obligation + fund (fund is NULL for firm-level).
 
     Returns (created_count, skipped_count).
     """
-    settings = ComplianceSettings.objects.filter(organization=organization).first()
+    comp_settings = ComplianceSettings.objects.filter(organization=organization).first()
 
-    templates = ComplianceTaskTemplate.objects.filter(
+    obligations = ComplianceObligation.objects.filter(
         organization=organization, is_active=True
     )
 
     created_count = 0
     skipped_count = 0
 
-    for template in templates:
+    for obligation in obligations:
+        # Skip event-driven obligations -- they are created by user actions
+        if obligation.frequency == ComplianceObligation.Frequency.EVENT_DRIVEN:
+            skipped_count += 1
+            continue
+
         # Check conditional flag
-        if template.conditional_flag:
-            if settings:
-                flag_value = getattr(settings, template.conditional_flag, False)
+        if obligation.conditional_flag:
+            if comp_settings:
+                flag_value = getattr(comp_settings, obligation.conditional_flag, False)
             else:
                 flag_value = False
             if not flag_value:
@@ -39,9 +70,11 @@ def generate_tasks(organization, year, regenerate=False, dry_run=False):
 
         instances_to_create = []
 
-        if template.frequency == ComplianceTaskTemplate.Frequency.MONTHLY:
+        if obligation.frequency == ComplianceObligation.Frequency.MONTHLY:
             for month in range(1, 13):
-                due_day = template.default_due_day or (settings.monthly_close_due_day if settings else 10)
+                due_day = obligation.default_due_day or (
+                    comp_settings.monthly_close_due_day if comp_settings else 10
+                )
                 # Due date is in the following month
                 if month == 12:
                     d = date(year + 1, 1, min(due_day, 28))
@@ -51,10 +84,12 @@ def generate_tasks(organization, year, regenerate=False, dry_run=False):
                 instances_to_create.append({
                     'month': month,
                     'due_date': d,
-                    'title': f"{template.title} ({month_name})",
+                    'title': f"{obligation.title} ({month_name})",
+                    'period_label': month_name,
+                    'fund': None,
                 })
 
-        elif template.frequency == ComplianceTaskTemplate.Frequency.QUARTERLY:
+        elif obligation.frequency == ComplianceObligation.Frequency.QUARTERLY:
             quarter_info = [
                 (1, date(year, 4, 30)),
                 (2, date(year, 7, 30)),
@@ -62,15 +97,15 @@ def generate_tasks(organization, year, regenerate=False, dry_run=False):
                 (4, date(year, 1, 30)),
             ]
             for q, default_due in quarter_info:
-                if template.quarter and template.quarter != q:
+                if obligation.quarter and obligation.quarter != q:
                     continue
                 due_date = default_due
-                if template.default_due_month and template.default_due_day:
-                    dm = template.default_due_month
-                    dd = template.default_due_day
+                if obligation.default_due_month and obligation.default_due_day:
+                    dm = obligation.default_due_month
+                    dd = obligation.default_due_day
                     due_date = date(year, dm, min(dd, _max_day(dm)))
                 quarter_label = f"Q{q}"
-                title = template.title
+                title = obligation.title
                 if "(Q" in title:
                     for i in range(1, 5):
                         title = title.replace(f"(Q{i})", f"({quarter_label})")
@@ -80,36 +115,51 @@ def generate_tasks(organization, year, regenerate=False, dry_run=False):
                     'month': due_date.month,
                     'due_date': due_date,
                     'title': title,
+                    'period_label': f"Q{q} {year}",
+                    'fund': None,
                 })
 
-        elif template.frequency == ComplianceTaskTemplate.Frequency.ANNUAL:
-            dm = template.default_due_month or 12
-            dd = template.default_due_day or 31
+        elif obligation.frequency == ComplianceObligation.Frequency.ANNUAL:
+            dm = obligation.default_due_month or 12
+            dd = obligation.default_due_day or 31
             due_date = date(year, dm, min(dd, _max_day(dm)))
             instances_to_create.append({
                 'month': dm,
                 'due_date': due_date,
-                'title': template.title,
+                'title': obligation.title,
+                'period_label': str(year),
+                'fund': None,
             })
 
-        elif template.frequency == ComplianceTaskTemplate.Frequency.ONE_TIME:
-            if template.default_due_month and template.default_due_day:
-                dm = template.default_due_month
-                dd = template.default_due_day
+        elif obligation.frequency == ComplianceObligation.Frequency.ONE_TIME:
+            if obligation.default_due_month and obligation.default_due_day:
+                dm = obligation.default_due_month
+                dd = obligation.default_due_day
                 due_date = date(year, dm, min(dd, _max_day(dm)))
                 instances_to_create.append({
                     'month': dm,
                     'due_date': due_date,
-                    'title': template.title,
+                    'title': obligation.title,
+                    'period_label': str(year),
+                    'fund': None,
                 })
 
         for inst in instances_to_create:
+            # Fund-level dedup: year + obligation + fund (fund can be None)
             existing = ComplianceTask.all_objects.filter(
-                template=template,
+                obligation=obligation,
                 year=year,
-                due_date=inst['due_date'],
+                fund=inst['fund'],
                 organization=organization,
-            ).first()
+            )
+            # For monthly/quarterly, also match on due_date to allow multiple per year
+            if obligation.frequency in (
+                ComplianceObligation.Frequency.MONTHLY,
+                ComplianceObligation.Frequency.QUARTERLY,
+            ):
+                existing = existing.filter(due_date=inst['due_date'])
+
+            existing = existing.first()
 
             if existing and not regenerate:
                 skipped_count += 1
@@ -125,16 +175,46 @@ def generate_tasks(organization, year, regenerate=False, dry_run=False):
             if not dry_run:
                 ComplianceTask.objects.create(
                     organization=organization,
-                    template=template,
+                    template=obligation,
+                    obligation=obligation,
+                    fund=inst['fund'],
                     title=inst['title'],
-                    description=template.description,
+                    description=obligation.description,
                     year=year,
                     month=inst['month'],
                     due_date=inst['due_date'],
-                    tags=template.tags,
-                    conditional_flag=template.conditional_flag,
-                    is_conditional=bool(template.conditional_flag),
+                    tags=obligation.tags,
+                    conditional_flag=obligation.conditional_flag,
+                    is_conditional=bool(obligation.conditional_flag),
+                    period_label=inst['period_label'],
                 )
             created_count += 1
 
+    # Send email notification
+    _send_generation_notification(organization, year, created_count, skipped_count, dry_run)
+
     return created_count, skipped_count
+
+
+def _send_generation_notification(organization, year, created_count, skipped_count, dry_run):
+    """Send email notification after task generation completes."""
+    if dry_run:
+        return
+
+    subject = f"Compliance tasks generated for {organization} — {year}"
+    message = (
+        f"Task generation completed for {organization}, year {year}.\n\n"
+        f"Created: {created_count}\n"
+        f"Skipped: {skipped_count}\n"
+    )
+
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[settings.DEFAULT_FROM_EMAIL],
+            fail_silently=True,
+        )
+    except Exception:
+        logger.exception("Failed to send task generation notification email")

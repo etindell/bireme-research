@@ -16,15 +16,19 @@ from django.views.generic import (
 
 from core.mixins import OrganizationViewMixin
 from .models import (
-    ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
+    ComplianceSettings, ComplianceObligation, ComplianceTask,
     ComplianceEvidence, ComplianceAuditLog, ComplianceDocument, SECNewsItem,
+    Fund, FundPrincipal, InvestorJurisdiction,
     SurveyTemplate, SurveyVersion, SurveyQuestion, SurveyAssignment,
     SurveyResponse, SurveyAnswer, SurveyEvidenceUpload, SurveyException,
 )
+# Backwards compat alias used in existing views
+ComplianceTaskTemplate = ComplianceObligation
 from .forms import (
-    ComplianceSettingsForm, ComplianceTaskTemplateForm, ComplianceTaskForm,
+    ComplianceSettingsForm, ComplianceObligationForm, ComplianceTaskForm,
     EvidenceUploadForm, ComplianceDocumentForm, SurveyCompleteForm,
 )
+ComplianceTaskTemplateForm = ComplianceObligationForm
 from .services.audit import log_action
 from .services.task_generation import generate_tasks
 from .services.surveys import assign_periodic_surveys, process_survey_submission
@@ -51,6 +55,30 @@ class ComplianceDashboardView(OrganizationViewMixin, TemplateView):
             status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE]
         ).count()
 
+        # Setup checklist for first-run experience
+        has_settings = ComplianceSettings.objects.filter(organization=org).exists()
+        has_funds = Fund.objects.filter(organization=org).exists()
+        has_jurisdictions = InvestorJurisdiction.objects.filter(organization=org).exists()
+        has_tasks = total > 0
+        setup_complete = has_settings and has_funds and has_jurisdictions and has_tasks
+        setup_steps = [
+            {'label': 'Configure ERA Settings', 'done': has_settings, 'url': 'compliance:settings'},
+            {'label': 'Add Your Funds', 'done': has_funds, 'url': 'compliance:fund_create'},
+            {'label': 'Add Investor Jurisdictions', 'done': has_jurisdictions, 'url': 'compliance:fund_list'},
+            {'label': 'Generate Tasks', 'done': has_tasks, 'url': 'compliance:generate_tasks'},
+        ]
+        setup_progress = sum(1 for s in setup_steps if s['done'])
+
+        # Jurisdiction tracker
+        jurisdictions = InvestorJurisdiction.objects.filter(
+            organization=org
+        ).select_related('fund').order_by('jurisdiction_code')
+
+        # Placeholder obligations (Alberta etc.)
+        placeholder_obligations = ComplianceObligation.objects.filter(
+            organization=org, is_placeholder=True, is_active=True
+        )
+
         ctx.update({
             'year': year,
             'total': total,
@@ -62,12 +90,17 @@ class ComplianceDashboardView(OrganizationViewMixin, TemplateView):
                 due_date__gte=now, due_date__lte=now + timedelta(days=14)
             ).exclude(
                 status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE]
-            ).order_by('due_date')[:10],
+            ).order_by('due_date').select_related('fund', 'obligation')[:10],
             'overdue_tasks': tasks.filter(
                 due_date__lt=now
             ).exclude(
-                status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE]
-            ).order_by('due_date')[:10],
+                status__in=[ComplianceTask.Status.COMPLETED, ComplianceTask.Status.NOT_APPLICABLE, ComplianceTask.Status.DEFERRED]
+            ).order_by('due_date').select_related('fund', 'obligation')[:10],
+            'jurisdictions': jurisdictions,
+            'placeholder_obligations': placeholder_obligations,
+            'setup_complete': setup_complete,
+            'setup_steps': setup_steps,
+            'setup_progress': setup_progress,
         })
         return ctx
 
@@ -965,3 +998,201 @@ class ExportSurveyCSVView(OrganizationViewMixin, View):
         response = HttpResponse(csv_content, content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename=compliance_surveys_{year}.csv'
         return response
+
+
+# ============ Fund Management ============
+
+class FundListView(OrganizationViewMixin, ListView):
+    model = Fund
+    template_name = 'compliance/fund_list.html'
+    context_object_name = 'funds'
+
+    def get_queryset(self):
+        return Fund.objects.filter(
+            organization=self.request.organization
+        ).prefetch_related('principals', 'investor_jurisdictions', 'compliance_tasks')
+
+
+class FundCreateView(OrganizationViewMixin, CreateView):
+    model = Fund
+    template_name = 'compliance/fund_form.html'
+    form_class = None  # set in get_form
+
+    def get_form(self, form_class=None):
+        from .forms import FundForm
+        return FundForm(**self.get_form_kwargs(), organization=self.request.organization)
+
+    def form_valid(self, form):
+        form.instance.organization = self.request.organization
+        form.instance.created_by = self.request.user
+        messages.success(self.request, f'Fund "{form.instance.name}" created.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('compliance:fund_list')
+
+
+class FundDetailView(OrganizationViewMixin, DetailView):
+    model = Fund
+    template_name = 'compliance/fund_detail.html'
+    context_object_name = 'fund'
+
+    def get_queryset(self):
+        return Fund.objects.filter(organization=self.request.organization)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        fund = self.object
+        ctx['principals'] = fund.principals.all()
+        ctx['jurisdictions'] = fund.investor_jurisdictions.all()
+        ctx['tasks'] = ComplianceTask.objects.filter(
+            organization=self.request.organization, fund=fund
+        ).select_related('obligation')[:20]
+        return ctx
+
+
+class FundUpdateView(OrganizationViewMixin, UpdateView):
+    model = Fund
+    template_name = 'compliance/fund_form.html'
+
+    def get_queryset(self):
+        return Fund.objects.filter(organization=self.request.organization)
+
+    def get_form(self, form_class=None):
+        from .forms import FundForm
+        return FundForm(**self.get_form_kwargs(), organization=self.request.organization)
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        messages.success(self.request, f'Fund "{form.instance.name}" updated.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('compliance:fund_detail', kwargs={'pk': self.object.pk})
+
+
+# ============ Fund Principal Management ============
+
+class FundPrincipalCreateView(OrganizationViewMixin, CreateView):
+    model = FundPrincipal
+    template_name = 'compliance/principal_form.html'
+
+    def get_form(self, form_class=None):
+        from .forms import FundPrincipalForm
+        return FundPrincipalForm(**self.get_form_kwargs(), organization=self.request.organization)
+
+    def form_valid(self, form):
+        fund = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
+        form.instance.fund = fund
+        form.instance.organization = self.request.organization
+        form.instance.created_by = self.request.user
+        messages.success(self.request, f'Principal "{form.instance.name}" added.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('compliance:fund_detail', kwargs={'pk': self.kwargs['fund_pk']})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['fund'] = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
+        return ctx
+
+
+class FundPrincipalUpdateView(OrganizationViewMixin, UpdateView):
+    model = FundPrincipal
+    template_name = 'compliance/principal_form.html'
+
+    def get_queryset(self):
+        return FundPrincipal.objects.filter(organization=self.request.organization)
+
+    def get_form(self, form_class=None):
+        from .forms import FundPrincipalForm
+        return FundPrincipalForm(**self.get_form_kwargs(), organization=self.request.organization)
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        messages.success(self.request, f'Principal "{form.instance.name}" updated.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('compliance:fund_detail', kwargs={'pk': self.kwargs['fund_pk']})
+
+
+class FundPrincipalDeleteView(OrganizationViewMixin, DeleteView):
+    model = FundPrincipal
+    template_name = 'compliance/confirm_delete.html'
+
+    def get_queryset(self):
+        return FundPrincipal.objects.filter(organization=self.request.organization)
+
+    def get_success_url(self):
+        return reverse('compliance:fund_detail', kwargs={'pk': self.kwargs['fund_pk']})
+
+
+# ============ Investor Jurisdiction Management ============
+
+class InvestorJurisdictionCreateView(OrganizationViewMixin, CreateView):
+    model = InvestorJurisdiction
+    template_name = 'compliance/jurisdiction_form.html'
+
+    def get_form(self, form_class=None):
+        from .forms import InvestorJurisdictionForm
+        return InvestorJurisdictionForm(**self.get_form_kwargs(), organization=self.request.organization)
+
+    def form_valid(self, form):
+        fund = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
+        form.instance.fund = fund
+        form.instance.organization = self.request.organization
+        form.instance.created_by = self.request.user
+        # Derive country from jurisdiction_code prefix
+        code = form.instance.jurisdiction_code
+        if '-' in code:
+            form.instance.country = code.split('-')[0]
+        response = super().form_valid(form)
+        # Explicit blue sky task generation (not signal-based, per eng review decision)
+        from .services.blue_sky import generate_blue_sky_task
+        task = generate_blue_sky_task(self.object)
+        if task:
+            messages.success(self.request, f'Added {form.instance.jurisdiction_name}. Blue sky task generated: {task.title}')
+        else:
+            messages.success(self.request, f'Added {form.instance.jurisdiction_name}. No blue sky filing required.')
+        return response
+
+    def get_success_url(self):
+        return reverse('compliance:fund_detail', kwargs={'pk': self.kwargs['fund_pk']})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['fund'] = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
+        return ctx
+
+
+class InvestorJurisdictionUpdateView(OrganizationViewMixin, UpdateView):
+    model = InvestorJurisdiction
+    template_name = 'compliance/jurisdiction_form.html'
+
+    def get_queryset(self):
+        return InvestorJurisdiction.objects.filter(organization=self.request.organization)
+
+    def get_form(self, form_class=None):
+        from .forms import InvestorJurisdictionForm
+        return InvestorJurisdictionForm(**self.get_form_kwargs(), organization=self.request.organization)
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        messages.success(self.request, f'Jurisdiction "{form.instance.jurisdiction_name}" updated.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('compliance:fund_detail', kwargs={'pk': self.kwargs['fund_pk']})
+
+
+class InvestorJurisdictionDeleteView(OrganizationViewMixin, DeleteView):
+    model = InvestorJurisdiction
+    template_name = 'compliance/confirm_delete.html'
+
+    def get_queryset(self):
+        return InvestorJurisdiction.objects.filter(organization=self.request.organization)
+
+    def get_success_url(self):
+        return reverse('compliance:fund_detail', kwargs={'pk': self.kwargs['fund_pk']})

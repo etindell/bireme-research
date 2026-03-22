@@ -1,11 +1,14 @@
 from django.contrib import admin
 from .models import (
-    ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
+    ComplianceSettings, ComplianceObligation, ComplianceTask,
     ComplianceEvidence, ComplianceAuditLog, ComplianceDocument, SECNewsItem,
+    Fund, FundPrincipal, InvestorJurisdiction,
     SurveyTemplate, SurveyVersion, SurveyQuestion, SurveyAssignment,
     SurveyResponse, SurveyAnswer, SurveyException, EmployeeCertificationStatus
 )
 
+
+# ============ Survey Admin (dormant — kept for future RIA use) ============
 
 class QuestionInline(admin.TabularInline):
     model = SurveyQuestion
@@ -50,23 +53,56 @@ admin.site.register(SurveyAnswer)
 admin.site.register(EmployeeCertificationStatus)
 
 
+# ============ ERA Compliance Admin ============
+
 @admin.register(ComplianceSettings)
 class ComplianceSettingsAdmin(admin.ModelAdmin):
-    list_display = ['organization', 'firm_name', 'monthly_close_due_day']
-    list_filter = ['organization']
+    list_display = ['organization', 'firm_name', 'registration_type', 'firm_crd_number']
+    list_filter = ['registration_type', 'organization']
 
 
-@admin.register(ComplianceTaskTemplate)
-class ComplianceTaskTemplateAdmin(admin.ModelAdmin):
-    list_display = ['title', 'frequency', 'organization', 'is_active', 'conditional_flag']
-    list_filter = ['frequency', 'is_active', 'organization']
+@admin.register(Fund)
+class FundAdmin(admin.ModelAdmin):
+    list_display = ['name', 'entity_type', 'entity_jurisdiction', 'is_active', 'organization']
+    list_filter = ['entity_type', 'is_active', 'organization']
+    search_fields = ['name']
+
+
+class PrincipalInline(admin.TabularInline):
+    model = FundPrincipal
+    extra = 0
+
+
+class JurisdictionInline(admin.TabularInline):
+    model = InvestorJurisdiction
+    extra = 0
+
+
+@admin.register(FundPrincipal)
+class FundPrincipalAdmin(admin.ModelAdmin):
+    list_display = ['name', 'title', 'fund', 'residency_jurisdiction', 'is_us_resident', 'requires_adv_nr']
+    list_filter = ['is_us_resident', 'requires_adv_nr', 'organization']
+    search_fields = ['name']
+
+
+@admin.register(InvestorJurisdiction)
+class InvestorJurisdictionAdmin(admin.ModelAdmin):
+    list_display = ['jurisdiction_code', 'jurisdiction_name', 'fund', 'first_sale_date', 'blue_sky_filed']
+    list_filter = ['country', 'blue_sky_filed', 'organization']
+    search_fields = ['jurisdiction_code', 'jurisdiction_name']
+
+
+@admin.register(ComplianceObligation)
+class ComplianceObligationAdmin(admin.ModelAdmin):
+    list_display = ['title', 'category', 'frequency', 'jurisdiction', 'is_active', 'is_placeholder', 'organization']
+    list_filter = ['category', 'frequency', 'is_active', 'is_placeholder', 'organization']
     search_fields = ['title']
 
 
 @admin.register(ComplianceTask)
 class ComplianceTaskAdmin(admin.ModelAdmin):
-    list_display = ['title', 'due_date', 'status', 'year', 'organization']
-    list_filter = ['status', 'year', 'organization']
+    list_display = ['title', 'due_date', 'status', 'fund', 'delegated_to', 'year', 'organization']
+    list_filter = ['status', 'delegated_to', 'year', 'organization']
     search_fields = ['title']
     date_hierarchy = 'due_date'
 
