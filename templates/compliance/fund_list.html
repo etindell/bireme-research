@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Funds - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li><a href="{% url 'compliance:dashboard' %}" class="text-sm font-medium text-gray-500 hover:text-gray-700">Compliance</a></li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500">Funds</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Funds</h1>
+        <a href="{% url 'compliance:fund_create' %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Fund</a>
+    </div>
+
+    {% if funds %}
+    <!-- Fund Cards -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {% for fund in funds %}
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <a href="{% url 'compliance:fund_detail' fund.pk %}" class="text-lg font-semibold text-primary-600 hover:text-primary-500">{{ fund.name }}</a>
+                    <p class="mt-1 text-sm text-gray-500">{{ fund.get_entity_type_display }} &middot; {{ fund.entity_jurisdiction }}</p>
+                </div>
+                {% if fund.is_active %}
+                <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">Active</span>
+                {% else %}
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
+                {% endif %}
+            </div>
+
+            <!-- Principals -->
+            {% if fund.principals.all %}
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Principals</h3>
+                <div class="mt-1 flex flex-wrap gap-1">
+                    {% for principal in fund.principals.all %}
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{{ principal.name }}{% if principal.residency_jurisdiction %} ({{ principal.residency_jurisdiction }}){% endif %}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Investor Jurisdictions -->
+            {% if fund.investor_jurisdictions.all %}
+            <div class="mt-3">
+                <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Investor Jurisdictions</h3>
+                <div class="mt-1 flex flex-wrap gap-1">
+                    {% for jur in fund.investor_jurisdictions.all %}
+                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">{{ jur.jurisdiction_code }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Task Summary -->
+            <div class="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+                <span class="text-sm text-gray-500">
+                    {{ fund.compliance_tasks.count }} total{% with overdue=fund.compliance_tasks.all|dictsort:"due_date" %}{% endwith %}
+                </span>
+                <div class="flex items-center gap-x-2">
+                    <a href="{% url 'compliance:principal_create' fund.pk %}" class="text-xs text-primary-600 hover:text-primary-500">+ Principal</a>
+                    <a href="{% url 'compliance:jurisdiction_create' fund.pk %}" class="text-xs text-primary-600 hover:text-primary-500">+ Jurisdiction</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white shadow rounded-lg p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No funds yet</h3>
+        <p class="mt-1 text-sm text-gray-500">Add your first fund to get started.</p>
+        <div class="mt-6">
+            <a href="{% url 'compliance:fund_create' %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Fund</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

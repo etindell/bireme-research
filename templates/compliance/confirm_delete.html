@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Delete - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li><a href="{% url 'compliance:dashboard' %}" class="text-sm font-medium text-gray-500 hover:text-gray-700">Compliance</a></li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500">Delete</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-gray-900">Confirm Delete</h1>
+
+    <div class="bg-white shadow rounded-lg p-6">
+        <p class="text-sm text-gray-700">Are you sure you want to delete <strong>{{ object }}</strong>? This action cannot be undone.</p>
+        <form method="post" class="mt-6 flex gap-x-3">
+            {% csrf_token %}
+            <button type="submit" class="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">Delete</button>
+            <a href="{{ request.META.HTTP_REFERER|default:'javascript:history.back()' }}" onclick="event.preventDefault(); history.back();" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

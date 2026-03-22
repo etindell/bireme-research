@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load compliance_tags %}
+
+{% block title %}{{ fund.name }} - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+            <li><a href="{% url 'compliance:dashboard' %}" class="text-sm font-medium text-gray-500 hover:text-gray-700">Compliance</a></li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                    <a href="{% url 'compliance:fund_list' %}" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">Funds</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                    <span class="ml-4 text-sm font-medium text-gray-500">{{ fund.name|truncatechars:40 }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Fund Info Card -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ fund.name }}</h1>
+                <div class="mt-2 flex items-center gap-x-3">
+                    {% if fund.is_active %}
+                    <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">Active</span>
+                    {% else %}
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
+                    {% endif %}
+                </div>
+            </div>
+            <a href="{% url 'compliance:fund_update' fund.pk %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Edit</a>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 text-sm">
+            <div><span class="text-gray-500">Entity Type:</span> <span class="font-medium">{{ fund.get_entity_type_display }}</span></div>
+            <div><span class="text-gray-500">Jurisdiction:</span> <span class="font-medium">{{ fund.entity_jurisdiction }}</span></div>
+            <div><span class="text-gray-500">SEC File Number:</span> <span class="font-medium">{{ fund.sec_file_number|default:"-" }}</span></div>
+            <div><span class="text-gray-500">CIK:</span> <span class="font-medium">{{ fund.edgar_cik|default:"-" }}</span></div>
+            <div><span class="text-gray-500">Inception Date:</span> <span class="font-medium">{% if fund.inception_date %}{{ fund.inception_date|date:"M j, Y" }}{% else %}-{% endif %}</span></div>
+        </div>
+    </div>
+
+    <!-- Principals Table -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Principals</h2>
+            <a href="{% url 'compliance:principal_create' fund.pk %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Principal</a>
+        </div>
+        {% if principals %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Title</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">CRD</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Residency</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">ADV-NR</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for principal in principals %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ principal.name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ principal.title|default:"-" }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ principal.crd_number|default:"-" }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ principal.residency_jurisdiction|default:"-" }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if principal.requires_adv_nr %}
+                            <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Required</span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-right space-x-2">
+                            <a href="{% url 'compliance:principal_update' fund.pk principal.pk %}" class="text-primary-600 hover:text-primary-500">Edit</a>
+                            <a href="{% url 'compliance:principal_delete' fund.pk principal.pk %}" class="text-red-600 hover:text-red-500">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No principals added yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Jurisdictions Table -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Investor Jurisdictions</h2>
+            <a href="{% url 'compliance:jurisdiction_create' fund.pk %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Jurisdiction</a>
+        </div>
+        {% if jurisdictions %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Code</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">First Sale</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Blue Sky</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Filing Date</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for jur in jurisdictions %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ jur.jurisdiction_code }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ jur.jurisdiction_name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{% if jur.first_sale_date %}{{ jur.first_sale_date|date:"M j, Y" }}{% else %}-{% endif %}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if jur.blue_sky_filed %}
+                            <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Filed</span>
+                            {% else %}
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{% if jur.blue_sky_filing_date %}{{ jur.blue_sky_filing_date|date:"M j, Y" }}{% else %}-{% endif %}</td>
+                        <td class="px-4 py-3 text-sm text-right space-x-2">
+                            <a href="{% url 'compliance:jurisdiction_update' fund.pk jur.pk %}" class="text-primary-600 hover:text-primary-500">Edit</a>
+                            <a href="{% url 'compliance:jurisdiction_delete' fund.pk jur.pk %}" class="text-red-600 hover:text-red-500">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No investor jurisdictions added yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Recent Tasks Table -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Recent Tasks</h2>
+        </div>
+        {% if tasks %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Title</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Due Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Delegated To</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for task in tasks %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm">
+                            <a href="{% url 'compliance:task_detail' task.pk %}" class="font-medium text-primary-600 hover:text-primary-500">{{ task.title|truncatechars:60 }}</a>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ task.due_date|date:"M j, Y" }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ task.status|status_badge_class }}">
+                                {{ task.status|status_label }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ task.delegated_to.email|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No tasks associated with this fund yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

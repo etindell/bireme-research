@@ -202,6 +202,24 @@
                         </a>
                     </li>
                     <li>
+                        <a href="{% url 'compliance:fund_list' %}"
+                           class="{% if 'compliance/funds' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21" />
+                            </svg>
+                            Funds
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'compliance:obligation_list' %}"
+                           class="{% if 'compliance/obligations' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                            </svg>
+                            Obligations
+                        </a>
+                    </li>
+                    <li>
                         <a href="{% url 'compliance:document_list' %}"
                            class="{% if 'compliance/documents' in request.path %}bg-gray-800 text-white{% else %}text-gray-400 hover:bg-gray-800 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                             <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
