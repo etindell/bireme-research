@@ -1016,11 +1016,10 @@ class FundListView(OrganizationViewMixin, ListView):
 class FundCreateView(OrganizationViewMixin, CreateView):
     model = Fund
     template_name = 'compliance/fund_form.html'
-    form_class = None  # set in get_form
 
-    def get_form(self, form_class=None):
+    def get_form_class(self):
         from .forms import FundForm
-        return FundForm(**self.get_form_kwargs(), organization=self.request.organization)
+        return FundForm
 
     def form_valid(self, form):
         form.instance.organization = self.request.organization
@@ -1058,9 +1057,9 @@ class FundUpdateView(OrganizationViewMixin, UpdateView):
     def get_queryset(self):
         return Fund.objects.filter(organization=self.request.organization)
 
-    def get_form(self, form_class=None):
+    def get_form_class(self):
         from .forms import FundForm
-        return FundForm(**self.get_form_kwargs(), organization=self.request.organization)
+        return FundForm
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
@@ -1077,9 +1076,9 @@ class FundPrincipalCreateView(OrganizationViewMixin, CreateView):
     model = FundPrincipal
     template_name = 'compliance/principal_form.html'
 
-    def get_form(self, form_class=None):
+    def get_form_class(self):
         from .forms import FundPrincipalForm
-        return FundPrincipalForm(**self.get_form_kwargs(), organization=self.request.organization)
+        return FundPrincipalForm
 
     def form_valid(self, form):
         fund = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
@@ -1105,9 +1104,9 @@ class FundPrincipalUpdateView(OrganizationViewMixin, UpdateView):
     def get_queryset(self):
         return FundPrincipal.objects.filter(organization=self.request.organization)
 
-    def get_form(self, form_class=None):
+    def get_form_class(self):
         from .forms import FundPrincipalForm
-        return FundPrincipalForm(**self.get_form_kwargs(), organization=self.request.organization)
+        return FundPrincipalForm
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
@@ -1135,9 +1134,9 @@ class InvestorJurisdictionCreateView(OrganizationViewMixin, CreateView):
     model = InvestorJurisdiction
     template_name = 'compliance/jurisdiction_form.html'
 
-    def get_form(self, form_class=None):
+    def get_form_class(self):
         from .forms import InvestorJurisdictionForm
-        return InvestorJurisdictionForm(**self.get_form_kwargs(), organization=self.request.organization)
+        return InvestorJurisdictionForm
 
     def form_valid(self, form):
         fund = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
@@ -1174,9 +1173,9 @@ class InvestorJurisdictionUpdateView(OrganizationViewMixin, UpdateView):
     def get_queryset(self):
         return InvestorJurisdiction.objects.filter(organization=self.request.organization)
 
-    def get_form(self, form_class=None):
+    def get_form_class(self):
         from .forms import InvestorJurisdictionForm
-        return InvestorJurisdictionForm(**self.get_form_kwargs(), organization=self.request.organization)
+        return InvestorJurisdictionForm
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
@@ -1196,3 +1195,26 @@ class InvestorJurisdictionDeleteView(OrganizationViewMixin, DeleteView):
 
     def get_success_url(self):
         return reverse('compliance:fund_detail', kwargs={'pk': self.kwargs['fund_pk']})
+
+
+class ImportJurisdictionsFromSECView(OrganizationViewMixin, View):
+    """Import investor jurisdictions from SEC EDGAR Form D filings."""
+
+    def post(self, request, fund_pk):
+        fund = get_object_or_404(Fund, pk=fund_pk, organization=request.organization)
+        from .services.sec_import import import_jurisdictions_from_sec
+        result = import_jurisdictions_from_sec(fund)
+
+        if result.get('error'):
+            messages.error(request, f'SEC import failed: {result["error"]}')
+        else:
+            created = result.get('created', [])
+            existing = result.get('existing', [])
+            if created:
+                messages.success(request, f'Imported {len(created)} jurisdictions from SEC EDGAR: {", ".join(created)}')
+            if existing:
+                messages.info(request, f'{len(existing)} jurisdictions already existed: {", ".join(existing)}')
+            if not created and not existing:
+                messages.warning(request, 'No jurisdictions found in SEC EDGAR Form D filings for this fund.')
+
+        return redirect('compliance:fund_detail', pk=fund_pk)

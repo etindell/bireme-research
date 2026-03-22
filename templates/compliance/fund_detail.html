@@ -100,7 +100,15 @@
     <div class="bg-white shadow rounded-lg p-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900">Investor Jurisdictions</h2>
-            <a href="{% url 'compliance:jurisdiction_create' fund.pk %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Jurisdiction</a>
+            <div class="flex items-center gap-x-2">
+                <form method="post" action="{% url 'compliance:import_sec_jurisdictions' fund.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        Import from SEC
+                    </button>
+                </form>
+                <a href="{% url 'compliance:jurisdiction_create' fund.pk %}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Add Jurisdiction</a>
+            </div>
         </div>
         {% if jurisdictions %}
         <div class="overflow-x-auto">

@@ -93,6 +93,9 @@
                 </div>
             </form>
 
+            {% load socialaccount %}
+            {% get_providers as socialaccount_providers %}
+            {% if socialaccount_providers %}
             <div>
                 <div class="relative mt-10">
                     <div class="absolute inset-0 flex items-center" aria-hidden="true">
@@ -121,6 +124,7 @@
                     Only @biremecapital.com accounts are allowed
                 </p>
             </div>
+            {% endif %}
         </div>
 
         <p class="mt-10 text-center text-sm text-gray-500">
