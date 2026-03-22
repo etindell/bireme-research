@@ -66,8 +66,8 @@ def fetch_nasaa_efd_filings(cik):
     """
     Search NASAA EFD for a fund's state notice filings by CIK.
 
-    Returns a list of dicts, one per filing found:
-    [{'efd_id': '507159', 'accession': '0001554856-25-000002', 'states': ['CA', 'CT', 'NY', 'TX']}, ...]
+    Returns a list of dicts, one per filing found. Each filing contains
+    per-state detail: notice date, first sale date, investors, amount sold, expiry.
     """
     headers = {'User-Agent': SEC_USER_AGENT}
     results = []
@@ -85,26 +85,46 @@ def fetch_nasaa_efd_filings(cik):
 
         for efd_id, accession in filings:
             time.sleep(SEC_REQUEST_DELAY)
-            filing_result = {'efd_id': efd_id, 'accession': accession, 'states': []}
+            filing_result = {'efd_id': efd_id, 'accession': accession, 'states': [], 'state_details': {}}
 
             try:
-                # Fetch the filing detail page to get state notices
-                detail_url = f'https://nasaaefd.org/FORMD/ViewFiling?EFDID={efd_id}&Accession={accession}'
-                detail_resp = requests.get(detail_url, headers=headers, timeout=15)
-                detail_resp.raise_for_status()
-                detail_html = detail_resp.text
+                # Fetch the notices page — has per-state detail
+                notices_url = f'https://nasaaefd.org/FormD/ViewFilingNotices?EFDID={efd_id}&Accession={accession}'
+                notices_resp = requests.get(notices_url, headers=headers, timeout=15)
+                notices_resp.raise_for_status()
+                notices_html = notices_resp.text
 
-                # Parse "Filed: CA, CT, NY, TX" pattern
-                filed_match = re.search(r"Filed:</td><td>([A-Z, ]+)</td>", detail_html)
-                if filed_match:
-                    states_str = filed_match.group(1)
-                    states = [s.strip() for s in states_str.split(',') if s.strip()]
-                    filing_result['states'] = states
+                # Parse the notices table
+                # Columns: State | File Number | Notice Date | Accession | Offering Amount | Date of 1st Sale | Total # Investors | Amount Sold | Expires
+                import re as _re
+                tbody_match = _re.search(r'<tbody>(.*?)</tbody>', notices_html, _re.DOTALL)
+                if tbody_match:
+                    rows = _re.findall(r'<tr[^>]*>(.*?)</tr>', tbody_match.group(1), _re.DOTALL)
+                    for row in rows:
+                        cells = _re.findall(r'<td[^>]*>(.*?)</td>', row, _re.DOTALL)
+                        clean = [_re.sub(r'<[^>]+>', '', c).strip() for c in cells]
+                        if len(clean) >= 9 and clean[0] and len(clean[0]) == 2:
+                            state_code = clean[0]
+                            filing_result['states'].append(state_code)
+                            filing_result['state_details'][state_code] = {
+                                'file_number': clean[1],
+                                'notice_date': clean[2],       # MM/DD/YYYY
+                                'accession': clean[3],
+                                'offering_amount': clean[4],
+                                'first_sale_date': clean[5],    # M/D/YYYY or empty
+                                'investors': clean[6],
+                                'amount_sold': clean[7],
+                                'expires': clean[8],
+                            }
 
-                # Try to extract entity name
-                name_match = re.search(r'lblEntityName["\']?>([^<]+)<', detail_html)
-                if name_match:
-                    filing_result['entity_name'] = name_match.group(1).strip()
+                # Fallback: parse from filing page if notices page had no table
+                if not filing_result['states']:
+                    detail_url = f'https://nasaaefd.org/FORMD/ViewFiling?EFDID={efd_id}&Accession={accession}'
+                    time.sleep(SEC_REQUEST_DELAY)
+                    detail_resp = requests.get(detail_url, headers=headers, timeout=15)
+                    filed_match = re.search(r"Filed:</td><td>([A-Z, ]+)</td>", detail_resp.text)
+                    if filed_match:
+                        filing_result['states'] = [s.strip() for s in filed_match.group(1).split(',') if s.strip()]
 
             except Exception as e:
                 print(f'[NASAA EFD] Error fetching filing {efd_id}: {e}')
@@ -160,28 +180,60 @@ def fetch_fund_states(fund_name, cik=None):
     }
 
 
+def _parse_date(date_str):
+    """Parse M/D/YYYY or MM/DD/YYYY to a date object, or None."""
+    if not date_str or not date_str.strip():
+        return None
+    from datetime import datetime
+    for fmt in ('%m/%d/%Y', '%m/%d/%y', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(date_str.strip(), fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def import_jurisdictions_from_sec(fund):
     """
     Import investor jurisdictions for a fund from NASAA EFD state notice filings.
 
-    Takes a Fund instance, fetches its blue sky filing data, and creates
-    InvestorJurisdiction records for each state found.
+    Pulls per-state detail: notice date, first sale date, investors, amount sold.
     """
     result = fetch_fund_states(fund.name, cik=fund.edgar_cik or None)
 
     if result.get('error'):
-        return {'created': [], 'existing': [], 'error': result['error']}
+        return {'created': [], 'existing': [], 'updated': [], 'error': result['error']}
 
     states = result.get('states', [])
     if not states:
-        return {'created': [], 'existing': [], 'error': 'No state notices found in NASAA EFD filings'}
+        return {'created': [], 'existing': [], 'updated': [], 'error': 'No state notices found in NASAA EFD filings'}
+
+    # Collect per-state details from the most recent filing
+    state_details = {}
+    for f in result.get('filings', []):
+        for state_code, detail in f.get('state_details', {}).items():
+            if state_code not in state_details:
+                state_details[state_code] = detail
 
     created = []
     existing = []
+    updated = []
 
     for state_code in states:
         iso_code = f'US-{state_code}'
         state_name = US_STATE_NAMES.get(state_code, state_code)
+        detail = state_details.get(state_code, {})
+
+        first_sale = _parse_date(detail.get('first_sale_date', ''))
+        notice_date = _parse_date(detail.get('notice_date', ''))
+
+        notes_parts = [f'Auto-imported from NASAA EFD (CIK: {result["cik"]})']
+        if detail.get('investors'):
+            notes_parts.append(f'Investors: {detail["investors"]}')
+        if detail.get('amount_sold'):
+            notes_parts.append(f'Amount sold: {detail["amount_sold"]}')
+        if detail.get('expires') and detail['expires'] != 'Never':
+            notes_parts.append(f'Expires: {detail["expires"]}')
 
         jur, was_created = InvestorJurisdiction.objects.get_or_create(
             fund=fund,
@@ -190,22 +242,36 @@ def import_jurisdictions_from_sec(fund):
                 'organization': fund.organization,
                 'jurisdiction_name': state_name,
                 'country': 'US',
-                'blue_sky_filed': True,  # We know it's filed because NASAA EFD shows it
-                'notes': f'Auto-imported from NASAA EFD (CIK: {result["cik"]})',
+                'first_sale_date': first_sale,
+                'blue_sky_filed': True,
+                'blue_sky_filing_date': notice_date,
+                'notes': ' | '.join(notes_parts),
             }
         )
 
         if was_created:
             created.append(iso_code)
-            # Generate blue sky task for ongoing tracking
             from .blue_sky import generate_blue_sky_task
             generate_blue_sky_task(jur)
         else:
-            existing.append(iso_code)
+            # Update existing with new data if we have it
+            changed = False
+            if first_sale and not jur.first_sale_date:
+                jur.first_sale_date = first_sale
+                changed = True
+            if notice_date and not jur.blue_sky_filing_date:
+                jur.blue_sky_filing_date = notice_date
+                jur.blue_sky_filed = True
+                changed = True
+            if changed:
+                jur.save(update_fields=['first_sale_date', 'blue_sky_filing_date', 'blue_sky_filed', 'updated_at'])
+                updated.append(iso_code)
+            else:
+                existing.append(iso_code)
 
     # Update the fund's CIK if we found it and it wasn't set
     if result.get('cik') and not fund.edgar_cik:
         fund.edgar_cik = result['cik']
         fund.save(update_fields=['edgar_cik', 'updated_at'])
 
-    return {'created': created, 'existing': existing, 'error': None}
+    return {'created': created, 'existing': existing, 'updated': updated, 'error': None}

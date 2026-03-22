@@ -1115,6 +1115,11 @@ class FundPrincipalUpdateView(OrganizationViewMixin, UpdateView):
         from .forms import FundPrincipalForm
         return FundPrincipalForm
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['fund'] = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
+        return ctx
+
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
         messages.success(self.request, f'Principal "{form.instance.name}" updated.')
@@ -1184,6 +1189,11 @@ class InvestorJurisdictionUpdateView(OrganizationViewMixin, UpdateView):
         from .forms import InvestorJurisdictionForm
         return InvestorJurisdictionForm
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['fund'] = get_object_or_404(Fund, pk=self.kwargs['fund_pk'], organization=self.request.organization)
+        return ctx
+
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
         messages.success(self.request, f'Jurisdiction "{form.instance.jurisdiction_name}" updated.')
@@ -1217,11 +1227,14 @@ class ImportJurisdictionsFromSECView(OrganizationViewMixin, View):
         else:
             created = result.get('created', [])
             existing = result.get('existing', [])
+            updated = result.get('updated', [])
             if created:
-                messages.success(request, f'Imported {len(created)} jurisdictions from SEC EDGAR: {", ".join(created)}')
+                messages.success(request, f'Imported {len(created)} jurisdictions from NASAA EFD: {", ".join(created)}')
+            if updated:
+                messages.success(request, f'Updated {len(updated)} jurisdictions with filing dates: {", ".join(updated)}')
             if existing:
-                messages.info(request, f'{len(existing)} jurisdictions already existed: {", ".join(existing)}')
-            if not created and not existing:
+                messages.info(request, f'{len(existing)} jurisdictions already up to date: {", ".join(existing)}')
+            if not created and not existing and not updated:
                 messages.warning(
                     request,
                     'No state-level data found in SEC Form D filings (states of solicitation was not reported). '
