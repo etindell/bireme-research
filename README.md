@@ -1,27 +1,91 @@
-# Bireme Research
+# Keelhaul
 
-A multi-tenant Django platform for investment research, portfolio management, and compliance oversight.
+ERA compliance calendar and task engine for small private exempt funds.
 
-## Compliance Certifications & Surveys
+> *Forked from [Bireme Research](https://github.com/etindell/bireme-research), a multi-tenant Django platform for investment research and portfolio management. Keelhaul extends the compliance module with ERA-specific obligations, NASAA EFD integration, and data-driven task generation.*
 
-The platform includes a robust certification system designed for SEC-registered investment advisers. It automates recurring employee surveys and attestations, ensuring regulatory requirements are met with full auditability.
+## What it does
 
-### Key Features
-- **Survey Versioning:** Immutable version history for all legal attestations and question sets.
-- **Automated Assignments:** Engine to launch quarterly and annual surveys to specific audiences (Access Persons, All Supervised Persons, etc.).
-- **Dynamic Forms:** Support for Yes/No, Text, Date, Decimal, and File Upload questions.
-- **Exception Escalation:** Flagged answers automatically trigger `SurveyException` records for CCO review.
-- **Digital Signatures:** Digital signature capture with timestamps and legal text snapshots.
-- **CCO Dashboard:** Central command center for assignments, reviews, and exception management.
+Keelhaul tracks compliance obligations for Exempt Reporting Advisers (ERAs) — the small fund managers (1-3 people) who are personally responsible for regulatory filings but have no compliance team and no budget for enterprise software.
 
-### Initialization & Setup
-1. **Seed Templates:** Run the following command to load standard regulatory templates (Personal Trading, Code of Ethics, etc.):
-   ```bash
-   python manage.py seed_compliance_surveys
-   ```
-2. **Assign Surveys:** Navigate to **Compliance > Certifications** in the sidebar. Use the "Assign Surveys" button to launch certifications for a specific year and quarter.
-3. **Employee Participation:** Employees will see their pending tasks under **My Certifications**.
-4. **CCO Review:** Submissions appear in the review queue on the Certifications Dashboard. Approved items are locked; rejected items are sent back to the employee for correction.
+- **Pulls real filing data** from NASAA EFD — blue sky notice filings, first sale dates, expiry dates, per fund
+- **Auto-generates tasks** from actual regulatory triggers — Form ADV annual amendments, Form D anniversaries, blue sky renewals, ADV-NR for non-US principals
+- **Tracks per-fund compliance** — each fund entity has its own CIK, investor jurisdictions, and filing status
+- **Links to source** — every filing status card links directly to NASAA EFD with the original filing and state notice PDFs
 
-### Auditability
-All survey data is exportable via CSV. Each submission preserves the exact questions and attestation language presented to the user at the time of signing.
+## Quick Start
+
+```bash
+# Clone and set up
+git clone https://github.com/mikenvt/bireme-research.git keelhaul
+cd keelhaul
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# Configure local environment
+cat > .env << 'EOF'
+DATABASE_URL=postgres:///keelhaul
+DEBUG=True
+ALLOWED_HOSTS=*
+SECRET_KEY=dev-secret-key-not-for-production
+EOF
+
+# Database setup
+createdb keelhaul
+python manage.py migrate
+python manage.py createsuperuser
+
+# Seed ERA obligations and run the compliance engine
+python manage.py seed_era_obligations --org <your-org-slug>
+python manage.py run_compliance_engine --org <your-org-slug>
+
+# Start the server
+python manage.py runserver
+```
+
+Then visit `http://localhost:8000/compliance/`
+
+## Compliance Engine
+
+The compliance engine scans real regulatory data and creates tasks for what needs doing:
+
+| Trigger | Source | Task Created |
+|---------|--------|-------------|
+| Form ADV annual amendment | Calendar (90 days after FYE) | File Part 1A on IARD |
+| Form D anniversary | NASAA EFD filing dates | File D/A on EDGAR before anniversary |
+| Blue sky renewal | NASAA EFD expiry dates | Renew state notice before expiry |
+| Form ADV-NR | Non-US principal residency | Renew with annual ADV amendment |
+| AML/CFT (2028) | FinCEN rule deadline | Preparation milestones |
+
+Run it manually or via cron:
+```bash
+python manage.py run_compliance_engine
+python manage.py send_compliance_reminders
+```
+
+## NASAA EFD Integration
+
+Keelhaul pulls per-state filing data directly from [NASAA EFD](https://nasaaefd.org):
+- State notice filing dates and expiry dates
+- First sale dates per state
+- Investor counts and amounts sold
+- Direct links to filing pages and state notice PDFs
+
+Each fund imports independently by CIK — different funds have different investor states.
+
+## Design System
+
+See [DESIGN.md](DESIGN.md) for the Keelhaul visual identity: deep navy + warm amber maritime palette, Instrument Serif headings, DM Sans body.
+
+## Architecture
+
+Built on Django with:
+- Multi-tenant via OrganizationMixin
+- HTMX + Alpine.js for interactive UI
+- Tailwind CSS
+- Soft-delete models with audit trail
+- Survey system (dormant — preserved for future RIA registration)
+
+## License
+
+Same as upstream Bireme Research.
