@@ -235,6 +235,23 @@ def import_jurisdictions_from_sec(fund):
         if detail.get('expires') and detail['expires'] != 'Never':
             notes_parts.append(f'Expires: {detail["expires"]}')
 
+        expires = _parse_date(detail.get('expires', ''))
+        investors = None
+        if detail.get('investors') and detail['investors'].strip().isdigit():
+            investors = int(detail['investors'].strip())
+        amount_sold = detail.get('amount_sold', '')
+
+        # Find the EFD ID and accession for this filing
+        efd_id = ''
+        accession = ''
+        for f in result.get('filings', []):
+            if state_code in f.get('state_details', {}):
+                efd_id = f.get('efd_id', '')
+                # Use the per-state accession if available, else the filing-level one
+                state_accession = f['state_details'][state_code].get('accession', '')
+                accession = state_accession or f.get('accession', '')
+                break
+
         jur, was_created = InvestorJurisdiction.objects.get_or_create(
             fund=fund,
             jurisdiction_code=iso_code,
@@ -245,6 +262,11 @@ def import_jurisdictions_from_sec(fund):
                 'first_sale_date': first_sale,
                 'blue_sky_filed': True,
                 'blue_sky_filing_date': notice_date,
+                'blue_sky_expires': expires,
+                'investors_count': investors,
+                'amount_sold': amount_sold,
+                'nasaa_efd_id': efd_id,
+                'nasaa_accession': accession,
                 'notes': ' | '.join(notes_parts),
             }
         )
@@ -254,20 +276,17 @@ def import_jurisdictions_from_sec(fund):
             from .blue_sky import generate_blue_sky_task
             generate_blue_sky_task(jur)
         else:
-            # Update existing with new data if we have it
-            changed = False
-            if first_sale and not jur.first_sale_date:
-                jur.first_sale_date = first_sale
-                changed = True
-            if notice_date and not jur.blue_sky_filing_date:
-                jur.blue_sky_filing_date = notice_date
-                jur.blue_sky_filed = True
-                changed = True
-            if changed:
-                jur.save(update_fields=['first_sale_date', 'blue_sky_filing_date', 'blue_sky_filed', 'updated_at'])
-                updated.append(iso_code)
-            else:
-                existing.append(iso_code)
+            # Update existing with fresh data from NASAA EFD
+            jur.first_sale_date = first_sale or jur.first_sale_date
+            jur.blue_sky_filing_date = notice_date or jur.blue_sky_filing_date
+            jur.blue_sky_filed = True
+            jur.blue_sky_expires = expires or jur.blue_sky_expires
+            jur.investors_count = investors if investors is not None else jur.investors_count
+            jur.amount_sold = amount_sold or jur.amount_sold
+            jur.nasaa_efd_id = efd_id or jur.nasaa_efd_id
+            jur.nasaa_accession = accession or jur.nasaa_accession
+            jur.save()
+            updated.append(iso_code)
 
     # Update the fund's CIK if we found it and it wasn't set
     if result.get('cik') and not fund.edgar_cik:

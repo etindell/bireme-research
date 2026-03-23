@@ -277,7 +277,36 @@ class InvestorJurisdiction(TimeStampedModel, OrganizationMixin):
     first_sale_date = models.DateField(null=True, blank=True)
     blue_sky_filed = models.BooleanField(default=False)
     blue_sky_filing_date = models.DateField(null=True, blank=True)
+    blue_sky_expires = models.DateField(null=True, blank=True)
+    investors_count = models.PositiveIntegerField(null=True, blank=True)
+    amount_sold = models.CharField(max_length=50, blank=True, default='')
+    # NASAA EFD reference for linking back to source
+    nasaa_efd_id = models.CharField(max_length=20, blank=True, default='')
+    nasaa_accession = models.CharField(max_length=30, blank=True, default='')
     notes = models.TextField(blank=True, default='')
+
+    @property
+    def nasaa_efd_url(self):
+        """Link to this filing on NASAA EFD."""
+        if self.nasaa_efd_id and self.nasaa_accession:
+            return f'https://nasaaefd.org/FORMD/ViewFiling?EFDID={self.nasaa_efd_id}&Accession={self.nasaa_accession}'
+        return None
+
+    @property
+    def nasaa_notice_pdf_url(self):
+        """Link to the state-specific notice PDF on NASAA EFD."""
+        if self.nasaa_efd_id and self.nasaa_accession and self.jurisdiction_code.startswith('US-'):
+            state = self.jurisdiction_code[3:]
+            return f'https://nasaaefd.org/FORMD/sendNoticeToPDF.ashx?EFDID={self.nasaa_efd_id}&Accession={self.nasaa_accession}&state={state}'
+        return None
+
+    @property
+    def needs_renewal(self):
+        """True if this filing has an expiry date that's within 90 days or past."""
+        if not self.blue_sky_expires:
+            return False
+        from datetime import timedelta
+        return self.blue_sky_expires <= (timezone.now().date() + timedelta(days=90))
 
     class Meta:
         unique_together = ['fund', 'jurisdiction_code']
