@@ -198,11 +198,25 @@ class TemplateDeleteView(OrganizationViewMixin, DeleteView):
 
 class GenerateTasksView(OrganizationViewMixin, View):
     def post(self, request):
-        year = int(request.POST.get('year', timezone.now().year))
-        regenerate = request.POST.get('regenerate') == 'on'
-        created, skipped = generate_tasks(request.organization, year, regenerate=regenerate)
-        messages.success(request, f'Generated {created} tasks for {year}. Skipped {skipped}.')
-        return redirect(reverse('compliance:task_list') + f'?year={year}')
+        from .services.compliance_engine import run_compliance_engine
+        result = run_compliance_engine(request.organization)
+
+        if result.get('error'):
+            messages.error(request, f'Compliance engine error: {result["error"]}')
+        else:
+            total = result['summary']['total']
+            if total:
+                parts = []
+                s = result['summary']
+                if s['form_adv']: parts.append(f'{s["form_adv"]} Form ADV')
+                if s['form_d']: parts.append(f'{s["form_d"]} Form D')
+                if s['blue_sky']: parts.append(f'{s["blue_sky"]} Blue Sky')
+                if s['aml_cft']: parts.append(f'{s["aml_cft"]} AML/CFT')
+                messages.success(request, f'Created {total} tasks: {", ".join(parts)}')
+            else:
+                messages.info(request, 'All compliance tasks are up to date — nothing new to create.')
+
+        return redirect('compliance:dashboard')
 
 
 # ============ Task CRUD (Phase 3) ============

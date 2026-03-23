@@ -14,9 +14,8 @@
         <div class="flex items-center gap-x-3">
             <form method="post" action="{% url 'compliance:generate_tasks' %}">
                 {% csrf_token %}
-                <input type="hidden" name="year" value="{{ year }}">
                 <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                    Generate {{ year }} Tasks
+                    Check Compliance
                 </button>
             </form>
             <a href="{% url 'compliance:export_csv' year %}" hx-boost="false" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">CSV</a>
