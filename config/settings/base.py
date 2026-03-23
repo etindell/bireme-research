@@ -109,6 +109,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': env.db('DATABASE_URL', default='postgres://postgres:postgres@localhost:5432/bireme_research')
 }
+DATABASES['default'].setdefault('ENGINE', 'django.db.backends.postgresql')
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
