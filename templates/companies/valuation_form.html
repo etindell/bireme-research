@@ -353,36 +353,40 @@
         return val.replace(/[$,\s]/g, '').trim();
     }
 
-    var fcfIds = ['id_fcf_year_1', 'id_fcf_year_2', 'id_fcf_year_3', 'id_fcf_year_4', 'id_fcf_year_5'];
-    var fcfFields = fcfIds.map(function(id) { return document.getElementById(id); }).filter(Boolean);
-    var tvField = document.getElementById('id_terminal_value');
-
-    fcfFields.forEach(function(field, index) {
-        field.addEventListener('paste', function(e) {
-            var pasted = (e.clipboardData || window.clipboardData).getData('text');
-            var values = pasted.split(/\t/).map(function(v) { return v.trim(); }).filter(function(v) { return v; });
-            if (values.length > 1) {
-                e.preventDefault();
-                for (var i = 0; i < values.length; i++) {
-                    var target = index + i;
-                    if (target < fcfFields.length) {
-                        fcfFields[target].value = cleanNumber(values[i]);
-                        fcfFields[target].dispatchEvent(new Event('change', { bubbles: true }));
-                    } else if (target === fcfFields.length && tvField) {
-                        tvField.value = cleanNumber(values[i]);
-                        tvField.dispatchEvent(new Event('change', { bubbles: true }));
+    function setupRowPaste(fieldIds, overflowField) {
+        var fields = fieldIds.map(function(id) { return document.getElementById(id); }).filter(Boolean);
+        fields.forEach(function(field, index) {
+            field.addEventListener('paste', function(e) {
+                var pasted = (e.clipboardData || window.clipboardData).getData('text');
+                var values = pasted.split(/\t/).map(function(v) { return v.trim(); }).filter(function(v) { return v; });
+                if (values.length > 1) {
+                    e.preventDefault();
+                    for (var i = 0; i < values.length; i++) {
+                        var target = index + i;
+                        if (target < fields.length) {
+                            fields[target].value = cleanNumber(values[i]);
+                            fields[target].dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (target === fields.length && overflowField) {
+                            overflowField.value = cleanNumber(values[i]);
+                            overflowField.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                } else {
+                    var cleaned = cleanNumber(pasted);
+                    if (cleaned !== pasted.trim()) {
+                        e.preventDefault();
+                        field.value = cleaned;
+                        field.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 }
-            } else {
-                var cleaned = cleanNumber(pasted);
-                if (cleaned !== pasted.trim()) {
-                    e.preventDefault();
-                    field.value = cleaned;
-                    field.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            }
+            });
         });
-    });
+    }
+
+    var tvField = document.getElementById('id_terminal_value');
+    setupRowPaste(['id_fcf_year_1', 'id_fcf_year_2', 'id_fcf_year_3', 'id_fcf_year_4', 'id_fcf_year_5'], tvField);
+    setupRowPaste(['id_revenue_year_1', 'id_revenue_year_2', 'id_revenue_year_3', 'id_revenue_year_4', 'id_revenue_year_5']);
+    setupRowPaste(['id_ebit_ebitda_year_1', 'id_ebit_ebitda_year_2', 'id_ebit_ebitda_year_3', 'id_ebit_ebitda_year_4', 'id_ebit_ebitda_year_5']);
 
     if (tvField) {
         tvField.addEventListener('paste', function(e) {
