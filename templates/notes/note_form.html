@@ -50,6 +50,16 @@
         display: none;
         box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
+    /* Autosave indicator animation */
+    @keyframes autosave-flash {
+        0% { opacity: 0; transform: translateY(-4px); }
+        15% { opacity: 1; transform: translateY(0); }
+        85% { opacity: 1; }
+        100% { opacity: 0.7; }
+    }
+    #autosave-indicator > * {
+        animation: autosave-flash 1.5s ease-out forwards;
+    }
     /* Placeholder for contenteditable */
     #rich-editor:empty:before {
         content: attr(data-placeholder);
@@ -732,6 +742,56 @@
             window.history.replaceState({}, '', data.url.replace('/autosave/', '/edit/'));
         }
     });
+})();
+
+/* Excel paste support for FCF / Terminal Value fields */
+(function() {
+    function cleanNumber(val) {
+        return val.replace(/[$,\s]/g, '').trim();
+    }
+
+    var fcfIds = ['id_fcf_year_1', 'id_fcf_year_2', 'id_fcf_year_3', 'id_fcf_year_4', 'id_fcf_year_5'];
+    var fcfFields = fcfIds.map(function(id) { return document.getElementById(id); }).filter(Boolean);
+    var tvField = document.getElementById('id_terminal_value');
+
+    fcfFields.forEach(function(field, index) {
+        field.addEventListener('paste', function(e) {
+            var pasted = (e.clipboardData || window.clipboardData).getData('text');
+            var values = pasted.split(/\t/).map(function(v) { return v.trim(); }).filter(function(v) { return v; });
+            if (values.length > 1) {
+                e.preventDefault();
+                for (var i = 0; i < values.length; i++) {
+                    var target = index + i;
+                    if (target < fcfFields.length) {
+                        fcfFields[target].value = cleanNumber(values[i]);
+                        fcfFields[target].dispatchEvent(new Event('change', { bubbles: true }));
+                    } else if (target === fcfFields.length && tvField) {
+                        tvField.value = cleanNumber(values[i]);
+                        tvField.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            } else {
+                var cleaned = cleanNumber(pasted);
+                if (cleaned !== pasted.trim()) {
+                    e.preventDefault();
+                    field.value = cleaned;
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        });
+    });
+
+    if (tvField) {
+        tvField.addEventListener('paste', function(e) {
+            var pasted = (e.clipboardData || window.clipboardData).getData('text');
+            var cleaned = cleanNumber(pasted);
+            if (cleaned !== pasted.trim()) {
+                e.preventDefault();
+                tvField.value = cleaned;
+                tvField.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
 })();
 
 function contentExpander() {
