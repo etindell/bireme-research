@@ -326,9 +326,6 @@
                         <p class="mt-1 text-2xl font-semibold text-gray-900">
                             {% if valuation.effective_price %}${{ valuation.effective_price|floatformat:2 }}{% else %}-{% endif %}
                         </p>
-                        {% if valuation.price_override %}
-                        <p class="text-xs text-amber-600">Manual override</p>
-                        {% endif %}
                     </div>
 
                     <!-- Terminal Value -->

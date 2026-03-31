@@ -609,7 +609,6 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
         from django.utils import timezone
 
         today = timezone.now().date()
-        price_override = cleaned_data.get('current_price') or None
 
         valuation = company.get_active_valuation()
 
@@ -620,7 +619,6 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
             valuation.fcf_year_4 = cleaned_data['fcf_year_4']
             valuation.fcf_year_5 = cleaned_data['fcf_year_5']
             valuation.terminal_value = cleaned_data['terminal_value']
-            valuation.price_override = price_override
             valuation.as_of_date = today
             valuation.calculate_irr()
             valuation.save(history_user=self.request.user)
@@ -633,7 +631,6 @@ class CompleteWithNoteView(OrganizationViewMixin, CreateView):
                 fcf_year_4=cleaned_data['fcf_year_4'],
                 fcf_year_5=cleaned_data['fcf_year_5'],
                 terminal_value=cleaned_data['terminal_value'],
-                price_override=price_override,
                 as_of_date=today,
                 is_active=True,
             )

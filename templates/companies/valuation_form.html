@@ -79,11 +79,18 @@
                     {% endif %}
                 </div>
                 <div>
-                    <label for="id_price_override" class="block text-sm font-medium leading-6 text-gray-900">
-                        Price Override
+                    <label class="block text-sm font-medium leading-6 text-gray-900">
+                        Current Price
                     </label>
-                    <div class="mt-2">{{ form.price_override }}</div>
-                    <p class="mt-1 text-xs text-gray-500">Leave blank to use Yahoo Finance price</p>
+                    <div class="mt-2">
+                        <p class="py-1.5 text-sm text-gray-900">
+                            {% if object and object.effective_price %}
+                            ${{ object.effective_price|floatformat:2 }}
+                            {% else %}
+                            <span class="text-gray-400">Fetched automatically from Yahoo Finance</span>
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

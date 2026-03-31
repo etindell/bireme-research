@@ -519,13 +519,6 @@ class CompanyValuation(SoftDeleteModel):
         blank=True,
         help_text='Current stock price (auto-fetched from Yahoo Finance)'
     )
-    price_override = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text='Manual price override (takes precedence over fetched price)'
-    )
     price_last_updated = models.DateTimeField(
         null=True,
         blank=True,
@@ -563,8 +556,8 @@ class CompanyValuation(SoftDeleteModel):
 
     @property
     def effective_price(self):
-        """Return the price to use for calculations (override, snapshot, or live from company)."""
-        return self.price_override or self.current_price or self.company.current_price
+        """Return the price to use for calculations (snapshot or live from company)."""
+        return self.current_price or self.company.current_price
 
     def get_cash_flows(self):
         """Return list of cash flows for IRR calculation."""

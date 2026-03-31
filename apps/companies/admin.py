@@ -76,7 +76,7 @@ class CompanyValuationAdmin(admin.ModelAdmin):
             'fields': ('shares_outstanding',)
         }),
         ('Price', {
-            'fields': ('current_price', 'price_override', 'price_last_updated')
+            'fields': ('current_price', 'price_last_updated')
         }),
         ('FCF Forecasts', {
             'fields': ('fcf_year_1', 'fcf_year_2', 'fcf_year_3', 'fcf_year_4', 'fcf_year_5')

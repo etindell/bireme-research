@@ -233,9 +233,6 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
         company = self.object.company
         today = timezone.now().date()
 
-        # Only set price_override if explicitly provided, otherwise let valuation use Yahoo Finance price
-        price_override = cleaned_data.get('current_price') or None
-
         # Get existing active valuation or create new one
         valuation = company.get_active_valuation()
 
@@ -247,7 +244,6 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
             valuation.fcf_year_4 = cleaned_data['fcf_year_4']
             valuation.fcf_year_5 = cleaned_data['fcf_year_5']
             valuation.terminal_value = cleaned_data['terminal_value']
-            valuation.price_override = price_override
             valuation.as_of_date = today
             valuation.calculate_irr()
             valuation.save(history_user=self.request.user)
@@ -261,7 +257,6 @@ class NoteCreateView(OrganizationViewMixin, CreateView):
                 fcf_year_4=cleaned_data['fcf_year_4'],
                 fcf_year_5=cleaned_data['fcf_year_5'],
                 terminal_value=cleaned_data['terminal_value'],
-                price_override=price_override,
                 as_of_date=today,
                 is_active=True,
             )
@@ -446,9 +441,6 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
         company = self.object.company
         today = timezone.now().date()
 
-        # Only set price_override if explicitly provided, otherwise let valuation use Yahoo Finance price
-        price_override = cleaned_data.get('current_price') or None
-
         # Get existing active valuation or create new one
         valuation = company.get_active_valuation()
 
@@ -460,7 +452,6 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
             valuation.fcf_year_4 = cleaned_data['fcf_year_4']
             valuation.fcf_year_5 = cleaned_data['fcf_year_5']
             valuation.terminal_value = cleaned_data['terminal_value']
-            valuation.price_override = price_override
             valuation.as_of_date = today
             valuation.calculate_irr()
             valuation.save(history_user=self.request.user)
@@ -474,7 +465,6 @@ class NoteUpdateView(OrganizationViewMixin, UpdateView):
                 fcf_year_4=cleaned_data['fcf_year_4'],
                 fcf_year_5=cleaned_data['fcf_year_5'],
                 terminal_value=cleaned_data['terminal_value'],
-                price_override=price_override,
                 as_of_date=today,
                 is_active=True,
             )

@@ -169,7 +169,6 @@ class CompanyValuationForm(forms.ModelForm):
             'terminal_value',
             'revenue_year_1', 'revenue_year_2', 'revenue_year_3', 'revenue_year_4', 'revenue_year_5',
             'ebit_ebitda_year_1', 'ebit_ebitda_year_2', 'ebit_ebitda_year_3', 'ebit_ebitda_year_4', 'ebit_ebitda_year_5',
-            'price_override',
             'as_of_date',
             'notes',
             'is_active',
@@ -242,11 +241,6 @@ class CompanyValuationForm(forms.ModelForm):
             }),
             'ebit_ebitda_year_5': forms.NumberInput(attrs={
                 'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
-                'step': '0.01',
-            }),
-            'price_override': forms.NumberInput(attrs={
-                'class': 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6',
-                'placeholder': 'Leave blank to use Yahoo Finance price',
                 'step': '0.01',
             }),
             'as_of_date': forms.DateInput(attrs={
