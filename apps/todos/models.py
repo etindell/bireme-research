@@ -261,6 +261,15 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         help_text='Notes about investor letters read this quarter'
     )
 
+    # Google Tasks sync
+    google_task_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text='Google Tasks ID for deduplication during sync'
+    )
+
     objects = TodoManager()
     all_objects = models.Manager()
 
@@ -359,3 +368,19 @@ class WatchlistQuickAdd(models.Model):
 
     def __str__(self):
         return f"{self.ticker} - {self.note[:30] if self.note else 'No note'}"
+
+
+class GoogleTasksSyncState(models.Model):
+    """Track last sync time per user for Google Tasks polling."""
+    user = models.OneToOneField(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='google_tasks_sync_state'
+    )
+    last_synced_at = models.DateTimeField()
+
+    class Meta:
+        db_table = 'google_tasks_sync_state'
+
+    def __str__(self):
+        return f"{self.user.email} - last synced {self.last_synced_at}"

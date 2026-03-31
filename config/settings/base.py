@@ -186,9 +186,11 @@ SOCIALACCOUNT_PROVIDERS = {
         'SCOPE': [
             'profile',
             'email',
+            'https://www.googleapis.com/auth/tasks.readonly',
         ],
         'AUTH_PARAMS': {
-            'access_type': 'online',
+            'access_type': 'offline',
+            'prompt': 'consent',  # Force consent to get refresh token
             'hd': 'biremecapital.com',  # Restrict to biremecapital.com domain
         },
         'OAUTH_PKCE_ENABLED': True,
