@@ -524,7 +524,14 @@ class NoteAutoSaveView(OrganizationViewMixin, View):
                     change_reason='Auto-save'
                 )
 
-            response = HttpResponse(f'<span class="text-xs text-gray-500 italic">Auto-saved at {now_str}</span>')
+            response = HttpResponse(
+                f'<span class="flex items-center gap-1.5 text-sm font-medium text-emerald-600">'
+                f'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                f'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>'
+                f'</svg>'
+                f'Saved at {now_str}'
+                f'</span>'
+            )
             
             # If this was a new note, provide the new URL for the frontend to update itself
             if pk == 0:
@@ -535,7 +542,14 @@ class NoteAutoSaveView(OrganizationViewMixin, View):
             return response
         else:
             # If invalid (e.g. some other required field), just return error quietly
-            return HttpResponse('<span class="text-xs text-red-500 italic">Auto-save failed</span>', status=200)
+            return HttpResponse(
+                '<span class="flex items-center gap-1.5 text-sm font-medium text-red-500">'
+                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>'
+                '</svg>'
+                'Auto-save failed'
+                '</span>', status=200
+            )
 
 
 class NoteDeleteView(OrganizationViewMixin, DeleteView):
