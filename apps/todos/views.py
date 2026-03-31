@@ -172,12 +172,7 @@ class TodoListView(OrganizationViewMixin, ListView):
             scope='organization', is_completed=False
         ).count()
 
-        # Legacy stats for backward compatibility (can be removed later)
-        context['maintenance_pending'] = scope_todos.pending().maintenance().count()
-        context['idea_generation_pending'] = scope_todos.pending().idea_generation().count()
-        context['marketing_pending'] = scope_todos.pending().marketing().count()
-
-        # Section-based todos for the default view (pending only, grouped by category)
+        # Section-based todos for the default view (pending only, grouped by priority)
         # Only show sections when no filters are applied (except default pending status)
         show_sections = (
             not self.request.GET.get('category') and
@@ -187,22 +182,26 @@ class TodoListView(OrganizationViewMixin, ListView):
         )
         if show_sections:
             base_qs = scope_todos.pending().select_related('company', 'category', 'created_by', 'assigned_to')
-            # Build category sections dynamically
-            category_sections = []
-            for category in categories:
-                todos = base_qs.filter(category=category).order_by('-created_at')[:20]
-                if todos.exists() or category.pending_count > 0:
-                    category_sections.append({
-                        'category': category,
+            # Build priority sections
+            priority_sections = []
+            priority_meta = {
+                'high': {'label': 'High Priority', 'color': '#DC2626', 'icon': 'exclamation'},
+                'normal': {'label': 'Normal', 'color': '#6B7280', 'icon': 'list'},
+                'tickler': {'label': 'Tickler', 'color': '#8B5CF6', 'icon': 'clock'},
+            }
+            for priority_value, priority_label in Todo.Priority.choices:
+                todos = base_qs.filter(priority=priority_value).order_by('-created_at')[:20]
+                count = base_qs.filter(priority=priority_value).count()
+                if count > 0:
+                    meta = priority_meta.get(priority_value, {})
+                    priority_sections.append({
+                        'priority': priority_value,
+                        'label': meta.get('label', priority_label),
+                        'color': meta.get('color', '#6B7280'),
                         'todos': todos,
-                        'count': category.pending_count,
+                        'count': count,
                     })
-            context['category_sections'] = category_sections
-
-            # Also include uncategorized todos
-            uncategorized_todos = base_qs.filter(category__isnull=True).order_by('-created_at')[:20]
-            if uncategorized_todos.exists():
-                context['uncategorized_todos'] = uncategorized_todos
+            context['priority_sections'] = priority_sections
 
         context['show_sections'] = show_sections
 

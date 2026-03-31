@@ -1,30 +1,28 @@
 {% if show_sections %}
-<!-- Dynamic category sections view (default pending view) -->
+<!-- Priority sections view (default pending view) -->
 <!-- Initialize todo IDs for bulk selection -->
-<div x-init="initTodoIds([{% for section in category_sections %}{% for todo in section.todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if uncategorized_todos %}{% if category_sections %}, {% endif %}{% for todo in uncategorized_todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}])"></div>
+<div x-init="initTodoIds([{% for section in priority_sections %}{% for todo in section.todos %}{{ todo.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}])"></div>
 <div class="space-y-6">
-    {% for section in category_sections %}
+    {% for section in priority_sections %}
     <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-4 py-3 border-b" style="background-color: {{ section.category.color }}10; border-color: {{ section.category.color }}30;">
+        <div class="px-4 py-3 border-b" style="background-color: {{ section.color }}10; border-color: {{ section.color }}30;">
             <div class="flex items-center justify-between">
-                <h2 class="text-lg font-medium flex items-center" style="color: {{ section.category.color }};">
-                    <div class="h-5 w-5 mr-2 rounded-full" style="background-color: {{ section.category.color }};"></div>
-                    {{ section.category.name }}
+                <h2 class="text-lg font-medium flex items-center" style="color: {{ section.color }};">
+                    <div class="h-5 w-5 mr-2 rounded-full" style="background-color: {{ section.color }};"></div>
+                    {{ section.label }}
                 </h2>
-                {% if section.count > 0 %}
-                <a href="?category={{ section.category.slug }}&status=pending&scope={{ current_scope }}" class="text-sm hover:underline" style="color: {{ section.category.color }};">
+                {% if section.count > 20 %}
+                <a href="?priority={{ section.priority }}&status=pending&scope={{ current_scope }}" class="text-sm hover:underline" style="color: {{ section.color }};">
                     View all ({{ section.count }}) &rarr;
                 </a>
+                {% else %}
+                <span class="text-sm" style="color: {{ section.color }};">{{ section.count }}</span>
                 {% endif %}
             </div>
         </div>
         <div class="divide-y divide-gray-200">
             {% for todo in section.todos %}
             {% include "todos/partials/todo_card.html" with selectable=True %}
-            {% empty %}
-            <div class="px-4 py-8 text-center text-gray-500">
-                <p class="text-sm">No {{ section.category.name|lower }} tasks pending</p>
-            </div>
             {% endfor %}
         </div>
     </div>
@@ -39,28 +37,6 @@
         </div>
     </div>
     {% endfor %}
-
-    {% if uncategorized_todos %}
-    <!-- Uncategorized Section -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-medium text-gray-900 flex items-center">
-                    <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                    </svg>
-                    Uncategorized
-                </h2>
-            </div>
-            <p class="text-sm text-gray-600 mt-1">Todos without a category assigned</p>
-        </div>
-        <div class="divide-y divide-gray-200">
-            {% for todo in uncategorized_todos %}
-            {% include "todos/partials/todo_card.html" with selectable=True %}
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 {% else %}

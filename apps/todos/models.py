@@ -158,9 +158,8 @@ class Todo(SoftDeleteModel, OrganizationMixin):
 
     class Priority(models.TextChoices):
         HIGH = 'high', 'High'
-        MEDIUM = 'medium', 'Medium'
-        LOW = 'low', 'Low'
-        NONE = 'none', 'None'
+        NORMAL = 'normal', 'Normal'
+        TICKLER = 'tickler', 'Tickler'
 
     class Scope(models.TextChoices):
         PERSONAL = 'personal', 'Personal'
@@ -196,7 +195,7 @@ class Todo(SoftDeleteModel, OrganizationMixin):
     priority = models.CharField(
         max_length=10,
         choices=Priority.choices,
-        default=Priority.NONE,
+        default=Priority.NORMAL,
         db_index=True
     )
 
