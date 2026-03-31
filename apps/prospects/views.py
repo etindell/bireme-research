@@ -38,8 +38,11 @@ class ProspectCreateView(OrganizationViewMixin, CreateView):
         form.instance.organization = self.request.organization
         res = super().form_valid(form)
         # Sync to HubSpot
-        sync_prospect_to_hubspot(self.object)
-        messages.success(self.request, f"Prospect {self.object} created and synced to HubSpot.")
+        hs_id = sync_prospect_to_hubspot(self.object)
+        if hs_id:
+            messages.success(self.request, f"Prospect {self.object} created and synced to HubSpot.")
+        else:
+            messages.warning(self.request, f"Prospect {self.object} created, but HubSpot sync failed. You can retry from the detail page.")
         return res
 
 class ProspectUpdateView(OrganizationViewMixin, UpdateView):
@@ -53,8 +56,11 @@ class ProspectUpdateView(OrganizationViewMixin, UpdateView):
     def form_valid(self, form):
         res = super().form_valid(form)
         # Sync to HubSpot
-        sync_prospect_to_hubspot(self.object)
-        messages.success(self.request, f"Prospect {self.object} updated and synced to HubSpot.")
+        hs_id = sync_prospect_to_hubspot(self.object)
+        if hs_id:
+            messages.success(self.request, f"Prospect {self.object} updated and synced to HubSpot.")
+        else:
+            messages.warning(self.request, f"Prospect {self.object} updated, but HubSpot sync failed. You can retry from the detail page.")
         return res
 
 class AddProspectNoteView(OrganizationViewMixin, View):
@@ -71,8 +77,13 @@ class AddProspectNoteView(OrganizationViewMixin, View):
                 content=content
             )
             # Sync to HubSpot
-            sync_note_to_hubspot(note)
-            
+            if prospect.hubspot_id:
+                note_id = sync_note_to_hubspot(note)
+                if not note_id:
+                    messages.warning(request, "Note saved locally but HubSpot sync failed.")
+            else:
+                messages.info(request, "Note saved. It will sync to HubSpot when the prospect is synced.")
+
             if request.htmx:
                 html = render_to_string('prospects/partials/note_item.html', {'note': note})
                 return HttpResponse(html)

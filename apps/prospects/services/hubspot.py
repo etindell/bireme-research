@@ -4,7 +4,7 @@ from django.utils import timezone
 
 try:
     from hubspot import HubSpot
-    from hubspot.crm.contacts import SimplePublicObjectInputForCreate, ApiException
+    from hubspot.crm.contacts import SimplePublicObjectInput, SimplePublicObjectInputForCreate, ApiException
     from hubspot.crm.objects.notes import SimplePublicObjectInputForCreate as NoteInput
     HUBSPOT_AVAILABLE = True
 except ImportError:
@@ -44,7 +44,7 @@ def sync_prospect_to_hubspot(prospect):
             # Update existing
             client.crm.contacts.basic_api.update(
                 contact_id=prospect.hubspot_id,
-                simple_public_object_input=SimplePublicObjectInputForCreate(properties=properties)
+                simple_public_object_input=SimplePublicObjectInput(properties=properties)
             )
             hs_id = prospect.hubspot_id
         else:
@@ -58,7 +58,7 @@ def sync_prospect_to_hubspot(prospect):
                 # Update it
                 client.crm.contacts.basic_api.update(
                     contact_id=hs_id,
-                    simple_public_object_input=SimplePublicObjectInputForCreate(properties=properties)
+                    simple_public_object_input=SimplePublicObjectInput(properties=properties)
                 )
             except ApiException as e:
                 if e.status == 404:
@@ -96,11 +96,18 @@ def sync_note_to_hubspot(prospect_note):
     }
 
     try:
-        # Create the note object
-        note_res = client.crm.objects.notes.basic_api.create(
-            simple_public_object_input=NoteInput(properties=properties)
-        )
-        note_id = note_res.id
+        # If we already have a note ID (from a previous partial sync), skip creation
+        if prospect_note.hubspot_note_id:
+            note_id = prospect_note.hubspot_note_id
+        else:
+            # Create the note object
+            note_res = client.crm.objects.notes.basic_api.create(
+                simple_public_object_input=NoteInput(properties=properties)
+            )
+            note_id = note_res.id
+            # Save immediately so retries don't create duplicates
+            prospect_note.hubspot_note_id = note_id
+            prospect_note.save(update_fields=['hubspot_note_id'])
 
         # Associate note with contact
         client.crm.associations.v4.basic_api.create(
@@ -116,8 +123,6 @@ def sync_note_to_hubspot(prospect_note):
             ]
         )
 
-        prospect_note.hubspot_note_id = note_id
-        prospect_note.save(update_fields=['hubspot_note_id'])
         return note_id
 
     except ApiException as e:
