@@ -170,39 +170,46 @@ def generate_note_pdf(note, user):
 
     # --- 3. NOTE CONTENT (Markdown) ---
     if note.content:
-        # Pre-strip any {: ... } markdown attribute blocks from the raw content
-        # so they don't leak into the split blocks.
-        clean_md = re.sub(r'\{:?[^}]+\}', '', note.content)
-        
+        # Pre-process: convert • bullet lines to standard markdown so the parser recognizes them
+        preprocessed = re.sub(r'^[•]\s*', '- ', note.content, flags=re.MULTILINE)
+        # Strip {: ... } markdown attribute blocks
+        preprocessed = re.sub(r'\{:?[^}]+\}', '', preprocessed)
+
         # 1. Convert Markdown to HTML
-        html_content = markdown.markdown(note.content)
+        html_content = markdown.markdown(preprocessed)
         
-        # 2. Use bleach to strip tags ReportLab doesn't like, but keep img for parsing
-        allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike', 'img']
-        # Split by blocks (p, li, blockquote)
-        blocks = re.split(r'<(?:p|li|blockquote|h[1-6])>', html_content)
+        # 2. Define allowed tags for ReportLab Paragraphs
+        # We keep 'li' temporarily to identify list items
+        allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike', 'img', 'li']
         
-        for block in blocks:
-            if not block.strip(): continue
+        # 3. Pre-process to make splitting easier
+        # Wrap the content of LI so we can identify it after splitting
+        html_content = html_content.replace('<li>', '<li_item>').replace('</li>', '</li_item>')
+        
+        # Split by blocks
+        parts = re.split(r'(<(?:p|li_item|blockquote|h[1-6])>)', html_content)
+        
+        current_tag = None
+        for part in parts:
+            if not part.strip(): continue
             
-            # Extract image tags before cleaning the rest of the text
-            # Now we need to look for style="width: ..." or other ways width is passed
-            # Our frontend sync uses style="width: 300px" or similar
+            # Check if this part is an opening tag
+            tag_match = re.match(r'<(p|li_item|blockquote|h[1-6])>', part)
+            if tag_match:
+                current_tag = tag_match.group(1)
+                continue
+            
+            block = part
+            # Handle Images
             img_tags = re.findall(r'<img[^>]+>', block)
-            
             if img_tags:
                 for img_tag in img_tags:
                     src_match = re.search(r'src="([^">]+)"', img_tag)
                     if not src_match: continue
                     img_src = src_match.group(1)
-                    
-                    # Try to extract width
-                    width_px = None
                     style_match = re.search(r'style="width:\s*(\d+)px"', img_tag)
-                    if style_match:
-                        width_px = int(style_match.group(1))
+                    width_px = int(style_match.group(1)) if style_match else None
                     
-                    # Resolve local path
                     local_path = ""
                     if img_src.startswith(settings.MEDIA_URL):
                         rel_path = img_src.replace(settings.MEDIA_URL, '', 1)
@@ -211,61 +218,50 @@ def generate_note_pdf(note, user):
                     if local_path and os.path.exists(local_path):
                         try:
                             rl_img = Image(local_path)
-                            
-                            # Standard scale limits
-                            max_w = 6 * inch
-                            max_h = 6 * inch
-                            
+                            max_w, max_h = 6 * inch, 6 * inch
                             w, h = rl_img.drawWidth, rl_img.drawHeight
                             aspect = h / float(w)
                             
-                            # If we have a custom width from the editor, use it (convert px to points roughly)
-                            # 1 inch = 72 points. Standard browser DPI is ~96. 
-                            # So points = pixels * 72 / 96 = pixels * 0.75
                             if width_px:
                                 target_w = width_px * 0.75
                                 rl_img.drawWidth = min(target_w, max_w)
                                 rl_img.drawHeight = rl_img.drawWidth * aspect
                             else:
-                                # Default scaling
                                 if w > max_w:
                                     rl_img.drawWidth = max_w
                                     rl_img.drawHeight = max_w * aspect
-                                if rl_img.drawHeight > max_h:
-                                    rl_img.drawHeight = max_h
-                                    rl_img.drawWidth = max_h / aspect
                             
                             rl_img.hAlign = 'LEFT'
                             content.append(Spacer(1, 0.1 * inch))
                             content.append(rl_img)
                             content.append(Spacer(1, 0.1 * inch))
-                        except Exception as e:
-                            content.append(Paragraph(f"<i>(Image error: {str(e)})</i>", styles['MetaText']))
+                        except: pass
                 
-                # Remove the img tags from the text so we don't try to render them in Paragraph
                 block = re.sub(r'<img[^>]+>', '', block)
 
-            # Clean the remaining text in the block
-            # CRITICAL: Also strip any lingering {: width="..." } text that might have survived MD conversion
-            block = re.sub(r'\{:?[^}]+\}', '', block)
-            
-            clean_text = bleach.clean(block, tags=allowed_tags, strip=True)
-            
-            # Map strong/em to b/i for ReportLab
+            # Clean and format text
+            block = re.sub(r'\{:?[^}]+\}', '', block) # Strip markdown attributes
+            clean_text = bleach.clean(block, tags=['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike'], strip=True)
             clean_text = clean_text.replace('<strong>', '<b>').replace('</strong>', '</b>')
             clean_text = clean_text.replace('<em>', '<i>').replace('</em>', '</i>')
             
-            # Remove closing tags that re.split left behind
-            clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6]|img)>', '', clean_text).strip()
+            # Remove any lingering closing tags from the split
+            clean_text = re.sub(r'</(?:p|li_item|blockquote|ul|ol|h[1-6]|img)>', '', clean_text).strip()
             
             if not clean_text: continue
             
             try:
-                content.append(Paragraph(clean_text, styles['NoteContent']))
-            except Exception as e:
-                # Fallback to plain text if ReportLab still complains
+                if current_tag == 'li_item':
+                    # Explicitly use the bullet character and BulletContent style
+                    content.append(Paragraph(f"&bull; {clean_text}", styles['BulletContent']))
+                else:
+                    content.append(Paragraph(clean_text, styles['NoteContent']))
+            except:
                 plain_text = strip_tags(clean_text)
-                content.append(Paragraph(plain_text, styles['NoteContent']))
+                if current_tag == 'li_item':
+                    content.append(Paragraph(f"&bull; {plain_text}", styles['BulletContent']))
+                else:
+                    content.append(Paragraph(plain_text, styles['NoteContent']))
 
     # --- 4. CASH FLOWS ---
     try:
@@ -334,6 +330,7 @@ def generate_company_pdf(company, notes, user):
     note_title_style = ParagraphStyle(name='NoteTitle', fontSize=16, leading=20, fontName='Helvetica-Bold', spaceBefore=15, spaceAfter=5, textColor=colors.HexColor('#2563eb'))
     meta_text_style = ParagraphStyle(name='MetaText', fontSize=9, leading=12, fontName='Helvetica', textColor=colors.grey, spaceAfter=10)
     content_style = ParagraphStyle(name='NoteContent', fontSize=10, leading=14, fontName='Helvetica', spaceBefore=4, spaceAfter=4)
+    bullet_style = ParagraphStyle(name='BulletContent', fontSize=10, leading=14, fontName='Helvetica', leftIndent=20, firstLineIndent=-12, spaceBefore=3, spaceAfter=3)
 
     content = []
 
@@ -387,17 +384,28 @@ def generate_company_pdf(company, notes, user):
             note_elements.append(Paragraph(" | ".join(meta), meta_text_style))
 
             if note.content:
+                # Pre-process: convert • bullet lines to standard markdown
+                preprocessed = re.sub(r'^[•]\s*', '- ', note.content, flags=re.MULTILINE)
+                preprocessed = re.sub(r'\{:?[^}]+\}', '', preprocessed)
+
                 # 1. Convert Markdown to HTML
-                html_content = markdown.markdown(note.content)
+                html_content = markdown.markdown(preprocessed)
                 
                 # 2. Use bleach to strip tags ReportLab doesn't like
                 allowed_tags = ['b', 'i', 'u', 'font', 'br', 'strong', 'em', 'strike', 'img']
-                # Split by blocks (p, li, blockquote)
-                blocks = re.split(r'<(?:p|li|blockquote|h[1-6])>', html_content)
                 
-                for block in blocks:
-                    if not block.strip(): continue
+                # Split by blocks but keep the tag so we know if it's a list item
+                parts = re.split(r'(<(?:p|li|blockquote|h[1-6])>)', html_content)
+                
+                current_tag = None
+                for part in parts:
+                    if not part.strip(): continue
                     
+                    if re.match(r'<(?:p|li|blockquote|h[1-6])>', part):
+                        current_tag = part
+                        continue
+                    
+                    block = part
                     # Extract image tags
                     img_tags = re.findall(r'<img[^>]+>', block)
                     if img_tags:
@@ -442,13 +450,12 @@ def generate_company_pdf(company, notes, user):
                         block = re.sub(r'<img[^>]+>', '', block)
 
                     # Clean the block text
-                    # CRITICAL: Also strip any lingering {: width="..." } text
                     block = re.sub(r'\{:?[^}]+\}', '', block)
-                    
                     clean_text = bleach.clean(block, tags=allowed_tags, strip=True)
                     
                     # Map tags for ReportLab
-                    clean_text = clean_text.replace('strong>', 'b>').replace('em>', 'i>')
+                    clean_text = clean_text.replace('<strong>', '<b>').replace('</strong>', '</b>')
+                    clean_text = clean_text.replace('<em>', '<i>').replace('</em>', '</i>')
                     
                     # Remove closing tags
                     clean_text = re.sub(r'</(?:p|li|blockquote|ul|ol|h[1-6]|img)>', '', clean_text).strip()
@@ -456,10 +463,16 @@ def generate_company_pdf(company, notes, user):
                     if not clean_text: continue
                     
                     try:
-                        note_elements.append(Paragraph(clean_text, content_style))
+                        if current_tag == '<li>':
+                            note_elements.append(Paragraph(f"&bull; {clean_text}", bullet_style))
+                        else:
+                            note_elements.append(Paragraph(clean_text, content_style))
                     except:
                         plain_text = strip_tags(clean_text)
-                        note_elements.append(Paragraph(plain_text, content_style))
+                        if current_tag == '<li>':
+                            note_elements.append(Paragraph(f"&bull; {plain_text}", bullet_style))
+                        else:
+                            note_elements.append(Paragraph(plain_text, content_style))
 
             note_elements.append(Spacer(1, 0.2*inch))
             content.append(KeepTogether(note_elements))
