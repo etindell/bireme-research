@@ -127,6 +127,16 @@
                     class="text-xs text-red-500 hover:text-red-700">
                 Delete
             </button>
+            <button hx-get="{% url 'notes:share_panel' note.pk %}"
+                    hx-target="#share-panel-{{ note.pk }}"
+                    hx-swap="innerHTML"
+                    @click.stop
+                    class="text-xs text-gray-500 hover:text-gray-700">
+                Share
+            </button>
         </div>
+
+        <!-- Share panel (loaded via HTMX) -->
+        <div id="share-panel-{{ note.pk }}"></div>
     </div>
 </div>
