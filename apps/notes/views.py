@@ -524,7 +524,7 @@ class NoteAutoSaveView(OrganizationViewMixin, View):
             )
             
             # If this was a new note, provide the new URL for the frontend to update itself
-            if pk == 0:
+            if not pk:
                 response['HX-Trigger'] = json.dumps({
                     "noteSaved": {"pk": note.pk, "url": reverse('notes:autosave', kwargs={'pk': note.pk})}
                 })
