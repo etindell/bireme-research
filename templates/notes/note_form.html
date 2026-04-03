@@ -762,6 +762,24 @@
             window.history.replaceState({}, '', data.url.replace('/autosave/', '/edit/'));
         }
     });
+
+    // --- 7. SAVE ON PAGE LEAVE ---
+    // Fire a save when the user navigates away, closes the tab, or switches tabs
+    // so unsaved content is never lost.
+    let beaconSent = false;
+    function saveBeforeLeave() {
+        if (beaconSent) return;
+        const url = form.getAttribute('hx-post');
+        if (!url) return;
+        beaconSent = true;
+        navigator.sendBeacon(url, new FormData(form));
+        // Reset after a short delay so future tab-switches still save
+        setTimeout(function() { beaconSent = false; }, 2000);
+    }
+    window.addEventListener('beforeunload', saveBeforeLeave);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') saveBeforeLeave();
+    });
 })();
 
 /* Excel paste support for FCF / Terminal Value fields */
