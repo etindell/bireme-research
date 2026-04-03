@@ -114,7 +114,7 @@
              x-init="$watch('showAlert', v => {}); document.getElementById('id_status')?.addEventListener('change', e => showAlert = e.target.value === 'watchlist')">
             <h2 class="text-lg font-medium text-gray-900 mb-4">
                 Alert Price Bands
-                <span class="text-sm font-normal text-gray-500">(required for Watch List)</span>
+                <span class="text-sm font-normal text-gray-500">(optional &mdash; can add later)</span>
             </h2>
             <p class="text-sm text-gray-500 mb-4">Set price triggers to alert you when this stock enters your buy or short range.</p>
 
@@ -157,7 +157,7 @@
                 <div>
                     <label for="id_alert_reason" class="block text-sm font-medium leading-6 text-gray-900">
                         Why these prices?
-                        <span x-show="showAlert" class="text-red-500">*</span>
+                        <span x-show="document.getElementById('id_alert_price_low')?.value || document.getElementById('id_alert_price_high')?.value" class="text-red-500">*</span>
                     </label>
                     <p class="text-xs text-gray-500 mb-1">e.g., 10x FCF, above fair value</p>
                     <div class="mt-2">

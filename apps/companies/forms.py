@@ -46,12 +46,9 @@ class CompanyForm(forms.ModelForm):
             if not direction:
                 self.add_error('direction', 'Direction (Long or Short) is required for On Deck companies.')
 
-        # Require at least one alert price and reason for watchlist companies
-        if status == Company.Status.WATCHLIST:
-            if not alert_price_low and not alert_price_high:
-                self.add_error('alert_price_low', 'At least one alert price is required for Watch List companies.')
-            if (alert_price_low or alert_price_high) and not alert_reason:
-                self.add_error('alert_reason', 'Please explain why you chose these alert prices.')
+        # If alert prices are set, require a reason — but prices themselves are optional
+        if (alert_price_low or alert_price_high) and not alert_reason:
+            self.add_error('alert_reason', 'Please explain why you chose these alert prices.')
 
         return cleaned_data
 
