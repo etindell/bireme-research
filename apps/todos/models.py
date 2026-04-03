@@ -155,6 +155,7 @@ class Todo(SoftDeleteModel, OrganizationMixin):
         INVESTOR_LETTER = 'investor_letter', 'Investor Letter Review'
         NOTE_TODO = 'note_todo', 'Note Todo'
         CUSTOM = 'custom', 'Custom'
+        WAITING_ON_RYAN = 'waiting_on_ryan', 'Waiting on Ryan'
 
     class Priority(models.TextChoices):
         HIGH = 'high', 'High'

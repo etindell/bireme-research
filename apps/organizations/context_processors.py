@@ -37,11 +37,16 @@ def organization(request):
         ).select_related('organization').order_by('-is_default', 'organization__name')
 
         # Add pending todo count for sidebar badge
+        # Exclude tickler priority and waiting-on-ryan — those aren't actionable right now
         if hasattr(request, 'organization') and request.organization:
             from apps.todos.models import Todo
             context['pending_todo_count'] = Todo.objects.filter(
                 organization=request.organization,
                 is_completed=False
+            ).exclude(
+                priority=Todo.Priority.TICKLER
+            ).exclude(
+                todo_type=Todo.TodoType.WAITING_ON_RYAN
             ).count()
 
             # Add unread news count for sidebar badge
