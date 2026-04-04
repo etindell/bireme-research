@@ -60,7 +60,11 @@ urlpatterns = [
     path('surveys/templates/<int:pk>/', views.SurveyTemplateDetailView.as_view(), name='survey_template_detail'),
     path('surveys/templates/<int:pk>/edit/', views.SurveyTemplateEditView.as_view(), name='survey_template_edit'),
     path('surveys/templates/<int:pk>/publish/', views.SurveyPublishVersionView.as_view(), name='survey_publish_version'),
-    
+    path('surveys/templates/<int:pk>/send/', views.SurveySendView.as_view(), name='survey_send'),
+
+    # Public token-based completion (no login required)
+    path('surveys/respond/<uuid:token>/', views.SurveyTokenCompleteView.as_view(), name='survey_token_complete'),
+
     # Assignments & Dashboard
     path('surveys/dashboard/', views.SurveyDashboardView.as_view(), name='survey_dashboard'),
     path('surveys/my/', views.MySurveysListView.as_view(), name='my_surveys'),

@@ -25,10 +25,14 @@ from .forms import (
     ComplianceSettingsForm, ComplianceTaskTemplateForm, ComplianceTaskForm,
     EvidenceUploadForm, ComplianceDocumentForm, SurveyCompleteForm,
     SurveyTemplateForm, SurveyVersionForm, SurveyQuestionFormSet,
+    SurveySendForm,
 )
 from .services.audit import log_action
 from .services.task_generation import generate_tasks
-from .services.surveys import assign_periodic_surveys, process_survey_submission
+from .services.surveys import (
+    assign_periodic_surveys, process_survey_submission,
+    send_survey, get_audience_users,
+)
 
 
 # ============ Dashboard ============
@@ -884,6 +888,97 @@ class SurveyPublishVersionView(OrganizationViewMixin, View):
             version.save()
             messages.success(request, f"Published Version {version.version_number} of {template.name}")
         return redirect('compliance:survey_template_detail', pk=pk)
+
+
+class SurveySendView(OrganizationViewMixin, View):
+    """Send a published survey version to employees."""
+
+    def get(self, request, pk):
+        template = get_object_or_404(SurveyTemplate.objects.filter(organization=request.organization), pk=pk)
+        version = template.versions.filter(is_published=True).order_by('-version_number').first()
+        if not version:
+            messages.error(request, "No published version. Publish a version first.")
+            return redirect('compliance:survey_template_detail', pk=pk)
+        form = SurveySendForm(organization=request.organization)
+        return self._render(request, template, version, form)
+
+    def post(self, request, pk):
+        template = get_object_or_404(SurveyTemplate.objects.filter(organization=request.organization), pk=pk)
+        version = template.versions.filter(is_published=True).order_by('-version_number').first()
+        if not version:
+            messages.error(request, "No published version.")
+            return redirect('compliance:survey_template_detail', pk=pk)
+
+        form = SurveySendForm(request.POST, organization=request.organization)
+        if form.is_valid():
+            if form.cleaned_data.get('send_to_audience'):
+                users = get_audience_users(request.organization, template.audience_type)
+                user_ids = list(users.values_list('id', flat=True))
+            else:
+                user_ids = [u.id for u in form.cleaned_data['users']]
+
+            if not user_ids:
+                messages.error(request, "No employees selected.")
+                return self._render(request, template, version, form)
+
+            distribution = send_survey(
+                organization=request.organization,
+                version=version,
+                user_ids=user_ids,
+                due_date=form.cleaned_data['due_date'],
+                send_email_flag=form.cleaned_data.get('send_email', False),
+                sent_by=request.user,
+            )
+            count = distribution.assignments.count()
+            messages.success(request, f"Survey sent to {count} employee(s).")
+            return redirect('compliance:survey_dashboard')
+
+        return self._render(request, template, version, form)
+
+    def _render(self, request, template, version, form):
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, 'compliance/surveys/send_survey.html', {
+            'template': template,
+            'version': version,
+            'form': form,
+        })
+
+
+class SurveyTokenCompleteView(View):
+    """Public view for completing a survey via token link (no login required)."""
+
+    def get(self, request, token):
+        assignment = get_object_or_404(SurveyAssignment, token=token)
+        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS]:
+            from django.template.response import TemplateResponse
+            return TemplateResponse(request, 'compliance/surveys/survey_already_submitted.html', {
+                'assignment': assignment,
+            })
+        form = SurveyCompleteForm(version=assignment.version)
+        return self._render(request, assignment, form)
+
+    def post(self, request, token):
+        assignment = get_object_or_404(SurveyAssignment, token=token)
+        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS]:
+            return redirect('compliance:survey_token_complete', token=token)
+
+        form = SurveyCompleteForm(request.POST, request.FILES, version=assignment.version)
+        if form.is_valid():
+            process_survey_submission(assignment, form.cleaned_data, assignment.user, request.FILES)
+            from django.template.response import TemplateResponse
+            return TemplateResponse(request, 'compliance/surveys/survey_thank_you.html', {
+                'assignment': assignment,
+            })
+        return self._render(request, assignment, form)
+
+    def _render(self, request, assignment, form):
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, 'compliance/surveys/survey_form_public.html', {
+            'assignment': assignment,
+            'form': form,
+            'version': assignment.version,
+            'template': assignment.version.template,
+        })
 
 
 class SurveyDashboardView(OrganizationViewMixin, TemplateView):

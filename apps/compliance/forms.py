@@ -1,4 +1,5 @@
 from django import forms
+from apps.users.models import User
 from .models import (
     ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
     ComplianceEvidence, ComplianceDocument, SurveyTemplate, SurveyVersion,
@@ -470,6 +471,37 @@ class ComplianceDocumentForm(forms.ModelForm):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+class SurveySendForm(forms.Form):
+    users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.none(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-2'}),
+        required=False,
+        label="Select Employees",
+    )
+    send_to_audience = forms.BooleanField(
+        required=False,
+        label="Send to all in audience group instead",
+        widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
+    )
+    due_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'}),
+        label="Due Date",
+    )
+    send_email = forms.BooleanField(
+        required=False, initial=True,
+        label="Send email notification",
+        widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
+    )
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organization:
+            self.fields['users'].queryset = User.objects.filter(
+                organization_memberships__organization=organization,
+                organization_memberships__is_deleted=False,
+            ).distinct().order_by('email')
 
 
 class SurveyTemplateForm(forms.ModelForm):

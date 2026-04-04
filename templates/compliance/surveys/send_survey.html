@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Send {{ template.name }} - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-2">
+            <li><a href="{% url 'compliance:survey_template_list' %}" class="text-sm text-gray-500 hover:text-gray-700">Survey Templates</a></li>
+            <li class="flex items-center">
+                <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+                <a href="{% url 'compliance:survey_template_detail' template.pk %}" class="ml-2 text-sm text-gray-500 hover:text-gray-700">{{ template.name }}</a>
+            </li>
+            <li class="flex items-center">
+                <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" /></svg>
+                <span class="ml-2 text-sm font-medium text-gray-900">Send Survey</span>
+            </li>
+        </ol>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-gray-900">Send Survey</h1>
+    <p class="text-sm text-gray-500">Distributing: <strong>{{ template.name }}</strong> (Version {{ version.version_number }})</p>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <div class="bg-white shadow rounded-lg p-6 space-y-5">
+            <!-- Audience toggle -->
+            <div x-data="{ useAudience: false }">
+                <label class="flex items-center gap-x-3">
+                    {{ form.send_to_audience }}
+                    <span class="text-sm font-medium text-gray-900">{{ form.send_to_audience.label }}</span>
+                    <span class="text-xs text-gray-500">({{ template.get_audience_type_display }})</span>
+                </label>
+
+                <div class="mt-4" x-show="!$el.closest('[x-data]').querySelector('[name=send_to_audience]').checked">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.users.label }}</label>
+                    <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3 space-y-2">
+                        {% for checkbox in form.users %}
+                        <label class="flex items-center gap-x-3 text-sm text-gray-700">
+                            {{ checkbox.tag }}
+                            {{ checkbox.choice_label }}
+                        </label>
+                        {% empty %}
+                        <p class="text-sm text-gray-500">No employees found in this organization.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Due date -->
+            <div>
+                <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.due_date.label }}</label>
+                <div class="mt-1">{{ form.due_date }}</div>
+                {% if form.due_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.due_date.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- Email toggle -->
+            <label class="flex items-center gap-x-3">
+                {{ form.send_email }}
+                <span class="text-sm font-medium text-gray-900">{{ form.send_email.label }}</span>
+            </label>
+        </div>
+
+        <div class="flex justify-end gap-x-3">
+            <a href="{% url 'compliance:survey_template_detail' template.pk %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</a>
+            <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Send Survey</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

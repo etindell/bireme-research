@@ -31,6 +31,7 @@ class OrganizationMiddleware:
         '/organizations/join/',
         '/share/',
         '/events/rsvp/',
+        '/compliance/surveys/respond/',
     ]
 
     def __init__(self, get_response):

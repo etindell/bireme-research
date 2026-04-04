@@ -1,9 +1,16 @@
 from datetime import date, timedelta
+
+from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.utils import timezone
+
 from apps.compliance.models import (
-    SurveyTemplate, SurveyVersion, SurveyAssignment, 
-    EmployeeCertificationStatus, SurveyException
+    SurveyTemplate, SurveyVersion, SurveyAssignment, SurveyDistribution,
+    EmployeeCertificationStatus, SurveyException, ComplianceTask,
 )
+from apps.compliance.services.audit import log_action
+from apps.compliance.models import ComplianceAuditLog
 from apps.users.models import User
 
 def get_audience_users(organization, audience_type):
@@ -148,4 +155,102 @@ def process_survey_submission(assignment, response_data, user, files=None):
     assignment.submitted_at = timezone.now()
     assignment.save()
 
+    # 4. Check if all assignments in distribution are complete
+    check_distribution_complete(assignment)
+
     return response
+
+
+def send_survey(organization, version, user_ids, due_date, send_email_flag, sent_by,
+                year=None, quarter=None):
+    """
+    Create assignments for selected users, optionally email them,
+    and create/link a ComplianceTask.
+    """
+    # Create a compliance task for tracking
+    task = ComplianceTask.objects.create(
+        organization=organization,
+        title=f"Survey: {version.template.name} (due {due_date})",
+        description=f"Distributed to {len(user_ids)} employee(s).",
+        year=due_date.year,
+        month=due_date.month,
+        due_date=due_date,
+        status=ComplianceTask.Status.IN_PROGRESS,
+        tags='survey',
+    )
+    log_action(
+        task, ComplianceAuditLog.ActionType.TASK_CREATED,
+        sent_by,
+        description=f"Survey distributed to {len(user_ids)} employee(s)",
+    )
+
+    # Create distribution record
+    distribution = SurveyDistribution.objects.create(
+        organization=organization,
+        version=version,
+        compliance_task=task,
+        sent_by=sent_by,
+        email_sent=send_email_flag,
+    )
+
+    # Create assignments
+    created = 0
+    for uid in user_ids:
+        _, was_created = SurveyAssignment.objects.get_or_create(
+            organization=organization,
+            version=version,
+            user_id=uid,
+            year=year,
+            quarter=quarter,
+            defaults={
+                'distribution': distribution,
+                'due_date': due_date,
+            },
+        )
+        if was_created:
+            created += 1
+
+    # Send emails
+    if send_email_flag and created > 0:
+        _send_survey_emails(distribution)
+
+    return distribution
+
+
+def _send_survey_emails(distribution):
+    site_url = getattr(settings, 'SITE_URL', '')
+    for assignment in distribution.assignments.select_related('user'):
+        link = f"{site_url}/compliance/surveys/respond/{assignment.token}/"
+        subject = f"Action Required: {distribution.version.template.name}"
+        body = (
+            f"Hi {assignment.user.first_name or assignment.user.email},\n\n"
+            f"You have been assigned a compliance survey: "
+            f"{distribution.version.template.name}.\n\n"
+            f"Due date: {assignment.due_date.strftime('%B %d, %Y')}\n\n"
+            f"Please complete it using this link:\n{link}\n\n"
+            f"Thank you."
+        )
+        send_mail(
+            subject=subject,
+            message=body,
+            from_email=None,
+            recipient_list=[assignment.user.email],
+            fail_silently=True,
+        )
+
+
+def check_distribution_complete(assignment):
+    """If all assignments in this distribution are done, mark the ComplianceTask complete."""
+    dist = assignment.distribution
+    if not dist or not dist.compliance_task:
+        return
+
+    terminal = [SurveyAssignment.Status.SUBMITTED, SurveyAssignment.Status.APPROVED,
+                SurveyAssignment.Status.NOT_APPLICABLE]
+    pending = dist.assignments.exclude(status__in=terminal).exists()
+
+    if not pending:
+        task = dist.compliance_task
+        task.status = ComplianceTask.Status.COMPLETED
+        task.completed_at = timezone.now()
+        task.save(update_fields=['status', 'completed_at', 'updated_at'])

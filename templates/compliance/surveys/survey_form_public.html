@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ template.name }} - Compliance Survey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+                            800: '#1e40af', 900: '#1e3a8a',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full">
+<div class="min-h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
+        <h2 class="text-center text-2xl font-bold text-gray-900">{{ template.name }}</h2>
+        <p class="mt-2 text-center text-sm text-gray-500">
+            Assigned to: {{ assignment.user.get_full_name|default:assignment.user.email }}
+            &middot; Due: {{ assignment.due_date|date:"M j, Y" }}
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
+        <div class="bg-white shadow rounded-lg overflow-hidden border-t-4 border-primary-600">
+            <div class="px-4 py-5 sm:p-6">
+                {% if version.instructions %}
+                <div class="bg-blue-50 p-4 rounded-md mb-8">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-sm font-medium text-blue-800 italic">Instructions</h3>
+                            <div class="mt-2 text-sm text-blue-700">{{ version.instructions|linebreaks }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data" class="space-y-8">
+                    {% csrf_token %}
+
+                    <div class="space-y-6">
+                        {% for field in form %}
+                            {% if field.name != 'attestation_consent' and field.name != 'attested_name' %}
+                            <div class="border-b border-gray-100 pb-6">
+                                <label class="block text-sm font-bold text-gray-900 mb-2">
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                                </label>
+                                {% if field.help_text %}
+                                <p class="text-xs text-gray-500 mb-2">{{ field.help_text }}</p>
+                                {% endif %}
+                                <div class="mt-1">{{ field }}</div>
+                                {% if field.errors %}
+                                <div class="mt-2 text-sm text-red-600">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- Final Attestation -->
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4 mt-10">
+                        <h3 class="text-lg font-bold text-gray-900">Final Attestation</h3>
+                        <p class="text-sm italic text-gray-700 leading-relaxed bg-white p-4 border border-gray-100 rounded">
+                            "{{ version.attestation_text }}"
+                        </p>
+                        <div class="pt-4 space-y-4">
+                            <div class="flex items-start">
+                                <div class="flex h-6 items-center">{{ form.attestation_consent }}</div>
+                                <div class="ml-3 text-sm leading-6">
+                                    <label for="{{ form.attestation_consent.id_for_label }}" class="font-medium text-gray-900">{{ form.attestation_consent.label }}</label>
+                                    {% if form.attestation_consent.errors %}<p class="text-red-600 text-xs mt-1">{{ form.attestation_consent.errors.0 }}</p>{% endif %}
+                                </div>
+                            </div>
+                            <div>
+                                <label for="{{ form.attested_name.id_for_label }}" class="block text-sm font-bold text-gray-900">
+                                    {{ form.attested_name.label }} <span class="text-red-500">*</span>
+                                </label>
+                                {{ form.attested_name }}
+                                <p class="mt-1 text-xs text-gray-500">Typing your name acts as your legally binding digital signature.</p>
+                                {% if form.attested_name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.attested_name.errors.0 }}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-6">
+                        <button type="submit" class="inline-flex items-center rounded-md bg-primary-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                            Submit Certification
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
