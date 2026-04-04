@@ -1098,39 +1098,39 @@ class SurveyReviewView(OrganizationViewMixin, View):
     template_name = 'compliance/surveys/review_detail.html'
 
     def get(self, request, pk):
-        # Only admins can review
-        if request.membership.role != 'admin':
-            return HttpResponse(status=403)
-            
+        if not request.membership.is_admin:
+            messages.error(request, "Only admins can review survey submissions.")
+            return redirect('compliance:survey_dashboard')
+
         assignment = get_object_or_404(
-            SurveyAssignment.objects.filter(organization=request.organization), 
+            SurveyAssignment.objects.filter(organization=request.organization),
             pk=pk
         )
         response = getattr(assignment, 'response', None)
-        answers = response.answers.all().select_related('question') if response else []
-        
+        answers = response.answers.all().select_related('question').prefetch_related('evidence_files') if response else []
+
         return self._render(request, assignment, response, answers)
 
     def post(self, request, pk):
-        if request.membership.role != 'admin':
-            return HttpResponse(status=403)
-            
+        if not request.membership.is_admin:
+            messages.error(request, "Only admins can review survey submissions.")
+            return redirect('compliance:survey_dashboard')
+
         assignment = get_object_or_404(
-            SurveyAssignment.objects.filter(organization=request.organization), 
+            SurveyAssignment.objects.filter(organization=request.organization),
             pk=pk
         )
         action = request.POST.get('action')
-        notes = request.POST.get('review_notes', '')
 
         if action == 'approve':
             assignment.status = SurveyAssignment.Status.APPROVED
         elif action == 'reject':
             assignment.status = SurveyAssignment.Status.REJECTED
-            
+
         assignment.reviewed_at = timezone.now()
         assignment.reviewed_by = request.user
         assignment.save()
-        
+
         messages.success(request, f"Survey {action}d.")
         return redirect('compliance:survey_dashboard')
 
@@ -1141,6 +1141,19 @@ class SurveyReviewView(OrganizationViewMixin, View):
             'response': response,
             'answers': answers,
         })
+
+
+class SurveyEvidenceDownloadView(OrganizationViewMixin, View):
+    """Download a file attached to a survey response."""
+
+    def get(self, request, pk):
+        from django.http import FileResponse
+        evidence = get_object_or_404(SurveyEvidenceUpload.objects.filter(
+            response__assignment__organization=request.organization,
+        ), pk=pk)
+        resp = FileResponse(evidence.file.open('rb'), content_type='application/octet-stream')
+        resp['Content-Disposition'] = f'attachment; filename="{evidence.original_filename}"'
+        return resp
 
 
 class SurveyExceptionListView(OrganizationViewMixin, ListView):
