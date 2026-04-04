@@ -60,6 +60,10 @@ class ComplianceTaskTemplate(SoftDeleteModel, OrganizationMixin):
     owner_role = models.CharField(max_length=100, blank=True, default='')
     suggested_evidence = models.TextField(blank=True, default='')
     is_active = models.BooleanField(default=True)
+    survey_template = models.ForeignKey(
+        'SurveyTemplate', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='task_templates',
+    )
 
     class Meta:
         ordering = ['default_due_month', 'default_due_day', 'title']

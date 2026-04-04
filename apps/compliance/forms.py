@@ -133,7 +133,7 @@ class ComplianceTaskTemplateForm(forms.ModelForm):
         fields = [
             'title', 'description', 'frequency', 'default_due_day',
             'default_due_month', 'quarter', 'tags', 'conditional_flag',
-            'owner_role', 'suggested_evidence', 'is_active',
+            'owner_role', 'suggested_evidence', 'is_active', 'survey_template',
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Task template title'}),
@@ -147,10 +147,16 @@ class ComplianceTaskTemplateForm(forms.ModelForm):
             'owner_role': forms.TextInput(attrs={'class': INPUT_CLASS}),
             'suggested_evidence': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2}),
             'is_active': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
+            'survey_template': forms.Select(attrs={'class': SELECT_CLASS}),
         }
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if organization:
+            from .models import SurveyTemplate
+            self.fields['survey_template'].queryset = SurveyTemplate.objects.filter(
+                organization=organization, is_active=True,
+            )
 
 
 class SurveyCompleteForm(forms.Form):

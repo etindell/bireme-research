@@ -222,13 +222,28 @@ class TaskDetailView(OrganizationViewMixin, DetailView):
 
     def get_queryset(self):
         return super().get_queryset().select_related(
-            'template', 'completed_by'
+            'template', 'template__survey_template', 'completed_by'
         ).prefetch_related('evidence_items', 'audit_logs', 'audit_logs__user')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['evidence_form'] = EvidenceUploadForm()
         ctx['statuses'] = ComplianceTask.Status.choices
+
+        task = self.object
+        survey_tpl = task.template.survey_template if task.template else None
+        ctx['linked_survey_template'] = survey_tpl
+
+        distribution = getattr(task, 'survey_distribution', None)
+        ctx['survey_distribution'] = distribution
+        if distribution:
+            total = distribution.assignments.count()
+            completed = distribution.assignments.filter(
+                status__in=['SUBMITTED', 'APPROVED', 'NOT_APPLICABLE']
+            ).count()
+            ctx['survey_total'] = total
+            ctx['survey_completed'] = completed
+
         return ctx
 
 
@@ -901,7 +916,8 @@ class SurveySendView(OrganizationViewMixin, View):
             return redirect('compliance:survey_template_detail', pk=pk)
         form = SurveySendForm(organization=request.organization, cadence=template.cadence,
                               initial={'year': timezone.now().year})
-        return self._render(request, template, version, form)
+        from_task = request.GET.get('from_task')
+        return self._render(request, template, version, form, from_task=from_task)
 
     def post(self, request, pk):
         template = get_object_or_404(SurveyTemplate.objects.filter(organization=request.organization), pk=pk)
@@ -911,6 +927,7 @@ class SurveySendView(OrganizationViewMixin, View):
             return redirect('compliance:survey_template_detail', pk=pk)
 
         form = SurveySendForm(request.POST, organization=request.organization, cadence=template.cadence)
+        from_task_pk = request.POST.get('from_task')
         if form.is_valid():
             if form.cleaned_data.get('send_to_audience'):
                 users = get_audience_users(request.organization, template.audience_type)
@@ -920,7 +937,13 @@ class SurveySendView(OrganizationViewMixin, View):
 
             if not user_ids:
                 messages.error(request, "No employees selected.")
-                return self._render(request, template, version, form)
+                return self._render(request, template, version, form, from_task=from_task_pk)
+
+            existing_task = None
+            if from_task_pk:
+                existing_task = ComplianceTask.objects.filter(
+                    pk=from_task_pk, organization=request.organization,
+                ).first()
 
             distribution = send_survey(
                 organization=request.organization,
@@ -931,19 +954,23 @@ class SurveySendView(OrganizationViewMixin, View):
                 sent_by=request.user,
                 year=form.cleaned_data.get('year'),
                 quarter=form.cleaned_data.get('quarter'),
+                existing_task=existing_task,
             )
             count = distribution.assignments.count()
             messages.success(request, f"Survey sent to {count} employee(s).")
+            if existing_task:
+                return redirect('compliance:task_detail', pk=existing_task.pk)
             return redirect('compliance:survey_dashboard')
 
-        return self._render(request, template, version, form)
+        return self._render(request, template, version, form, from_task=from_task_pk)
 
-    def _render(self, request, template, version, form):
+    def _render(self, request, template, version, form, from_task=None):
         from django.template.response import TemplateResponse
         return TemplateResponse(request, 'compliance/surveys/send_survey.html', {
             'template': template,
             'version': version,
             'form': form,
+            'from_task': from_task,
         })
 
 

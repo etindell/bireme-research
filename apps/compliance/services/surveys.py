@@ -162,27 +162,36 @@ def process_survey_submission(assignment, response_data, user, files=None):
 
 
 def send_survey(organization, version, user_ids, due_date, send_email_flag, sent_by,
-                year=None, quarter=None):
+                year=None, quarter=None, existing_task=None):
     """
     Create assignments for selected users, optionally email them,
     and create/link a ComplianceTask.
     """
-    # Create a compliance task for tracking
-    task = ComplianceTask.objects.create(
-        organization=organization,
-        title=f"Survey: {version.template.name} (due {due_date})",
-        description=f"Distributed to {len(user_ids)} employee(s).",
-        year=due_date.year,
-        month=due_date.month,
-        due_date=due_date,
-        status=ComplianceTask.Status.IN_PROGRESS,
-        tags='survey',
-    )
-    log_action(
-        task, ComplianceAuditLog.ActionType.TASK_CREATED,
-        sent_by,
-        description=f"Survey distributed to {len(user_ids)} employee(s)",
-    )
+    if existing_task:
+        task = existing_task
+        task.status = ComplianceTask.Status.IN_PROGRESS
+        task.save(update_fields=['status', 'updated_at'])
+        log_action(
+            task, ComplianceAuditLog.ActionType.STATUS_CHANGE,
+            sent_by,
+            description=f"Survey distributed to {len(user_ids)} employee(s)",
+        )
+    else:
+        task = ComplianceTask.objects.create(
+            organization=organization,
+            title=f"Survey: {version.template.name} (due {due_date})",
+            description=f"Distributed to {len(user_ids)} employee(s).",
+            year=due_date.year,
+            month=due_date.month,
+            due_date=due_date,
+            status=ComplianceTask.Status.IN_PROGRESS,
+            tags='survey',
+        )
+        log_action(
+            task, ComplianceAuditLog.ActionType.TASK_CREATED,
+            sent_by,
+            description=f"Survey distributed to {len(user_ids)} employee(s)",
+        )
 
     # Create distribution record
     distribution = SurveyDistribution.objects.create(

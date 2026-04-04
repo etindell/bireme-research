@@ -77,6 +77,43 @@
         </div>
         {% endif %}
 
+        {% if linked_survey_template %}
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Linked Survey</h3>
+            {% if survey_distribution %}
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-900">
+                        <a href="{% url 'compliance:survey_template_detail' linked_survey_template.pk %}" class="text-primary-600 hover:underline">
+                            {{ linked_survey_template.name }}
+                        </a>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Sent {{ survey_distribution.sent_at|date:"M j, Y" }} by {{ survey_distribution.sent_by.email|default:"System" }}
+                    </p>
+                    <p class="text-sm text-gray-700 mt-1">
+                        {{ survey_completed }} of {{ survey_total }} response{{ survey_total|pluralize }} received
+                    </p>
+                </div>
+                <a href="{% url 'compliance:survey_dashboard' %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    View Responses
+                </a>
+            </div>
+            {% else %}
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-700">
+                    <a href="{% url 'compliance:survey_template_detail' linked_survey_template.pk %}" class="text-primary-600 hover:underline">
+                        {{ linked_survey_template.name }}
+                    </a>
+                </p>
+                <a href="{% url 'compliance:survey_send' linked_survey_template.pk %}?from_task={{ task.pk }}" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    Send Survey
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <!-- Status Change -->
         <div class="mt-4 pt-4 border-t border-gray-200">
             <h3 class="text-sm font-medium text-gray-500 mb-2">Change Status</h3>

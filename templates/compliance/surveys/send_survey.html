@@ -23,6 +23,7 @@
 
     <form method="post" class="space-y-6">
         {% csrf_token %}
+        {% if from_task %}<input type="hidden" name="from_task" value="{{ from_task }}">{% endif %}
 
         <div class="bg-white shadow rounded-lg p-6 space-y-5">
             <!-- Audience toggle -->
