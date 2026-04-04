@@ -35,6 +35,16 @@
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div class="bg-white shadow rounded-lg overflow-hidden border-t-4 border-primary-600">
             <div class="px-4 py-5 sm:p-6">
+                {% load compliance_tags %}
+                {% with assignment|period_label as period %}
+                {% if period %}
+                <div class="bg-amber-50 border border-amber-200 rounded-md px-4 py-3 mb-6">
+                    <p class="text-sm font-semibold text-amber-900">Reporting Period: {{ period }}</p>
+                    <p class="text-xs text-amber-700 mt-1">All responses below must pertain to this period only.</p>
+                </div>
+                {% endif %}
+                {% endwith %}
+
                 {% if version.instructions %}
                 <div class="bg-blue-50 p-4 rounded-md mb-8">
                     <div class="flex">

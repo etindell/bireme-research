@@ -22,10 +22,19 @@
     <div class="bg-white shadow rounded-lg overflow-hidden border-t-4 border-primary-600">
         <div class="px-4 py-5 sm:p-6">
             <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ template.name }}</h1>
-            <div class="text-sm text-gray-500 mb-6 flex gap-4">
-                <span>Period: {% if assignment.quarter %}Q{{ assignment.quarter }} {% endif %}{{ assignment.year|default:"" }}</span>
+            <div class="text-sm text-gray-500 mb-2 flex gap-4">
                 <span>Due: {{ assignment.due_date|date:"M j, Y" }}</span>
             </div>
+
+            {% load compliance_tags %}
+            {% with assignment|period_label as period %}
+            {% if period %}
+            <div class="bg-amber-50 border border-amber-200 rounded-md px-4 py-3 mb-6">
+                <p class="text-sm font-semibold text-amber-900">Reporting Period: {{ period }}</p>
+                <p class="text-xs text-amber-700 mt-1">All responses below must pertain to this period only.</p>
+            </div>
+            {% endif %}
+            {% endwith %}
 
             <div class="bg-blue-50 p-4 rounded-md mb-8">
                 <div class="flex">
