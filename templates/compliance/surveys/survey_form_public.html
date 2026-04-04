@@ -92,9 +92,20 @@
                                 <label for="{{ form.attested_name.id_for_label }}" class="block text-sm font-bold text-gray-900">
                                     {{ form.attested_name.label }} <span class="text-red-500">*</span>
                                 </label>
-                                {{ form.attested_name }}
-                                <p class="mt-1 text-xs text-gray-500">Typing your name acts as your legally binding digital signature.</p>
+                                <div class="mt-2 relative">
+                                    <input type="text" name="attested_name" id="{{ form.attested_name.id_for_label }}"
+                                           value="{{ form.attested_name.value|default:'' }}"
+                                           required
+                                           class="block w-full border-0 border-b-2 border-gray-400 bg-transparent py-2 px-1 text-xl text-gray-900 focus:border-primary-600 focus:ring-0 placeholder:text-gray-300"
+                                           style="font-family: 'Brush Script MT', 'Segoe Script', cursive; font-size: 1.5rem;"
+                                           placeholder="Type your full name here">
+                                    <p class="mt-1 text-xs text-gray-400 tracking-wide uppercase">Signature</p>
+                                </div>
+                                <p class="mt-2 text-xs text-gray-500">Typing your name acts as your legally binding digital signature.</p>
                                 {% if form.attested_name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.attested_name.errors.0 }}</p>{% endif %}
+                                <div class="mt-3 flex items-center gap-x-4 text-xs text-gray-400">
+                                    <span>Date: {% now "N j, Y" %}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
