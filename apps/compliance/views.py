@@ -1124,14 +1124,21 @@ class SurveyReviewView(OrganizationViewMixin, View):
 
         if action == 'approve':
             assignment.status = SurveyAssignment.Status.APPROVED
+            assignment.reviewed_at = timezone.now()
+            assignment.reviewed_by = request.user
+            assignment.save()
+            messages.success(request, "Survey approved.")
         elif action == 'reject':
-            assignment.status = SurveyAssignment.Status.REJECTED
-
-        assignment.reviewed_at = timezone.now()
-        assignment.reviewed_by = request.user
-        assignment.save()
-
-        messages.success(request, f"Survey {action}d.")
+            # Delete the old response so the employee can resubmit
+            response = getattr(assignment, 'response', None)
+            if response:
+                response.delete()
+            assignment.status = SurveyAssignment.Status.NOT_STARTED
+            assignment.submitted_at = None
+            assignment.reviewed_at = timezone.now()
+            assignment.reviewed_by = request.user
+            assignment.save()
+            messages.success(request, "Survey rejected and reopened for resubmission.")
         return redirect('compliance:survey_dashboard')
 
     def _render(self, request, assignment, response, answers):
