@@ -24,6 +24,7 @@ from .models import (
 from .forms import (
     ComplianceSettingsForm, ComplianceTaskTemplateForm, ComplianceTaskForm,
     EvidenceUploadForm, ComplianceDocumentForm, SurveyCompleteForm,
+    SurveyTemplateForm, SurveyVersionForm, SurveyQuestionFormSet,
 )
 from .services.audit import log_action
 from .services.task_generation import generate_tasks
@@ -801,6 +802,74 @@ class SurveyTemplateDetailView(OrganizationViewMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         ctx['versions'] = self.object.versions.all().prefetch_related('questions')
         return ctx
+
+
+class SurveyTemplateEditView(OrganizationViewMixin, View):
+    """Edit a survey template: its metadata, the latest draft version, and its questions."""
+
+    def _get_objects(self, request, pk):
+        template = get_object_or_404(
+            SurveyTemplate.objects.filter(organization=request.organization), pk=pk
+        )
+        # Get or create a draft version to edit
+        draft = template.versions.filter(is_published=False).order_by('-version_number').first()
+        if not draft:
+            latest = template.versions.order_by('-version_number').first()
+            next_num = (latest.version_number + 1) if latest else 1
+            draft = SurveyVersion.objects.create(
+                template=template,
+                organization=request.organization,
+                version_number=next_num,
+                created_by=request.user,
+            )
+            # Copy questions from latest published version
+            if latest:
+                for q in latest.questions.all():
+                    SurveyQuestion.objects.create(
+                        version=draft,
+                        sort_order=q.sort_order,
+                        question_key=q.question_key,
+                        prompt=q.prompt,
+                        help_text=q.help_text,
+                        field_type=q.field_type,
+                        is_required=q.is_required,
+                        conditional_logic=q.conditional_logic,
+                        response_options=q.response_options,
+                        exception_trigger_rules=q.exception_trigger_rules,
+                    )
+        return template, draft
+
+    def get(self, request, pk):
+        template, draft = self._get_objects(request, pk)
+        template_form = SurveyTemplateForm(instance=template, organization=request.organization)
+        version_form = SurveyVersionForm(instance=draft, organization=request.organization)
+        question_formset = SurveyQuestionFormSet(instance=draft)
+        return self._render(request, template, draft, template_form, version_form, question_formset)
+
+    def post(self, request, pk):
+        template, draft = self._get_objects(request, pk)
+        template_form = SurveyTemplateForm(request.POST, instance=template, organization=request.organization)
+        version_form = SurveyVersionForm(request.POST, instance=draft, organization=request.organization)
+        question_formset = SurveyQuestionFormSet(request.POST, instance=draft)
+
+        if template_form.is_valid() and version_form.is_valid() and question_formset.is_valid():
+            template_form.save()
+            version_form.save()
+            question_formset.save()
+            messages.success(request, f'Updated "{template.name}" draft.')
+            return redirect('compliance:survey_template_detail', pk=template.pk)
+
+        return self._render(request, template, draft, template_form, version_form, question_formset)
+
+    def _render(self, request, template, draft, template_form, version_form, question_formset):
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, 'compliance/surveys/template_edit.html', {
+            'template': template,
+            'draft': draft,
+            'template_form': template_form,
+            'version_form': version_form,
+            'question_formset': question_formset,
+        })
 
 
 class SurveyPublishVersionView(OrganizationViewMixin, View):

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ template.name }} - Compliance{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-2">
+            <li>
+                <a href="{% url 'compliance:survey_template_list' %}" class="text-sm text-gray-500 hover:text-gray-700">Survey Templates</a>
+            </li>
+            <li class="flex items-center">
+                <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                </svg>
+                <a href="{% url 'compliance:survey_template_detail' template.pk %}" class="ml-2 text-sm text-gray-500 hover:text-gray-700">{{ template.name }}</a>
+            </li>
+            <li class="flex items-center">
+                <svg class="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                </svg>
+                <span class="ml-2 text-sm font-medium text-gray-900">Edit</span>
+            </li>
+        </ol>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-gray-900">Edit Template</h1>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Template metadata -->
+        <div class="bg-white shadow rounded-lg p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900">Template Settings</h2>
+            {% for field in template_form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                <div class="mt-1">{{ field }}</div>
+                {% if field.errors %}<p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Version settings -->
+        <div class="bg-white shadow rounded-lg p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900">Draft Version {{ draft.version_number }} Settings</h2>
+            {% for field in version_form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                <div class="mt-1">{{ field }}</div>
+                {% if field.errors %}<p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Questions -->
+        <div class="bg-white shadow rounded-lg p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900">Questions</h2>
+            {{ question_formset.management_form }}
+            {% if question_formset.non_form_errors %}
+            <div class="text-sm text-red-600">{{ question_formset.non_form_errors }}</div>
+            {% endif %}
+
+            <div id="question-forms" class="space-y-6">
+                {% for form in question_formset %}
+                <div class="border border-gray-200 rounded-lg p-4 space-y-3 {% if form.instance.pk %}bg-white{% else %}bg-gray-50{% endif %}">
+                    {% if form.instance.pk %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-500 uppercase">Question {{ forloop.counter }}</span>
+                        <label class="flex items-center gap-x-2 text-sm text-red-600">
+                            {{ form.DELETE }} Remove
+                        </label>
+                    </div>
+                    {% else %}
+                    <span class="text-xs font-medium text-primary-600 uppercase">New Question</span>
+                    {% endif %}
+
+                    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+                    <div class="grid grid-cols-6 gap-4">
+                        <div class="col-span-1">
+                            <label class="block text-xs font-medium text-gray-500">Order</label>
+                            <div class="mt-1">{{ form.sort_order }}</div>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-medium text-gray-500">Key</label>
+                            <div class="mt-1">{{ form.question_key }}</div>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-medium text-gray-500">Type</label>
+                            <div class="mt-1">{{ form.field_type }}</div>
+                        </div>
+                        <div class="col-span-1 flex items-end">
+                            <label class="flex items-center gap-x-2 text-sm text-gray-700">
+                                {{ form.is_required }} Required
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500">Prompt</label>
+                        <div class="mt-1">{{ form.prompt }}</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500">Help Text</label>
+                        <div class="mt-1">{{ form.help_text }}</div>
+                    </div>
+
+                    {% if form.errors %}
+                    <div class="text-sm text-red-600">
+                        {% for field, errors in form.errors.items %}
+                            {{ field }}: {{ errors.0 }}<br>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-x-3">
+            <a href="{% url 'compliance:survey_template_detail' template.pk %}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Cancel</a>
+            <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">Save Draft</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

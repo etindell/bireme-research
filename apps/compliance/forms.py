@@ -1,7 +1,8 @@
 from django import forms
 from .models import (
     ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
-    ComplianceEvidence, ComplianceDocument
+    ComplianceEvidence, ComplianceDocument, SurveyTemplate, SurveyVersion,
+    SurveyQuestion,
 )
 
 INPUT_CLASS = 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6'
@@ -471,9 +472,61 @@ class ComplianceDocumentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
 
+class SurveyTemplateForm(forms.ModelForm):
+    class Meta:
+        model = SurveyTemplate
+        fields = ['name', 'description', 'cadence', 'audience_type', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': INPUT_CLASS}),
+            'description': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3}),
+            'cadence': forms.Select(attrs={'class': SELECT_CLASS}),
+            'audience_type': forms.Select(attrs={'class': SELECT_CLASS}),
+            'is_active': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
+        }
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class SurveyVersionForm(forms.ModelForm):
+    class Meta:
+        model = SurveyVersion
+        fields = ['instructions', 'attestation_text', 'effective_date']
+        widgets = {
+            'instructions': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3}),
+            'attestation_text': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3}),
+            'effective_date': forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'}),
+        }
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class SurveyQuestionForm(forms.ModelForm):
+    class Meta:
+        model = SurveyQuestion
+        fields = ['sort_order', 'question_key', 'prompt', 'help_text', 'field_type', 'is_required']
+        widgets = {
+            'sort_order': forms.NumberInput(attrs={'class': INPUT_CLASS, 'min': 0}),
+            'question_key': forms.TextInput(attrs={'class': INPUT_CLASS}),
+            'prompt': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 2}),
+            'help_text': forms.TextInput(attrs={'class': INPUT_CLASS}),
+            'field_type': forms.Select(attrs={'class': SELECT_CLASS}),
+            'is_required': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
+        }
+
+
+SurveyQuestionFormSet = forms.inlineformset_factory(
+    SurveyVersion, SurveyQuestion,
+    form=SurveyQuestionForm,
+    extra=1,
+    can_delete=True,
+)
+
+
 class SurveyCompleteForm(forms.Form):
     """Dynamic form for survey completion based on version questions."""
-    
+
     attested_name = forms.CharField(
         label="Digital Signature (Type Full Name)",
         widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Full Name'})

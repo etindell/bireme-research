@@ -58,6 +58,7 @@ urlpatterns = [
     # Templates & Versions
     path('surveys/templates/', views.SurveyTemplateListView.as_view(), name='survey_template_list'),
     path('surveys/templates/<int:pk>/', views.SurveyTemplateDetailView.as_view(), name='survey_template_detail'),
+    path('surveys/templates/<int:pk>/edit/', views.SurveyTemplateEditView.as_view(), name='survey_template_edit'),
     path('surveys/templates/<int:pk>/publish/', views.SurveyPublishVersionView.as_view(), name='survey_publish_version'),
     
     # Assignments & Dashboard
