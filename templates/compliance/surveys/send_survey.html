@@ -48,6 +48,22 @@
                 </div>
             </div>
 
+            <!-- Period -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.year.label }}</label>
+                    <div class="mt-1">{{ form.year }}</div>
+                    {% if form.year.errors %}<p class="mt-1 text-sm text-red-600">{{ form.year.errors.0 }}</p>{% endif %}
+                </div>
+                {% if template.cadence == 'QUARTERLY' %}
+                <div>
+                    <label for="{{ form.quarter.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.quarter.label }}</label>
+                    <div class="mt-1">{{ form.quarter }}</div>
+                    {% if form.quarter.errors %}<p class="mt-1 text-sm text-red-600">{{ form.quarter.errors.0 }}</p>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+
             <!-- Due date -->
             <div>
                 <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.due_date.label }}</label>

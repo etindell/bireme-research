@@ -899,7 +899,8 @@ class SurveySendView(OrganizationViewMixin, View):
         if not version:
             messages.error(request, "No published version. Publish a version first.")
             return redirect('compliance:survey_template_detail', pk=pk)
-        form = SurveySendForm(organization=request.organization)
+        form = SurveySendForm(organization=request.organization, cadence=template.cadence,
+                              initial={'year': timezone.now().year})
         return self._render(request, template, version, form)
 
     def post(self, request, pk):
@@ -909,7 +910,7 @@ class SurveySendView(OrganizationViewMixin, View):
             messages.error(request, "No published version.")
             return redirect('compliance:survey_template_detail', pk=pk)
 
-        form = SurveySendForm(request.POST, organization=request.organization)
+        form = SurveySendForm(request.POST, organization=request.organization, cadence=template.cadence)
         if form.is_valid():
             if form.cleaned_data.get('send_to_audience'):
                 users = get_audience_users(request.organization, template.audience_type)
@@ -928,6 +929,8 @@ class SurveySendView(OrganizationViewMixin, View):
                 due_date=form.cleaned_data['due_date'],
                 send_email_flag=form.cleaned_data.get('send_email', False),
                 sent_by=request.user,
+                year=form.cleaned_data.get('year'),
+                quarter=form.cleaned_data.get('quarter'),
             )
             count = distribution.assignments.count()
             messages.success(request, f"Survey sent to {count} employee(s).")

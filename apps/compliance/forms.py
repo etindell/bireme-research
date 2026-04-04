@@ -474,6 +474,9 @@ class ComplianceDocumentForm(forms.ModelForm):
 
 
 class SurveySendForm(forms.Form):
+    YEAR_CHOICES = [(y, str(y)) for y in range(2024, 2030)]
+    QUARTER_CHOICES = [('', '—'), (1, 'Q1'), (2, 'Q2'), (3, 'Q3'), (4, 'Q4')]
+
     users = forms.ModelMultipleChoiceField(
         queryset=User.objects.none(),
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-2'}),
@@ -485,6 +488,17 @@ class SurveySendForm(forms.Form):
         label="Send to all in audience group instead",
         widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
     )
+    year = forms.TypedChoiceField(
+        choices=YEAR_CHOICES, coerce=int,
+        widget=forms.Select(attrs={'class': SELECT_CLASS}),
+        label="Year",
+    )
+    quarter = forms.TypedChoiceField(
+        choices=QUARTER_CHOICES, coerce=lambda x: int(x) if x else None,
+        required=False,
+        widget=forms.Select(attrs={'class': SELECT_CLASS}),
+        label="Quarter",
+    )
     due_date = forms.DateField(
         widget=forms.DateInput(attrs={'class': INPUT_CLASS, 'type': 'date'}),
         label="Due Date",
@@ -495,7 +509,7 @@ class SurveySendForm(forms.Form):
         widget=forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
     )
 
-    def __init__(self, *args, organization=None, **kwargs):
+    def __init__(self, *args, organization=None, cadence=None, **kwargs):
         super().__init__(*args, **kwargs)
         if organization:
             self.fields['users'].queryset = User.objects.filter(
