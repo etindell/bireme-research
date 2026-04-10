@@ -271,43 +271,25 @@ def _fuzzy_name_match(name: str, organization):
     return None
 
 
-def calculate_portfolio_irr(positions) -> float | None:
-    """
-    Weighted average IRR across positions that have IRR values.
-    positions: queryset or list of PortfolioPosition objects.
-    """
-    total_weight = Decimal('0')
-    weighted_irr = Decimal('0')
-
-    for pos in positions:
-        if pos.irr is not None:
-            weight = pos.proposed_weight if pos.proposed_weight is not None else pos.current_weight
-            weighted_irr += weight * pos.irr
-            total_weight += weight
-
-    if total_weight == 0:
-        return None
-
-    return float(weighted_irr / total_weight)
-
-
 def calculate_portfolio_irr_from_weights(positions, use_proposed=False) -> float | None:
     """
-    Calculate portfolio IRR using either current or proposed weights.
+    Portfolio IRR relative to 100% NAV.
+    portfolio_irr = sum(weight_i * irr_i) for positions with IRR.
+    Unallocated weight (cash) implicitly contributes 0% IRR.
     """
-    total_weight = Decimal('0')
+    has_any = False
     weighted_irr = Decimal('0')
 
     for pos in positions:
         if pos.irr is not None:
             weight = pos.proposed_weight if (use_proposed and pos.proposed_weight is not None) else pos.current_weight
             weighted_irr += weight * pos.irr
-            total_weight += weight
+            has_any = True
 
-    if total_weight == 0:
+    if not has_any:
         return None
 
-    return float(weighted_irr / total_weight)
+    return float(weighted_irr)
 
 
 def estimate_portfolio_volatility(positions, lookback_days=252) -> dict:
