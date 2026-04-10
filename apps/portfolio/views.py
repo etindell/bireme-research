@@ -1,11 +1,12 @@
 """
 Views for Portfolio management.
 """
+import logging
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import ListView, DetailView, CreateView, View
@@ -19,6 +20,8 @@ from .services import (
     calculate_portfolio_irr_from_weights,
     estimate_portfolio_volatility,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _build_summary_context(snapshot):
@@ -39,6 +42,76 @@ def _build_summary_context(snapshot):
     }
 
 
+def _run_extraction(snapshot, organization):
+    """
+    Run Gemini extraction on a snapshot's source file, match companies, and create positions.
+    Returns (success: bool, message: str).
+    """
+    try:
+        file_path = snapshot.source_file.path
+    except Exception as e:
+        snapshot.extraction_raw = _error_dict('file_path_error',
+            'Could not locate the uploaded file on disk.', str(e))
+        snapshot.save(update_fields=['extraction_raw'])
+        return False, str(e)
+
+    try:
+        extracted, error = extract_portfolio_from_file(file_path)
+    except Exception as e:
+        snapshot.extraction_raw = _error_dict('unexpected_error',
+            'An unexpected error occurred during extraction.', str(e))
+        snapshot.save(update_fields=['extraction_raw'])
+        return False, str(e)
+
+    if error:
+        snapshot.extraction_raw = _error_dict(error.code, error.message, error.detail)
+        snapshot.save(update_fields=['extraction_raw'])
+        return False, str(error)
+
+    snapshot.extraction_raw = {'positions': extracted}
+
+    try:
+        matched = match_positions_to_companies(extracted, organization)
+
+        for pos in matched:
+            weight = Decimal(str(pos.get('weight', 0)))
+            irr_val = Decimal(str(pos['irr'])) if pos.get('irr') is not None else None
+            PortfolioPosition.objects.create(
+                snapshot=snapshot,
+                company=pos.get('company'),
+                ticker=pos.get('ticker', ''),
+                name_extracted=pos.get('name', ''),
+                current_weight=weight,
+                proposed_weight=weight,
+                irr=irr_val,
+                irr_source=pos.get('irr_source', 'valuation'),
+            )
+    except Exception as e:
+        snapshot.extraction_raw = _error_dict('matching_error',
+            'Positions were extracted but failed during company matching.', str(e))
+        snapshot.save(update_fields=['extraction_raw'])
+        return False, str(e)
+
+    positions = snapshot.positions.all()
+    current_irr = calculate_portfolio_irr_from_weights(positions, use_proposed=False)
+    if current_irr is not None:
+        snapshot.total_irr = Decimal(str(round(current_irr, 4)))
+
+    snapshot.save()
+
+    matched_count = sum(1 for p in matched if p.get('company'))
+    return True, f'Extracted {len(matched)} positions ({matched_count} matched to existing companies).'
+
+
+def _error_dict(code, message, detail=''):
+    return {
+        'error': True,
+        'error_code': code,
+        'error_message': message,
+        'error_detail': detail,
+    }
+
+
 class PortfolioListView(OrganizationViewMixin, ListView):
     model = PortfolioSnapshot
     template_name = 'portfolio/list.html'
@@ -51,79 +124,45 @@ class PortfolioCreateView(OrganizationViewMixin, CreateView):
     form_class = PortfolioSnapshotForm
     template_name = 'portfolio/create.html'
 
-    def _save_extraction_error(self, snapshot, code, message, detail=''):
-        """Persist an extraction error on the snapshot for display on the detail page."""
-        snapshot.extraction_raw = {
-            'error': True,
-            'error_code': code,
-            'error_message': message,
-            'error_detail': detail,
-        }
-        snapshot.save(update_fields=['extraction_raw'])
-
     def form_valid(self, form):
         form.instance.organization = self.request.organization
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
-        snapshot = self.object
 
-        try:
-            file_path = snapshot.source_file.path
-        except Exception as e:
-            self._save_extraction_error(snapshot, 'file_path_error',
-                'Could not locate the uploaded file on disk.', str(e))
-            return response
+        success, msg = _run_extraction(self.object, self.request.organization)
+        if success:
+            messages.success(self.request, msg)
+        else:
+            messages.error(self.request, f'Extraction failed: {msg}')
 
-        try:
-            extracted, error = extract_portfolio_from_file(file_path)
-        except Exception as e:
-            self._save_extraction_error(snapshot, 'unexpected_error',
-                'An unexpected error occurred during extraction.', str(e))
-            return response
-
-        if error:
-            self._save_extraction_error(snapshot, error.code, error.message, error.detail)
-            return response
-
-        snapshot.extraction_raw = {'positions': extracted}
-
-        try:
-            matched = match_positions_to_companies(extracted, self.request.organization)
-
-            for pos in matched:
-                weight = Decimal(str(pos.get('weight', 0)))
-                irr_val = Decimal(str(pos['irr'])) if pos.get('irr') is not None else None
-                PortfolioPosition.objects.create(
-                    snapshot=snapshot,
-                    company=pos.get('company'),
-                    ticker=pos.get('ticker', ''),
-                    name_extracted=pos.get('name', ''),
-                    current_weight=weight,
-                    proposed_weight=weight,
-                    irr=irr_val,
-                    irr_source=pos.get('irr_source', 'valuation'),
-                )
-        except Exception as e:
-            self._save_extraction_error(snapshot, 'matching_error',
-                'Positions were extracted but failed during company matching.', str(e))
-            return response
-
-        positions = snapshot.positions.all()
-        current_irr = calculate_portfolio_irr_from_weights(positions, use_proposed=False)
-        if current_irr is not None:
-            snapshot.total_irr = Decimal(str(round(current_irr, 4)))
-
-        snapshot.save()
-
-        matched_count = sum(1 for p in matched if p.get('company'))
-        messages.success(
-            self.request,
-            f'Extracted {len(matched)} positions ({matched_count} matched to existing companies).'
-        )
         return response
 
     def get_success_url(self):
         return reverse('portfolio:detail', kwargs={'pk': self.object.pk})
+
+
+class PortfolioReExtractView(OrganizationViewMixin, View):
+    """Re-run extraction on an existing snapshot's source file."""
+    model = PortfolioSnapshot
+
+    def post(self, request, pk):
+        snapshot = get_object_or_404(
+            PortfolioSnapshot.objects.filter(organization=request.organization),
+            pk=pk,
+        )
+
+        # Clear existing positions
+        snapshot.positions.all().delete()
+        snapshot.total_irr = None
+        snapshot.total_volatility = None
+
+        success, msg = _run_extraction(snapshot, request.organization)
+        if success:
+            messages.success(request, msg)
+        else:
+            messages.error(request, f'Extraction failed: {msg}')
+
+        return redirect('portfolio:detail', pk=snapshot.pk)
 
 
 class PortfolioDetailView(OrganizationViewMixin, DetailView):

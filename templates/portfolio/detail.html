@@ -21,13 +21,20 @@
             </div>
         </div>
         <div class="mt-4 flex gap-x-3 md:ml-4 md:mt-0">
+            <form method="post" action="{% url 'portfolio:re_extract' snapshot.pk %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                    </svg>
+                    Re-extract
+                </button>
+            </form>
             <button hx-post="{% url 'portfolio:recalculate' snapshot.pk %}"
                     hx-target="#portfolio-summary"
                     hx-swap="innerHTML"
                     class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
-                </svg>
                 Recalculate
             </button>
             <a href="{% url 'portfolio:list' %}"
@@ -65,6 +72,16 @@
                     <pre class="mt-1 text-xs text-red-600 bg-red-100 rounded p-2 overflow-x-auto whitespace-pre-wrap">{{ snapshot.extraction_raw.error_detail }}</pre>
                 </details>
                 {% endif %}
+                <form method="post" action="{% url 'portfolio:re_extract' snapshot.pk %}" class="mt-3">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                        <svg class="-ml-0.5 mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                        </svg>
+                        Retry Extraction
+                    </button>
+                </form>
             </div>
         </div>
     </div>
