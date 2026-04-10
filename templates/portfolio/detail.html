@@ -50,8 +50,8 @@
         {% include "portfolio/partials/portfolio_summary.html" %}
     </div>
 
-    <!-- Extraction Error Alert -->
-    {% if snapshot.extraction_raw.error %}
+    <!-- Extraction Error Alert (only show if no positions were created) -->
+    {% if snapshot.extraction_raw.error and not positions %}
     <div class="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
         <div class="flex">
             <div class="flex-shrink-0">
