@@ -212,6 +212,7 @@ class PortfolioAddPositionView(OrganizationViewMixin, View):
 
         company_id = request.POST.get('company_id', '').strip()
         weight_str = request.POST.get('weight', '').strip()
+        include_current = request.POST.get('include_current') == 'on'
 
         if not company_id:
             messages.error(request, 'Please select a company.')
@@ -238,12 +239,14 @@ class PortfolioAddPositionView(OrganizationViewMixin, View):
         if active_val and active_val.calculated_irr is not None:
             irr = active_val.calculated_irr
 
+        current_weight = weight if include_current else Decimal('0')
+
         PortfolioPosition.objects.create(
             snapshot=snapshot,
             company=company,
             ticker=ticker,
             name_extracted=company.name,
-            current_weight=weight,
+            current_weight=current_weight,
             proposed_weight=weight,
             irr=irr,
             irr_source=irr_source,
@@ -263,9 +266,53 @@ class PortfolioDetailView(OrganizationViewMixin, DetailView):
 
         ctx = super().get_context_data(**kwargs)
         ctx.update(_build_summary_context(self.object))
-        ctx['companies'] = Company.objects.filter(
+
+        # Companies for the add-position dropdown, with status for checkbox default
+        companies = Company.objects.filter(
             organization=self.request.organization,
         ).order_by('name')
+        ctx['companies'] = companies
+
+        # Build a set of long_book company IDs for the checkbox default
+        long_book_ids = set(
+            companies.filter(status='long_book').values_list('pk', flat=True)
+        )
+        ctx['long_book_ids_json'] = list(long_book_ids)
+
+        # Build changes list comparing current vs proposed
+        positions = ctx['positions']
+        changes = []
+        for pos in positions:
+            cw = float(pos.current_weight) * 100
+            pw = float(pos.proposed_weight if pos.proposed_weight is not None else pos.current_weight) * 100
+            name = pos.name_extracted or (pos.company.name if pos.company else pos.ticker)
+            delta = pw - cw
+
+            if cw == 0 and pw > 0:
+                changes.append({
+                    'type': 'added',
+                    'name': name,
+                    'ticker': pos.ticker,
+                    'proposed': pw,
+                })
+            elif pw == 0 and cw > 0:
+                changes.append({
+                    'type': 'removed',
+                    'name': name,
+                    'ticker': pos.ticker,
+                    'current': cw,
+                })
+            elif abs(delta) > 0.05:  # threshold to avoid float noise
+                changes.append({
+                    'type': 'increased' if delta > 0 else 'reduced',
+                    'name': name,
+                    'ticker': pos.ticker,
+                    'current': cw,
+                    'proposed': pw,
+                    'delta': delta,
+                })
+        ctx['changes'] = changes
+
         return ctx
 
 

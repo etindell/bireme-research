@@ -50,6 +50,32 @@
         {% include "portfolio/partials/portfolio_summary.html" %}
     </div>
 
+    <!-- Proposed Changes Callout -->
+    {% if changes %}
+    <div class="mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
+        <h3 class="text-sm font-semibold text-blue-900 mb-2">Proposed Changes</h3>
+        <ul class="space-y-1 text-sm text-blue-800">
+            {% for c in changes %}
+            <li class="flex items-center gap-x-2">
+                {% if c.type == 'added' %}
+                <span class="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">NEW</span>
+                Added <span class="font-medium">{{ c.name }}</span> ({{ c.ticker }}) at {{ c.proposed|floatformat:1 }}%
+                {% elif c.type == 'removed' %}
+                <span class="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">REM</span>
+                Removed <span class="font-medium">{{ c.name }}</span> ({{ c.ticker }}) from {{ c.current|floatformat:1 }}%
+                {% elif c.type == 'increased' %}
+                <span class="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">+</span>
+                Increased <span class="font-medium">{{ c.name }}</span> ({{ c.ticker }}) from {{ c.current|floatformat:1 }}% to {{ c.proposed|floatformat:1 }}% (<span class="text-green-700">+{{ c.delta|floatformat:1 }}pp</span>)
+                {% elif c.type == 'reduced' %}
+                <span class="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">-</span>
+                Reduced <span class="font-medium">{{ c.name }}</span> ({{ c.ticker }}) from {{ c.current|floatformat:1 }}% to {{ c.proposed|floatformat:1 }}% (<span class="text-red-700">{{ c.delta|floatformat:1 }}pp</span>)
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- Extraction Error Alert (only show if no positions were created) -->
     {% if snapshot.extraction_raw.error and not positions %}
     <div class="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
@@ -73,7 +99,7 @@
                     <pre class="mt-1 text-xs text-red-600 bg-red-100 rounded p-2 overflow-x-auto whitespace-pre-wrap">{{ snapshot.extraction_raw.error_detail }}</pre>
                 </details>
                 {% endif %}
-                <form method="post" action="{% url 'portfolio:re_extract' snapshot.pk %}" class="mt-3" @submit="extracting = true">
+                <form method="post" action="{% url 'portfolio:re_extract' snapshot.pk %}" hx-boost="false" class="mt-3" @submit="extracting = true">
                     {% csrf_token %}
                     <button type="submit" :disabled="extracting"
                             class="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -157,11 +183,12 @@
             </table>
         </div>
         <!-- Add Position -->
-        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50"
+             x-data="{ selectedCompany: '', longBookIds: {{ long_book_ids_json }} }">
             <form method="post" action="{% url 'portfolio:add_position' snapshot.pk %}" hx-boost="false" class="flex items-center gap-x-3 flex-wrap">
                 {% csrf_token %}
                 <span class="text-sm font-medium text-gray-700">Add position:</span>
-                <select name="company_id" required
+                <select name="company_id" required x-model="selectedCompany"
                         class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">
                     <option value="">Select company...</option>
                     {% for company in companies %}
@@ -178,6 +205,12 @@
                            class="w-20 rounded-md border-0 py-1.5 text-right text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm">
                     <span class="text-sm text-gray-500">%</span>
                 </div>
+                <label class="flex items-center gap-x-1.5 text-sm text-gray-600">
+                    <input type="checkbox" name="include_current"
+                           :checked="longBookIds.includes(parseInt(selectedCompany))"
+                           class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                    Include in current
+                </label>
                 <button type="submit"
                         class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
                     Add
