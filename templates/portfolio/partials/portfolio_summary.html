@@ -1,0 +1,53 @@
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Current Portfolio IRR -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <dt class="text-sm font-medium text-gray-500">Current Portfolio IRR</dt>
+        <dd class="mt-1 text-2xl font-semibold tracking-tight {% if current_irr is not None and current_irr > 0 %}text-green-600{% elif current_irr is not None %}text-red-600{% else %}text-gray-400{% endif %}">
+            {% if current_irr is not None %}
+            {{ current_irr|floatformat:1 }}%
+            {% else %}
+            --
+            {% endif %}
+        </dd>
+    </div>
+
+    <!-- Proposed Portfolio IRR -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <dt class="text-sm font-medium text-gray-500">Proposed Portfolio IRR</dt>
+        <dd class="mt-1 text-2xl font-semibold tracking-tight {% if proposed_irr is not None and proposed_irr > 0 %}text-green-600{% elif proposed_irr is not None %}text-red-600{% else %}text-gray-400{% endif %}">
+            {% if proposed_irr is not None %}
+            {{ proposed_irr|floatformat:1 }}%
+            {% else %}
+            --
+            {% endif %}
+        </dd>
+    </div>
+
+    <!-- Delta -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <dt class="text-sm font-medium text-gray-500">IRR Delta</dt>
+        <dd class="mt-1 text-2xl font-semibold tracking-tight">
+            {% if current_irr is not None and proposed_irr is not None %}
+                <span x-data="{ delta: {{ proposed_irr }} - {{ current_irr }} }"
+                      :class="delta > 0.01 ? 'text-green-600' : delta < -0.01 ? 'text-red-600' : 'text-gray-600'"
+                      x-text="(delta >= 0 ? '+' : '') + delta.toFixed(1) + '%'"></span>
+            {% else %}
+            <span class="text-gray-400">--</span>
+            {% endif %}
+        </dd>
+    </div>
+
+    <!-- Weight Sum -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <dt class="text-sm font-medium text-gray-500">Proposed Weight Sum</dt>
+        <dd class="mt-1 text-2xl font-semibold tracking-tight">
+            {% if proposed_weight_sum is not None %}
+            <span class="{% if proposed_weight_sum > 102 or proposed_weight_sum < 98 %}text-yellow-600{% else %}text-gray-900{% endif %}">
+                {{ proposed_weight_sum|floatformat:1 }}%
+            </span>
+            {% else %}
+            <span class="text-gray-400">--</span>
+            {% endif %}
+        </dd>
+    </div>
+</div>

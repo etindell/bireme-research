@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load portfolio_tags %}
+
+{% block title %}{{ snapshot.name|default:snapshot }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between mb-6">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                {{ snapshot.name|default:"Portfolio Snapshot" }}
+            </h1>
+            <div class="mt-1 flex items-center gap-x-4 text-sm text-gray-500">
+                <span>{{ snapshot.as_of_date|date:"M j, Y" }}</span>
+                {% if snapshot.source_file %}
+                <a href="{{ snapshot.source_file.url }}" target="_blank" class="text-primary-600 hover:text-primary-800">
+                    View Source File
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="mt-4 flex gap-x-3 md:ml-4 md:mt-0">
+            <button hx-post="{% url 'portfolio:recalculate' snapshot.pk %}"
+                    hx-target="#portfolio-summary"
+                    hx-swap="innerHTML"
+                    class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                </svg>
+                Recalculate
+            </button>
+            <a href="{% url 'portfolio:list' %}"
+               class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div id="portfolio-summary" class="mb-6">
+        {% include "portfolio/partials/portfolio_summary.html" %}
+    </div>
+
+    <!-- Positions Table -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900">Positions</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticker</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Wt (%)</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Proposed Wt (%)</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">IRR (%)</th>
+                        <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">IRR Contribution</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for position in positions %}
+                    {% include "portfolio/partials/position_row.html" %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">
+                            No positions extracted. Check the source file and try re-uploading.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if positions %}
+                <tfoot class="bg-gray-50">
+                    <tr class="font-medium">
+                        <td class="px-4 py-3 text-sm text-gray-900" colspan="2">Total</td>
+                        <td class="px-4 py-3 text-sm text-right text-gray-900">{{ current_weight_sum|floatformat:1 }}%</td>
+                        <td class="px-4 py-3 text-sm text-right text-gray-900">{{ proposed_weight_sum|floatformat:1 }}%</td>
+                        <td class="px-4 py-3 text-sm text-right" colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <!-- Volatility Panel -->
+    <div class="mt-6">
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-medium text-gray-900">Volatility Analysis</h2>
+                <button hx-post="{% url 'portfolio:volatility' snapshot.pk %}"
+                        hx-target="#volatility-content"
+                        hx-swap="innerHTML"
+                        hx-indicator="#vol-spinner"
+                        class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    <svg id="vol-spinner" class="htmx-indicator -ml-0.5 mr-1.5 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Fetch Volatility Data
+                </button>
+            </div>
+            <div id="volatility-content">
+                {% if snapshot.total_volatility is not None %}
+                <p class="text-sm text-gray-600">
+                    Last calculated portfolio volatility:
+                    <span class="font-semibold text-gray-900">{{ snapshot.total_volatility|pct_display }}%</span>
+                    (annualized).
+                    Click "Fetch Volatility Data" to refresh.
+                </p>
+                {% else %}
+                <p class="text-sm text-gray-500">
+                    Click "Fetch Volatility Data" to calculate portfolio volatility using historical price data.
+                    This may take a few seconds.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

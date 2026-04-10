@@ -54,6 +54,9 @@ urlpatterns = [
     # Prospects (Sales/CRM)
     path('prospects/', include('apps.prospects.urls', namespace='prospects')),
 
+    # Portfolio
+    path('portfolio/', include('apps.portfolio.urls', namespace='portfolio')),
+
     # Share (public, no auth required)
     path('share/', include('apps.share.urls', namespace='share')),
 ]

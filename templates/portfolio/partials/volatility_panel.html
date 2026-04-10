@@ -1,0 +1,92 @@
+{% if vol_data.portfolio_volatility is not None %}
+<div class="space-y-6">
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="bg-gray-50 rounded-lg p-4">
+            <dt class="text-sm font-medium text-gray-500">Portfolio Volatility</dt>
+            <dd class="mt-1 text-xl font-semibold text-gray-900">
+                {{ vol_data.portfolio_volatility|floatformat:1 }}%
+                <span class="text-xs font-normal text-gray-500">(annualized)</span>
+            </dd>
+        </div>
+        {% if vol_data.diversification_ratio %}
+        <div class="bg-gray-50 rounded-lg p-4">
+            <dt class="text-sm font-medium text-gray-500">Diversification Ratio</dt>
+            <dd class="mt-1 text-xl font-semibold text-gray-900">{{ vol_data.diversification_ratio|floatformat:2 }}x</dd>
+        </div>
+        {% endif %}
+        <div class="bg-gray-50 rounded-lg p-4">
+            <dt class="text-sm font-medium text-gray-500">Tickers Analyzed</dt>
+            <dd class="mt-1 text-xl font-semibold text-gray-900">{{ vol_data.tickers|length }}</dd>
+        </div>
+    </div>
+
+    {% if vol_data.tickers_missing_data %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+        <p class="text-sm text-yellow-800">
+            <span class="font-medium">Missing price data:</span>
+            {{ vol_data.tickers_missing_data|join:", " }}
+            (these are excluded from the volatility calculation)
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Individual Volatilities -->
+    {% if vol_data.individual_volatilities %}
+    <div>
+        <h3 class="text-sm font-medium text-gray-700 mb-2">Individual Position Volatilities</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {% for ticker, vol in vol_data.individual_volatilities.items %}
+            <div class="bg-gray-50 rounded px-3 py-2 text-center">
+                <div class="text-xs font-medium text-gray-500 font-mono">{{ ticker }}</div>
+                <div class="text-sm font-semibold text-gray-900">{{ vol|floatformat:1 }}%</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Correlation Matrix -->
+    {% if vol_data.correlation_matrix and vol_data.tickers|length <= 20 %}
+    <div>
+        <h3 class="text-sm font-medium text-gray-700 mb-2">Correlation Matrix</h3>
+        <div class="overflow-x-auto">
+            <table class="text-xs">
+                <thead>
+                    <tr>
+                        <th class="px-2 py-1"></th>
+                        {% for t in vol_data.tickers %}
+                        <th class="px-2 py-1 font-mono text-gray-500 font-medium">{{ t }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in vol_data.correlation_matrix %}
+                    <tr>
+                        <td class="px-2 py-1 font-mono text-gray-500 font-medium">{{ vol_data.tickers|slice:forloop.counter0|last }}</td>
+                        {% for cell in row %}
+                        <td class="px-2 py-1 text-center"
+                            style="background-color: {% if cell > 0.7 %}rgba(239, 68, 68, {{ cell|floatformat:2 }}){% elif cell > 0.3 %}rgba(251, 191, 36, {{ cell|floatformat:2 }}){% elif cell < 0 %}rgba(59, 130, 246, {{ cell|floatformat:2 }}){% else %}rgba(156, 163, 175, 0.2){% endif %}">
+                            {{ cell|floatformat:2 }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="text-center py-4">
+    <p class="text-sm text-gray-500">
+        {% if vol_data.tickers_missing_data %}
+        Could not fetch price data for: {{ vol_data.tickers_missing_data|join:", " }}.
+        These tickers may not be available on Yahoo Finance (private companies, etc.).
+        {% else %}
+        Unable to calculate volatility. Ensure positions have valid tickers.
+        {% endif %}
+    </p>
+</div>
+{% endif %}
