@@ -164,8 +164,15 @@ def extract_portfolio_from_file(file_path: str) -> tuple[list[dict], ExtractionE
 def match_positions_to_companies(positions: list[dict], organization) -> list[dict]:
     """
     For each extracted position, try to match to an existing Company.
-    Match by ticker symbol first, then fuzzy name match.
+    Matching strategy (in order):
+      1. Exact ticker match
+      2. Base ticker match — strip exchange suffixes (.L, .TO, .DE, etc.)
+         from both sides and compare
+      3. Fuzzy name match — search company names using extracted name
     Populate IRR from active CompanyValuation.
+
+    Note: calculated_irr is already stored as a percentage (e.g. 15.0 = 15%),
+    NOT as a decimal. We store it as-is in PortfolioPosition.irr.
     """
     from apps.companies.models import Company, CompanyTicker
 
@@ -174,25 +181,33 @@ def match_positions_to_companies(positions: list[dict], organization) -> list[di
         company__is_deleted=False,
     ).select_related('company')
 
-    ticker_map = {}
+    # Build lookup maps
+    exact_map = {}       # "AAF.L" -> company
+    base_map = {}        # "AAF" -> company (stripped of exchange suffix)
     for ct in org_tickers:
-        ticker_map[ct.symbol.upper()] = ct.company
+        sym = ct.symbol.upper()
+        exact_map[sym] = ct.company
+        base = _strip_exchange_suffix(sym)
+        # Don't overwrite if a more specific ticker already claimed this base
+        if base not in base_map:
+            base_map[base] = ct.company
 
     for pos in positions:
         ticker = pos.get('ticker', '').upper()
-        company = ticker_map.get(ticker)
+        extracted_base = _strip_exchange_suffix(ticker)
 
+        # 1. Exact match
+        company = exact_map.get(ticker)
+
+        # 2. Base ticker match (handles non-USD tickers)
         if not company:
-            # Try fuzzy name match
-            name = pos.get('name', '').lower()
+            company = base_map.get(extracted_base)
+
+        # 3. Fuzzy name match
+        if not company:
+            name = pos.get('name', '').strip()
             if name:
-                try:
-                    company = Company.objects.filter(
-                        organization=organization,
-                        name__icontains=name.split()[0] if name.split() else name,
-                    ).first()
-                except Exception:
-                    pass
+                company = _fuzzy_name_match(name, organization)
 
         pos['company'] = company
         pos['irr'] = None
@@ -201,9 +216,59 @@ def match_positions_to_companies(positions: list[dict], organization) -> list[di
         if company:
             active_val = company.valuations.filter(is_active=True, is_deleted=False).first()
             if active_val and active_val.calculated_irr is not None:
+                # calculated_irr is already a percentage (15.0 = 15%)
                 pos['irr'] = float(active_val.calculated_irr)
 
     return positions
+
+
+def _strip_exchange_suffix(ticker: str) -> str:
+    """Strip exchange suffix from ticker: 'AAF.L' -> 'AAF', 'RIO.AX' -> 'RIO'."""
+    return ticker.split('.')[0] if '.' in ticker else ticker
+
+
+def _fuzzy_name_match(name: str, organization):
+    """Try to match an extracted company name to a Company in the database."""
+    from apps.companies.models import Company
+
+    # Try full name first
+    match = Company.objects.filter(
+        organization=organization, is_deleted=False,
+        name__iexact=name,
+    ).first()
+    if match:
+        return match
+
+    # Try contains with full name
+    match = Company.objects.filter(
+        organization=organization, is_deleted=False,
+        name__icontains=name,
+    ).first()
+    if match:
+        return match
+
+    # Try significant words (skip common suffixes like Inc, Ltd, Corp, PLC, etc.)
+    skip = {'inc', 'ltd', 'llc', 'corp', 'plc', 'co', 'group', 'holdings',
+            'limited', 'corporation', 'the', 'and', '&', 'sa', 'se', 'nv', 'ag'}
+    words = [w for w in name.split() if w.lower().rstrip('.,') not in skip]
+    if words:
+        query = ' '.join(words[:3])
+        match = Company.objects.filter(
+            organization=organization, is_deleted=False,
+            name__icontains=query,
+        ).first()
+        if match:
+            return match
+
+        # Try just the first significant word
+        match = Company.objects.filter(
+            organization=organization, is_deleted=False,
+            name__icontains=words[0],
+        ).first()
+        if match:
+            return match
+
+    return None
 
 
 def calculate_portfolio_irr(positions) -> float | None:

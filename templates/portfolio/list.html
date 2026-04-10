@@ -49,7 +49,7 @@
                     <td class="px-4 py-3 text-sm text-right">
                         {% if snapshot.total_irr is not None %}
                         <span class="{% if snapshot.total_irr > 0 %}text-green-600{% else %}text-red-600{% endif %} font-medium">
-                            {{ snapshot.total_irr|pct_display }}%
+                            {{ snapshot.total_irr|floatformat:1 }}%
                         </span>
                         {% else %}
                         <span class="text-gray-400">--</span>

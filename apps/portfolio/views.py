@@ -32,11 +32,13 @@ def _build_summary_context(snapshot):
     current_weight_sum = sum(float(p.current_weight) for p in positions) * 100
     proposed_weight_sum = sum(float(p.proposed_weight if p.proposed_weight is not None else p.current_weight) for p in positions) * 100
 
+    # Note: IRR values from CompanyValuation.calculated_irr are already
+    # stored as percentages (e.g. 15.0 = 15%), so no conversion needed.
     return {
         'snapshot': snapshot,
         'positions': positions,
-        'current_irr': current_irr * 100 if current_irr is not None else None,
-        'proposed_irr': proposed_irr * 100 if proposed_irr is not None else None,
+        'current_irr': current_irr,
+        'proposed_irr': proposed_irr,
         'current_weight_sum': current_weight_sum,
         'proposed_weight_sum': proposed_weight_sum,
     }
@@ -163,6 +165,37 @@ class PortfolioReExtractView(OrganizationViewMixin, View):
             messages.error(request, f'Extraction failed: {msg}')
 
         return redirect('portfolio:detail', pk=snapshot.pk)
+
+
+class PortfolioSetDefaultIRRView(OrganizationViewMixin, View):
+    """Set a default IRR for all positions that don't have one."""
+    model = PortfolioSnapshot
+
+    def post(self, request, pk):
+        snapshot = get_object_or_404(
+            PortfolioSnapshot.objects.filter(organization=request.organization),
+            pk=pk,
+        )
+
+        irr_str = request.POST.get('default_irr', '').strip()
+        try:
+            default_irr = Decimal(irr_str)
+        except (InvalidOperation, ValueError):
+            messages.error(request, 'Invalid IRR value.')
+            return redirect('portfolio:detail', pk=pk)
+
+        # Apply to positions without an IRR
+        updated = snapshot.positions.filter(irr__isnull=True).update(
+            irr=default_irr,
+            irr_source='manual',
+        )
+
+        if updated:
+            messages.success(request, f'Set {default_irr}% IRR on {updated} position(s).')
+        else:
+            messages.info(request, 'All positions already have an IRR.')
+
+        return redirect('portfolio:detail', pk=pk)
 
 
 class PortfolioDetailView(OrganizationViewMixin, DetailView):

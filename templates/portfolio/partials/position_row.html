@@ -32,7 +32,7 @@
     <td class="px-4 py-3 text-sm text-right">
         {% if position.irr is not None %}
         <span class="{% if position.irr > 0 %}text-green-600{% else %}text-red-600{% endif %} font-medium">
-            {{ position.irr|pct_display }}%
+            {{ position.irr|floatformat:1 }}%
         </span>
         {% if position.irr_source == 'manual' %}
         <span class="text-xs text-gray-400 ml-1">(M)</span>
@@ -43,7 +43,7 @@
     </td>
     <td class="px-4 py-3 text-sm text-right text-gray-600">
         {% if position.irr is not None %}
-            <span x-data="{ val: {{ position.irr }} * {{ position.effective_weight }} * 100 }"
+            <span x-data="{ val: {{ position.irr }} * {{ position.effective_weight }} }"
                   x-text="val.toFixed(2) + '%'"></span>
         {% else %}
         <span class="text-gray-400">--</span>

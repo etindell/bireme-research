@@ -87,6 +87,29 @@
     </div>
     {% endif %}
 
+    <!-- Default IRR -->
+    {% if positions %}
+    <div class="mb-6 bg-white shadow rounded-lg p-4">
+        <form method="post" action="{% url 'portfolio:set_default_irr' snapshot.pk %}" class="flex items-center gap-x-4 flex-wrap">
+            {% csrf_token %}
+            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Default IRR for unmatched positions:</label>
+            <div class="flex items-center gap-x-2">
+                <input type="number"
+                       name="default_irr"
+                       step="0.1"
+                       placeholder="e.g. 12.0"
+                       class="w-24 rounded-md border-0 py-1.5 text-right text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm">
+                <span class="text-sm text-gray-500">%</span>
+                <button type="submit"
+                        class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                    Apply
+                </button>
+            </div>
+            <span class="text-xs text-gray-500">Applies to positions that have no IRR from the leaderboard</span>
+        </form>
+    </div>
+    {% endif %}
+
     <!-- Positions Table -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200">
