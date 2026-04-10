@@ -270,7 +270,7 @@ class PortfolioDetailView(OrganizationViewMixin, DetailView):
 
 
 class PortfolioUpdateWeightView(OrganizationViewMixin, View):
-    """HTMX endpoint to update a single position's proposed weight."""
+    """Update a single position's proposed weight and reload the page."""
     model = PortfolioSnapshot
 
     def post(self, request, pk, position_pk):
@@ -288,9 +288,7 @@ class PortfolioUpdateWeightView(OrganizationViewMixin, View):
         except (InvalidOperation, ValueError):
             pass
 
-        ctx = _build_summary_context(snapshot)
-        html = render_to_string('portfolio/partials/portfolio_summary.html', ctx, request=request)
-        return HttpResponse(html)
+        return redirect('portfolio:detail', pk=pk)
 
 
 class PortfolioRecalculateView(OrganizationViewMixin, View):
