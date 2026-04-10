@@ -42,6 +42,34 @@
         {% include "portfolio/partials/portfolio_summary.html" %}
     </div>
 
+    <!-- Extraction Error Alert -->
+    {% if snapshot.extraction_raw.error %}
+    <div class="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-semibold text-red-800">
+                    Extraction Failed
+                    <span class="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        {{ snapshot.extraction_raw.error_code }}
+                    </span>
+                </h3>
+                <p class="mt-1 text-sm text-red-700">{{ snapshot.extraction_raw.error_message }}</p>
+                {% if snapshot.extraction_raw.error_detail %}
+                <details class="mt-2">
+                    <summary class="text-xs text-red-600 cursor-pointer hover:text-red-800">Show details</summary>
+                    <pre class="mt-1 text-xs text-red-600 bg-red-100 rounded p-2 overflow-x-auto whitespace-pre-wrap">{{ snapshot.extraction_raw.error_detail }}</pre>
+                </details>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Positions Table -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200">
@@ -65,7 +93,11 @@
                     {% empty %}
                     <tr>
                         <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">
+                            {% if snapshot.extraction_raw.error %}
+                            Extraction failed — see error above.
+                            {% else %}
                             No positions extracted. Check the source file and try re-uploading.
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

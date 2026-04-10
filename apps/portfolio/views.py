@@ -51,36 +51,62 @@ class PortfolioCreateView(OrganizationViewMixin, CreateView):
     form_class = PortfolioSnapshotForm
     template_name = 'portfolio/create.html'
 
+    def _save_extraction_error(self, snapshot, code, message, detail=''):
+        """Persist an extraction error on the snapshot for display on the detail page."""
+        snapshot.extraction_raw = {
+            'error': True,
+            'error_code': code,
+            'error_message': message,
+            'error_detail': detail,
+        }
+        snapshot.save(update_fields=['extraction_raw'])
+
     def form_valid(self, form):
         form.instance.organization = self.request.organization
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
-
         snapshot = self.object
-        file_path = snapshot.source_file.path
-        extracted, error = extract_portfolio_from_file(file_path)
 
-        if error:
-            messages.error(self.request, f'Extraction failed: {error}')
+        try:
+            file_path = snapshot.source_file.path
+        except Exception as e:
+            self._save_extraction_error(snapshot, 'file_path_error',
+                'Could not locate the uploaded file on disk.', str(e))
             return response
 
-        snapshot.extraction_raw = extracted
+        try:
+            extracted, error = extract_portfolio_from_file(file_path)
+        except Exception as e:
+            self._save_extraction_error(snapshot, 'unexpected_error',
+                'An unexpected error occurred during extraction.', str(e))
+            return response
 
-        matched = match_positions_to_companies(extracted, self.request.organization)
+        if error:
+            self._save_extraction_error(snapshot, error.code, error.message, error.detail)
+            return response
 
-        for pos in matched:
-            weight = Decimal(str(pos.get('weight', 0)))
-            irr_val = Decimal(str(pos['irr'])) if pos.get('irr') is not None else None
-            PortfolioPosition.objects.create(
-                snapshot=snapshot,
-                company=pos.get('company'),
-                ticker=pos.get('ticker', ''),
-                name_extracted=pos.get('name', ''),
-                current_weight=weight,
-                proposed_weight=weight,
-                irr=irr_val,
-                irr_source=pos.get('irr_source', 'valuation'),
-            )
+        snapshot.extraction_raw = {'positions': extracted}
+
+        try:
+            matched = match_positions_to_companies(extracted, self.request.organization)
+
+            for pos in matched:
+                weight = Decimal(str(pos.get('weight', 0)))
+                irr_val = Decimal(str(pos['irr'])) if pos.get('irr') is not None else None
+                PortfolioPosition.objects.create(
+                    snapshot=snapshot,
+                    company=pos.get('company'),
+                    ticker=pos.get('ticker', ''),
+                    name_extracted=pos.get('name', ''),
+                    current_weight=weight,
+                    proposed_weight=weight,
+                    irr=irr_val,
+                    irr_source=pos.get('irr_source', 'valuation'),
+                )
+        except Exception as e:
+            self._save_extraction_error(snapshot, 'matching_error',
+                'Positions were extracted but failed during company matching.', str(e))
+            return response
 
         positions = snapshot.positions.all()
         current_irr = calculate_portfolio_irr_from_weights(positions, use_proposed=False)
