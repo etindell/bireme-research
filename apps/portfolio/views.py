@@ -198,14 +198,74 @@ class PortfolioSetDefaultIRRView(OrganizationViewMixin, View):
         return redirect('portfolio:detail', pk=pk)
 
 
+class PortfolioAddPositionView(OrganizationViewMixin, View):
+    """Add a position from an existing company in the database."""
+    model = PortfolioSnapshot
+
+    def post(self, request, pk):
+        from apps.companies.models import Company
+
+        snapshot = get_object_or_404(
+            PortfolioSnapshot.objects.filter(organization=request.organization),
+            pk=pk,
+        )
+
+        company_id = request.POST.get('company_id', '').strip()
+        weight_str = request.POST.get('weight', '').strip()
+
+        if not company_id:
+            messages.error(request, 'Please select a company.')
+            return redirect('portfolio:detail', pk=pk)
+
+        company = get_object_or_404(
+            Company.objects.filter(organization=request.organization),
+            pk=company_id,
+        )
+
+        try:
+            weight = Decimal(weight_str) / 100 if weight_str else Decimal('0')
+        except (InvalidOperation, ValueError):
+            weight = Decimal('0')
+
+        # Get ticker
+        primary_ticker = company.tickers.filter(is_primary=True).first()
+        ticker = primary_ticker.symbol if primary_ticker else company.tickers.first().symbol if company.tickers.exists() else ''
+
+        # Get IRR from active valuation
+        irr = None
+        irr_source = 'valuation'
+        active_val = company.valuations.filter(is_active=True, is_deleted=False).first()
+        if active_val and active_val.calculated_irr is not None:
+            irr = active_val.calculated_irr
+
+        PortfolioPosition.objects.create(
+            snapshot=snapshot,
+            company=company,
+            ticker=ticker,
+            name_extracted=company.name,
+            current_weight=weight,
+            proposed_weight=weight,
+            irr=irr,
+            irr_source=irr_source,
+        )
+
+        messages.success(request, f'Added {company.name} ({ticker}).')
+        return redirect('portfolio:detail', pk=pk)
+
+
 class PortfolioDetailView(OrganizationViewMixin, DetailView):
     model = PortfolioSnapshot
     template_name = 'portfolio/detail.html'
     context_object_name = 'snapshot'
 
     def get_context_data(self, **kwargs):
+        from apps.companies.models import Company
+
         ctx = super().get_context_data(**kwargs)
         ctx.update(_build_summary_context(self.object))
+        ctx['companies'] = Company.objects.filter(
+            organization=self.request.organization,
+        ).order_by('name')
         return ctx
 
 
