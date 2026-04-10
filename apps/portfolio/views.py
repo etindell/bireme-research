@@ -58,10 +58,10 @@ class PortfolioCreateView(OrganizationViewMixin, CreateView):
 
         snapshot = self.object
         file_path = snapshot.source_file.path
-        extracted = extract_portfolio_from_file(file_path)
+        extracted, error = extract_portfolio_from_file(file_path)
 
-        if not extracted:
-            messages.warning(self.request, 'Could not extract positions from the uploaded file. You can add them manually.')
+        if error:
+            messages.error(self.request, f'Extraction failed: {error}')
             return response
 
         snapshot.extraction_raw = extracted
