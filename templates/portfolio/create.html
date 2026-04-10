@@ -9,7 +9,7 @@
     </div>
 
     <div x-data="{ submitting: false }">
-        <form method="post" enctype="multipart/form-data" class="space-y-8" @submit="submitting = true">
+        <form method="post" enctype="multipart/form-data" class="space-y-8" hx-boost="false" @submit="submitting = true">
             {% csrf_token %}
 
             <div class="bg-blue-50 shadow rounded-lg p-6">

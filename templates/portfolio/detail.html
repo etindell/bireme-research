@@ -21,7 +21,7 @@
             </div>
         </div>
         <div class="mt-4 flex gap-x-3 md:ml-4 md:mt-0">
-            <form method="post" action="{% url 'portfolio:re_extract' snapshot.pk %}" @submit="extracting = true">
+            <form method="post" action="{% url 'portfolio:re_extract' snapshot.pk %}" hx-boost="false" @submit="extracting = true">
                 {% csrf_token %}
                 <button type="submit" :disabled="extracting"
                         class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
