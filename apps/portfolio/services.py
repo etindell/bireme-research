@@ -112,7 +112,7 @@ def extract_portfolio_from_file(file_path: str) -> tuple[list[dict], ExtractionE
     try:
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
-            model="gemini-2.5-flash-preview",
+            model="gemini-3-flash-preview",
             contents=[
                 types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
                 EXTRACTION_PROMPT,
