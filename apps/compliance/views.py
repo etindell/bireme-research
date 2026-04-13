@@ -1085,12 +1085,32 @@ class SurveyCompleteView(OrganizationViewMixin, View):
         return self._render(request, assignment, form)
 
     def _render(self, request, assignment, form):
+        import json as json_module
         from django.template.response import TemplateResponse
+
+        # Build conditional logic map: field_name -> {parent_field, show_value}
+        # and a reverse map: parent_field -> [child_fields] for Alpine.js
+        conditional_map = {}
+        for question in assignment.version.questions.all():
+            if question.conditional_logic:
+                show_if = question.conditional_logic.get('show_if', {})
+                parent_key = show_if.get('question_key', '')
+                equals_val = show_if.get('equals', '')
+                if parent_key:
+                    # Find parent question's field name (q_<pk>)
+                    parent_q = assignment.version.questions.filter(question_key=parent_key).first()
+                    if parent_q:
+                        conditional_map[f'q_{question.pk}'] = {
+                            'parent_field': f'q_{parent_q.pk}',
+                            'show_value': str(equals_val).lower(),
+                        }
+
         return TemplateResponse(request, self.template_name, {
             'assignment': assignment,
             'form': form,
             'version': assignment.version,
-            'template': assignment.version.template
+            'template': assignment.version.template,
+            'conditional_map_json': json_module.dumps(conditional_map),
         })
 
 

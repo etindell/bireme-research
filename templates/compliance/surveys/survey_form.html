@@ -52,13 +52,17 @@
                 </div>
             </div>
 
-            <form method="post" enctype="multipart/form-data" class="space-y-8">
+            <form method="post" enctype="multipart/form-data" class="space-y-8"
+                  x-data="surveyForm({{ conditional_map_json }})">
                 {% csrf_token %}
-                
+
                 <div class="space-y-6">
                     {% for field in form %}
                         {% if field.name != 'attestation_consent' and field.name != 'attested_name' %}
-                        <div class="border-b border-gray-100 pb-6">
+                        <div class="border-b border-gray-100 pb-6"
+                             x-show="isVisible('{{ field.name }}')"
+                             x-cloak
+                             :class="!isVisible('{{ field.name }}') && 'hidden'">
                             <label class="block text-sm font-bold text-gray-900 mb-2">
                                 {{ field.label }}
                                 {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
@@ -66,11 +70,11 @@
                             {% if field.help_text %}
                             <p class="text-xs text-gray-500 mb-2">{{ field.help_text }}</p>
                             {% endif %}
-                            
-                            <div class="mt-1">
+
+                            <div class="mt-1" @change="onAnswer('{{ field.name }}', $event)">
                                 {{ field }}
                             </div>
-                            
+
                             {% if field.errors %}
                             <div class="mt-2 text-sm text-red-600">
                                 {{ field.errors }}
@@ -87,7 +91,7 @@
                     <p class="text-sm italic text-gray-700 leading-relaxed bg-white p-4 border border-gray-100 rounded">
                         "{{ version.attestation_text }}"
                     </p>
-                    
+
                     <div class="pt-4 space-y-4">
                         <div class="flex items-start">
                             <div class="flex h-6 items-center">
@@ -135,4 +139,36 @@
         </div>
     </div>
 </div>
+
+<script>
+function surveyForm(conditionalMap) {
+    return {
+        // conditionalMap: { "q_123": { parent_field: "q_100", show_value: "true" } }
+        conditions: conditionalMap || {},
+        answers: {},
+
+        onAnswer(fieldName, event) {
+            // Capture the answer value for radio buttons, selects, and inputs
+            const target = event.target;
+            let val;
+            if (target.type === 'radio') {
+                val = target.value;
+            } else if (target.tagName === 'SELECT') {
+                val = target.value;
+            } else {
+                val = target.value;
+            }
+            this.answers[fieldName] = String(val).toLowerCase();
+        },
+
+        isVisible(fieldName) {
+            const cond = this.conditions[fieldName];
+            if (!cond) return true;  // No condition = always visible
+            const parentVal = this.answers[cond.parent_field];
+            if (parentVal === undefined) return false;  // Parent not answered yet = hide
+            return parentVal === cond.show_value;
+        }
+    }
+}
+</script>
 {% endblock %}

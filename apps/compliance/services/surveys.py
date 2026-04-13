@@ -100,12 +100,32 @@ def process_survey_submission(assignment, response_data, user, files=None):
         # In a real view, we'd pass IP and User Agent
     )
 
-    # 2. Iterate Questions and save Answers
-    for question in assignment.version.questions.all():
+    # 2. Build a lookup of all answers by question_key for conditional logic
+    all_questions = list(assignment.version.questions.all())
+    # First pass: collect all submitted values keyed by question_key
+    answers_by_key = {}
+    for q in all_questions:
+        val = response_data.get(f'q_{q.pk}')
+        if val is not None:
+            answers_by_key[q.question_key] = str(val).lower()
+
+    # 3. Iterate Questions and save Answers
+    for question in all_questions:
         value = response_data.get(f'q_{question.pk}')
+
+        # Check conditional logic — skip if parent condition not met
+        if question.conditional_logic:
+            show_if = question.conditional_logic.get('show_if', {})
+            parent_key = show_if.get('question_key', '')
+            required_val = str(show_if.get('equals', '')).lower()
+            parent_answer = answers_by_key.get(parent_key, '')
+            if parent_answer != required_val:
+                # Condition not met — question was hidden, skip entirely
+                continue
+
         if value is None:
             continue
-        
+
         is_exception = False
         exc_summary = ""
 
@@ -116,15 +136,21 @@ def process_survey_submission(assignment, response_data, user, files=None):
             if str(value).lower() == str(trigger_val).lower():
                 is_exception = True
                 severity = rules.get('severity', 'WARNING')
+                category = rules.get('category', 'OTHER')
                 exc_summary = f"Triggered by {question.question_key}"
-                
-                # Create the exception record
+
+                # Map category string to enum
+                try:
+                    cat_enum = SurveyException.Category(category)
+                except ValueError:
+                    cat_enum = SurveyException.Category.OTHER
+
                 SurveyException.objects.create(
                     organization=assignment.organization,
                     assignment=assignment,
                     response=response,
                     severity=severity,
-                    category=SurveyException.Category.OTHER, # We could map this better
+                    category=cat_enum,
                     summary=f"Exception in {assignment.version.template.name}",
                     details=f"User answered '{value}' to: {question.prompt}"
                 )

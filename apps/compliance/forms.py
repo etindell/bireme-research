@@ -42,7 +42,7 @@ class ComplianceSettingsForm(forms.ModelForm):
 
 class SurveyCompleteForm(forms.Form):
     """Dynamic form for survey completion based on version questions."""
-    
+
     attested_name = forms.CharField(
         label="Digital Signature (Type Full Name)",
         widget=forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Full Name'})
@@ -55,17 +55,20 @@ class SurveyCompleteForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.version = kwargs.pop('version', None)
         super().__init__(*args, **kwargs)
-        
+
         if self.version:
             for question in self.version.questions.all():
                 field_key = f'q_{question.pk}'
                 field_type = question.field_type
                 label = question.prompt
-                required = question.is_required
                 help_text = question.help_text
-                
+
+                # Conditional questions are not required at the form level —
+                # they may be hidden. Server-side validation happens in
+                # process_survey_submission instead.
+                required = question.is_required and not question.conditional_logic
+
                 if field_type == 'YES_NO':
-                    # Use a radio select for yes/no instead of checkbox for better explicitness
                     self.fields[field_key] = forms.TypedChoiceField(
                         label=label,
                         choices=[(True, 'Yes'), (False, 'No')],
@@ -102,13 +105,12 @@ class SurveyCompleteForm(forms.Form):
                 elif field_type in ['SINGLE_SELECT', 'MULTI_SELECT']:
                     choices = []
                     if question.response_options:
-                        # Assume list of strings or list of pairs
                         opts = question.response_options
                         if isinstance(opts, list):
                             for o in opts:
                                 if isinstance(o, list): choices.append(tuple(o))
                                 else: choices.append((o, o))
-                    
+
                     if field_type == 'SINGLE_SELECT':
                         self.fields[field_key] = forms.ChoiceField(
                             label=label, choices=choices, required=required, help_text=help_text,
@@ -119,7 +121,6 @@ class SurveyCompleteForm(forms.Form):
                             label=label, choices=choices, required=required, help_text=help_text,
                             widget=forms.CheckboxSelectMultiple(attrs={'class': 'space-y-1'})
                         )
-                # Tables would need more complex JS handling, defaulting to text for now
                 else:
                     self.fields[field_key] = forms.CharField(
                         label=label, required=required, help_text=help_text,
@@ -555,6 +556,40 @@ class SurveyVersionForm(forms.ModelForm):
 
 
 class SurveyQuestionForm(forms.ModelForm):
+    # Friendly fields that map to the JSON config
+    show_if_question_key = forms.CharField(
+        required=False, label='Show only if question key',
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'e.g. had_trades',
+        }),
+        help_text='Leave blank for always-visible. Enter another question\'s key to make this conditional.',
+    )
+    show_if_value = forms.CharField(
+        required=False, label='equals value',
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'e.g. true',
+        }),
+    )
+    exception_trigger_value = forms.CharField(
+        required=False, label='Trigger exception if answer equals',
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'e.g. true or false',
+        }),
+    )
+    exception_severity = forms.ChoiceField(
+        required=False, label='Exception severity',
+        choices=[('', '—'), ('INFO', 'Info'), ('WARNING', 'Warning'), ('CRITICAL', 'Critical')],
+        widget=forms.Select(attrs={'class': SELECT_CLASS}),
+    )
+    exception_category = forms.ChoiceField(
+        required=False, label='Exception category',
+        choices=[('', '— Default (Other) —')] + list(SurveyException.Category.choices),
+        widget=forms.Select(attrs={'class': SELECT_CLASS}),
+    )
+
     class Meta:
         model = SurveyQuestion
         fields = ['sort_order', 'question_key', 'prompt', 'help_text', 'field_type', 'is_required']
@@ -566,6 +601,49 @@ class SurveyQuestionForm(forms.ModelForm):
             'field_type': forms.Select(attrs={'class': SELECT_CLASS}),
             'is_required': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Populate friendly fields from JSON
+        if self.instance and self.instance.pk:
+            cl = self.instance.conditional_logic or {}
+            show_if = cl.get('show_if', {})
+            self.fields['show_if_question_key'].initial = show_if.get('question_key', '')
+            self.fields['show_if_value'].initial = show_if.get('equals', '')
+
+            et = self.instance.exception_trigger_rules or {}
+            self.fields['exception_trigger_value'].initial = et.get('trigger_on', '')
+            self.fields['exception_severity'].initial = et.get('severity', '')
+            self.fields['exception_category'].initial = et.get('category', '')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+
+        # Build conditional_logic JSON
+        qk = self.cleaned_data.get('show_if_question_key', '').strip()
+        qv = self.cleaned_data.get('show_if_value', '').strip()
+        if qk and qv:
+            instance.conditional_logic = {'show_if': {'question_key': qk, 'equals': qv}}
+        else:
+            instance.conditional_logic = None
+
+        # Build exception_trigger_rules JSON
+        tv = self.cleaned_data.get('exception_trigger_value', '').strip()
+        if tv:
+            rules = {'trigger_on': tv}
+            sev = self.cleaned_data.get('exception_severity', '').strip()
+            if sev:
+                rules['severity'] = sev
+            cat = self.cleaned_data.get('exception_category', '').strip()
+            if cat:
+                rules['category'] = cat
+            instance.exception_trigger_rules = rules
+        else:
+            instance.exception_trigger_rules = None
+
+        if commit:
+            instance.save()
+        return instance
 
 
 class SurveyExceptionForm(forms.ModelForm):
