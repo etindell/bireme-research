@@ -25,7 +25,7 @@ from .forms import (
     ComplianceSettingsForm, ComplianceTaskTemplateForm, ComplianceTaskForm,
     EvidenceUploadForm, ComplianceDocumentForm, SurveyCompleteForm,
     SurveyTemplateForm, SurveyVersionForm, SurveyQuestionFormSet,
-    SurveySendForm,
+    SurveySendForm, SurveyExceptionForm,
 )
 from .services.audit import log_action
 from .services.task_generation import generate_tasks
@@ -1169,7 +1169,83 @@ class SurveyExceptionListView(OrganizationViewMixin, ListView):
     context_object_name = 'exceptions'
 
     def get_queryset(self):
-        return SurveyException.objects.filter(organization=self.request.organization).select_related('assignment', 'assignment__user')
+        qs = SurveyException.objects.filter(
+            organization=self.request.organization,
+        ).select_related('assignment', 'assignment__user', 'owner')
+
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['current_status'] = self.request.GET.get('status', '')
+        ctx['status_choices'] = SurveyException.Status.choices
+        all_exceptions = SurveyException.objects.filter(organization=self.request.organization)
+        ctx['open_count'] = all_exceptions.filter(status__in=['OPEN', 'UNDER_REVIEW']).count()
+        ctx['resolved_count'] = all_exceptions.filter(status__in=['RESOLVED', 'DISMISSED']).count()
+        return ctx
+
+
+class SurveyExceptionDetailView(OrganizationViewMixin, View):
+    """Detail view for managing a single exception — update status, add resolution notes."""
+
+    def get(self, request, pk):
+        exception = get_object_or_404(
+            SurveyException.objects.filter(organization=request.organization).select_related(
+                'assignment', 'assignment__user', 'assignment__version__template',
+                'response', 'owner',
+            ),
+            pk=pk,
+        )
+        form = SurveyExceptionForm(instance=exception)
+
+        # Get the flagged answers from the response
+        flagged_answers = []
+        if exception.response:
+            flagged_answers = exception.response.answers.filter(
+                is_exception_flag=True,
+            ).select_related('question')
+
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, 'compliance/surveys/exception_detail.html', {
+            'exception': exception,
+            'form': form,
+            'flagged_answers': flagged_answers,
+        })
+
+    def post(self, request, pk):
+        exception = get_object_or_404(
+            SurveyException.objects.filter(organization=request.organization),
+            pk=pk,
+        )
+        form = SurveyExceptionForm(request.POST, instance=exception)
+
+        if form.is_valid():
+            exc = form.save(commit=False)
+
+            # Auto-set resolved_at when transitioning to resolved/dismissed
+            if exc.status in ('RESOLVED', 'DISMISSED') and not exc.resolved_at:
+                exc.resolved_at = timezone.now()
+            elif exc.status in ('OPEN', 'UNDER_REVIEW'):
+                exc.resolved_at = None
+
+            # Auto-assign owner to current user if not set
+            if not exc.owner:
+                exc.owner = request.user
+
+            exc.save()
+            messages.success(request, f'Exception updated to "{exc.get_status_display()}".')
+            return redirect('compliance:survey_exception_detail', pk=pk)
+
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, 'compliance/surveys/exception_detail.html', {
+            'exception': exception,
+            'form': form,
+            'flagged_answers': [],
+        })
 
 
 class ExportSurveyCSVView(OrganizationViewMixin, View):

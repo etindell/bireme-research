@@ -3,7 +3,7 @@ from apps.users.models import User
 from .models import (
     ComplianceSettings, ComplianceTaskTemplate, ComplianceTask,
     ComplianceEvidence, ComplianceDocument, SurveyTemplate, SurveyVersion,
-    SurveyQuestion,
+    SurveyQuestion, SurveyException,
 )
 
 INPUT_CLASS = 'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6'
@@ -566,6 +566,26 @@ class SurveyQuestionForm(forms.ModelForm):
             'field_type': forms.Select(attrs={'class': SELECT_CLASS}),
             'is_required': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
         }
+
+
+class SurveyExceptionForm(forms.ModelForm):
+    class Meta:
+        model = SurveyException
+        fields = ['status', 'severity', 'category', 'summary', 'details', 'resolution_notes']
+        widgets = {
+            'status': forms.Select(attrs={'class': SELECT_CLASS}),
+            'severity': forms.Select(attrs={'class': SELECT_CLASS}),
+            'category': forms.Select(attrs={'class': SELECT_CLASS}),
+            'summary': forms.TextInput(attrs={'class': INPUT_CLASS}),
+            'details': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 3}),
+            'resolution_notes': forms.Textarea(attrs={
+                'class': TEXTAREA_CLASS, 'rows': 4,
+                'placeholder': 'Describe how this exception was resolved...',
+            }),
+        }
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 SurveyQuestionFormSet = forms.inlineformset_factory(
