@@ -994,7 +994,13 @@ class SurveyTokenCompleteView(View):
 
         form = SurveyCompleteForm(request.POST, request.FILES, version=assignment.version)
         if form.is_valid():
-            process_survey_submission(assignment, form.cleaned_data, assignment.user, request.FILES)
+            import logging
+            logger = logging.getLogger(__name__)
+            try:
+                process_survey_submission(assignment, form.cleaned_data, assignment.user, request.FILES)
+            except Exception:
+                logger.exception("Survey submission failed for assignment pk=%s (token)", assignment.pk)
+                raise
             from django.template.response import TemplateResponse
             return TemplateResponse(request, 'compliance/surveys/survey_thank_you.html', {
                 'assignment': assignment,
@@ -1073,15 +1079,21 @@ class SurveyCompleteView(OrganizationViewMixin, View):
 
     def post(self, request, pk):
         assignment = get_object_or_404(
-            SurveyAssignment.objects.filter(user=request.user, organization=request.organization), 
+            SurveyAssignment.objects.filter(user=request.user, organization=request.organization),
             pk=pk
         )
         form = SurveyCompleteForm(request.POST, request.FILES, version=assignment.version)
         if form.is_valid():
-            process_survey_submission(assignment, form.cleaned_data, request.user, request.FILES)
+            import logging
+            logger = logging.getLogger(__name__)
+            try:
+                process_survey_submission(assignment, form.cleaned_data, request.user, request.FILES)
+            except Exception:
+                logger.exception("Survey submission failed for assignment pk=%s", assignment.pk)
+                raise
             messages.success(request, "Certification submitted successfully.")
             return redirect('compliance:my_surveys')
-            
+
         return self._render(request, assignment, form)
 
     def _render(self, request, assignment, form):

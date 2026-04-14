@@ -91,13 +91,22 @@ def process_survey_submission(assignment, response_data, user, files=None):
     from apps.compliance.models import SurveyResponse, SurveyAnswer, SurveyEvidenceUpload
     import json
 
+    # Clean up any existing response (e.g. from a rejected submission that wasn't fully cleared)
+    try:
+        old_response = assignment.response
+        old_response.delete()
+    except SurveyResponse.DoesNotExist:
+        pass
+
+    # Clean up orphaned exceptions from prior submissions
+    assignment.exceptions.filter(response__isnull=True).delete()
+
     # 1. Create Response
     response = SurveyResponse.objects.create(
         organization=assignment.organization,
         assignment=assignment,
         attested_name=response_data.get('attested_name', user.get_full_name()),
         certification_text_snapshot=assignment.version.attestation_text,
-        # In a real view, we'd pass IP and User Agent
     )
 
     # 2. Build a lookup of all answers by question_key for conditional logic
