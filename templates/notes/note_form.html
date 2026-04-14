@@ -87,6 +87,7 @@
     </div>
 
     <form method="post" id="note-form" class="space-y-8"
+          action="{% if object %}{% url 'notes:update' object.pk %}{% else %}{% url 'notes:create' %}{% endif %}"
           hx-post="{% if object %}{% url 'notes:autosave' object.pk %}{% else %}{% url 'notes:autosave_new' %}{% endif %}"
           hx-trigger="change delay:10s, autosave from:body"
           hx-target="#autosave-indicator"
@@ -462,7 +463,7 @@
                class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                 Cancel
             </a>
-            <button type="submit"
+            <button type="submit" id="save-btn" hx-boost="false"
                     class="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
                 {% if object %}Save Changes{% else %}Create Note{% endif %}
             </button>
@@ -755,12 +756,30 @@
 
     document.body.addEventListener('noteSaved', function(evt) {
         const data = evt.detail;
-        if (form && data.url) {
-            form.setAttribute('hx-post', data.url);
-            form.setAttribute('action', data.url.replace('/autosave/', '/edit/'));
+        if (form && data.pk) {
+            const autosaveUrl = '/notes/autosave/' + data.pk + '/';
+            const editUrl = '/notes/' + data.pk + '/edit/';
+            form.setAttribute('hx-post', autosaveUrl);
+            form.setAttribute('action', editUrl);
             htmx.process(form);
-            window.history.replaceState({}, '', data.url.replace('/autosave/', '/edit/'));
+            window.history.replaceState({}, '', editUrl);
         }
+    });
+
+    // --- SAVE BUTTON: bypass HTMX and do a real form POST ---
+    document.getElementById('save-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        // Set is_draft to false so the note is published
+        const draftInput = form.querySelector('input[name="is_draft"]');
+        if (draftInput) draftInput.value = 'false';
+        // Sync rich editor content to textarea before submit
+        if (typeof syncHtmlToMarkdown === 'function') syncHtmlToMarkdown();
+        // Remove hx-post temporarily so HTMX doesn't intercept
+        const hxPost = form.getAttribute('hx-post');
+        form.removeAttribute('hx-post');
+        form.submit();
+        // Restore in case submit is prevented
+        if (hxPost) form.setAttribute('hx-post', hxPost);
     });
 
     // --- 7. SAVE ON PAGE LEAVE ---
