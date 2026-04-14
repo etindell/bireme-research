@@ -412,6 +412,7 @@ class SurveyAssignment(TimeStampedModel, OrganizationMixin):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_surveys'
     )
     reminder_sent_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True, default='', help_text="CCO notes when rejecting a submission")
 
     class Meta:
         ordering = ['due_date', 'user__email']

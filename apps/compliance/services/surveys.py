@@ -274,6 +274,34 @@ def _send_survey_emails(distribution):
         )
 
 
+def send_rejection_email(assignment):
+    """Notify the employee that their survey submission was rejected."""
+    site_url = getattr(settings, 'SITE_URL', '')
+    link = f"{site_url}/compliance/surveys/respond/{assignment.token}/"
+    reason_block = ''
+    if assignment.rejection_reason:
+        reason_block = (
+            f"\nReason from reviewer:\n"
+            f"{assignment.rejection_reason}\n"
+        )
+    body = (
+        f"Hi {assignment.user.first_name or assignment.user.email},\n\n"
+        f"Your submission for \"{assignment.version.template.name}\" has been "
+        f"returned for revision by {assignment.reviewed_by.get_full_name()}.\n"
+        f"{reason_block}\n"
+        f"Please resubmit using this link:\n{link}\n\n"
+        f"Due date: {assignment.due_date.strftime('%B %d, %Y')}\n\n"
+        f"Thank you."
+    )
+    send_mail(
+        subject=f"Action Required: {assignment.version.template.name} — Revision Needed",
+        message=body,
+        from_email=None,
+        recipient_list=[assignment.user.email],
+        fail_silently=True,
+    )
+
+
 def check_distribution_complete(assignment):
     """If all assignments in this distribution are done, mark the ComplianceTask complete."""
     dist = assignment.distribution

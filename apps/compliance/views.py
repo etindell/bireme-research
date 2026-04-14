@@ -979,7 +979,7 @@ class SurveyTokenCompleteView(View):
 
     def get(self, request, token):
         assignment = get_object_or_404(SurveyAssignment, token=token)
-        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS]:
+        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS, SurveyAssignment.Status.REJECTED]:
             from django.template.response import TemplateResponse
             return TemplateResponse(request, 'compliance/surveys/survey_already_submitted.html', {
                 'assignment': assignment,
@@ -989,7 +989,7 @@ class SurveyTokenCompleteView(View):
 
     def post(self, request, token):
         assignment = get_object_or_404(SurveyAssignment, token=token)
-        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS]:
+        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS, SurveyAssignment.Status.REJECTED]:
             return redirect('compliance:survey_token_complete', token=token)
 
         form = SurveyCompleteForm(request.POST, request.FILES, version=assignment.version)
@@ -1064,7 +1064,7 @@ class SurveyCompleteView(OrganizationViewMixin, View):
             SurveyAssignment.objects.filter(user=request.user, organization=request.organization), 
             pk=pk
         )
-        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS]:
+        if assignment.status not in [SurveyAssignment.Status.NOT_STARTED, SurveyAssignment.Status.IN_PROGRESS, SurveyAssignment.Status.REJECTED]:
             messages.warning(request, "This survey has already been submitted or is no longer editable.")
             return redirect('compliance:my_surveys')
             
@@ -1153,11 +1153,16 @@ class SurveyReviewView(OrganizationViewMixin, View):
             response = getattr(assignment, 'response', None)
             if response:
                 response.delete()
-            assignment.status = SurveyAssignment.Status.NOT_STARTED
+            assignment.status = SurveyAssignment.Status.REJECTED
             assignment.submitted_at = None
             assignment.reviewed_at = timezone.now()
             assignment.reviewed_by = request.user
+            assignment.rejection_reason = request.POST.get('review_notes', '').strip()
             assignment.save()
+
+            from apps.compliance.services.surveys import send_rejection_email
+            send_rejection_email(assignment)
+
             messages.success(request, "Survey rejected and reopened for resubmission.")
         return redirect('compliance:survey_dashboard')
 

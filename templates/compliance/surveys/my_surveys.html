@@ -46,8 +46,10 @@
                     </td>
                     <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {% if assignment.status == 'NOT_STARTED' or assignment.status == 'IN_PROGRESS' or assignment.status == 'REJECTED' %}
-                        <a href="{% url 'compliance:survey_complete' assignment.pk %}" class="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                            Start Survey
+                        <a href="{% url 'compliance:survey_complete' assignment.pk %}" hx-boost="false"
+                           onclick="window.location.href=this.href; return false;"
+                           class="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                            {% if assignment.status == 'REJECTED' %}Revise & Resubmit{% else %}Start Survey{% endif %}
                         </a>
                         {% else %}
                         <span class="text-gray-400">View Submission</span>
