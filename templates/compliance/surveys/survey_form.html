@@ -71,7 +71,7 @@
                 </div>
             </div>
 
-            <form method="post" enctype="multipart/form-data" class="space-y-8"
+            <form method="post" enctype="multipart/form-data" class="space-y-8" hx-boost="false"
                   x-data="surveyForm({{ conditional_map_json }})">
                 {% csrf_token %}
 
