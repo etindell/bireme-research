@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'apps.compliance',
     'apps.prospects',
     'apps.portfolio',
+    'apps.signals',
     'core',
 ]
 

@@ -57,6 +57,9 @@ urlpatterns = [
     # Portfolio
     path('portfolio/', include('apps.portfolio.urls', namespace='portfolio')),
 
+    # Signals
+    path('signals/', include('apps.signals.urls', namespace='signals')),
+
     # Share (public, no auth required)
     path('share/', include('apps.share.urls', namespace='share')),
 ]

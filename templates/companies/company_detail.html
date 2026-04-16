@@ -490,6 +490,12 @@
     </div>
     {% endwith %}
 
+    <!-- Signals Card -->
+    <div hx-get="{% url 'signals:company_card' company.slug %}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+    </div>
+
     <!-- Todos -->
     <div hx-get="{% url 'todos:company_todos' company.slug %}"
          hx-trigger="load"

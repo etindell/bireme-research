@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Signals - Bireme Research{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl">
+                Signals
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Alternative-data signal tracking across portfolio companies.
+                These are proxy signals, not literal customer counts.
+            </p>
+        </div>
+    </div>
+
+    {% if config_stats %}
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Enabled</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Sync</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">New 30d</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">New 90d</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Candidates</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest First Seen</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in config_stats %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'signals:company_detail' item.config.company.slug %}"
+                           class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                            {{ item.config.company.name }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ item.config.get_source_display }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if item.config.is_enabled %}
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">On</span>
+                        {% else %}
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Off</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if item.config.last_synced_at %}
+                            {{ item.config.last_synced_at|date:"M d, Y H:i" }}
+                        {% else %}
+                            <span class="text-gray-400">Never</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        {% if item.new_30d %}
+                        <span class="font-semibold text-green-600">+{{ item.new_30d }}</span>
+                        {% else %}
+                        <span class="text-gray-400">0</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        {% if item.new_90d %}
+                        <span class="font-medium text-gray-900">+{{ item.new_90d }}</span>
+                        {% else %}
+                        <span class="text-gray-400">0</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                        {{ item.total_candidates }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if item.latest_first_seen %}
+                            {{ item.latest_first_seen|date:"M d, Y" }}
+                        {% else %}
+                            <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <a href="{% url 'signals:company_detail' item.config.company.slug %}"
+                           class="text-primary-600 hover:text-primary-500 font-medium">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="bg-white shadow rounded-lg px-6 py-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No signal sources configured</h3>
+        <p class="mt-1 text-sm text-gray-500">
+            Use the management command to set up signal tracking for a company.
+        </p>
+        <pre class="mt-4 text-xs text-gray-600 bg-gray-50 rounded p-3 inline-block text-left">python manage.py create_signal_config --company-slug &lt;slug&gt; --source cybozu_ct_subdomains</pre>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

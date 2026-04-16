@@ -1,0 +1,42 @@
+<tr class="hover:bg-gray-50" id="obs-{{ obs.pk }}">
+    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ obs.first_seen_at|date:"M d, Y" }}</td>
+    <td class="px-4 py-2 text-sm font-mono text-gray-700">
+        {{ obs.fqdn }}
+        {% if obs.source_url %}
+        <a href="{{ obs.source_url }}" target="_blank" class="text-gray-400 hover:text-gray-600 ml-1">
+            <svg class="inline h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+        </a>
+        {% endif %}
+    </td>
+    <td class="px-4 py-2 text-sm text-gray-500">{{ obs.base_domain }}</td>
+    <td class="px-4 py-2 text-sm text-gray-500 max-w-[200px] truncate">{{ obs.issuer_name }}</td>
+    <td class="px-4 py-2 text-right text-sm text-gray-500">{{ obs.observation_count }}</td>
+    <td class="px-4 py-2 text-center">
+        {% if obs.is_excluded %}
+        <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Yes</span>
+        {% else %}
+        <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">No</span>
+        {% endif %}
+    </td>
+    <td class="px-4 py-2 whitespace-nowrap text-right text-sm">
+        {% if obs.is_excluded %}
+        <form hx-post="{% url 'signals:include' obs.pk %}"
+              hx-target="#obs-{{ obs.pk }}"
+              hx-swap="outerHTML"
+              class="inline">
+            {% csrf_token %}
+            <button type="submit" class="text-green-600 hover:text-green-500 text-xs font-medium">Include</button>
+        </form>
+        {% else %}
+        <form hx-post="{% url 'signals:exclude' obs.pk %}"
+              hx-target="#obs-{{ obs.pk }}"
+              hx-swap="outerHTML"
+              class="inline">
+            {% csrf_token %}
+            <button type="submit" class="text-red-600 hover:text-red-500 text-xs font-medium">Exclude</button>
+        </form>
+        {% endif %}
+    </td>
+</tr>
